@@ -8,8 +8,15 @@ import id.gustyxganteng.agent.core.network.AgnesApiService
 import id.gustyxganteng.agent.core.network.AgnesApiServiceImpl
 import id.gustyxganteng.agent.core.network.SmartRetryInterceptor
 import id.gustyxganteng.agent.core.network.SseStreamParser
+import id.gustyxganteng.agent.domain.agent.AgentOrchestrator
+import id.gustyxganteng.agent.domain.context.ContextMeterManager
+import id.gustyxganteng.agent.domain.tools.FileSystemTool
+import id.gustyxganteng.agent.domain.tools.ShellTool
+import id.gustyxganteng.agent.domain.tools.WebTool
+import id.gustyxganteng.agent.feature.chat.ChatViewModel
 import kotlinx.serialization.json.Json
 import org.koin.android.ext.koin.androidContext
+import org.koin.androidx.viewmodel.dsl.viewModel
 import org.koin.dsl.module
 
 val appModule = module {
@@ -51,6 +58,34 @@ val appModule = module {
             retryInterceptor = get(),
             sseStreamParser = get(),
             json = get()
+        )
+    }
+
+    // Tools & Context
+    single { FileSystemTool() }
+    single { ShellTool() }
+    single { WebTool() }
+    single { ContextMeterManager(get(), get()) }
+    single {
+        AgentOrchestrator(
+            agnesApiService = get(),
+            chatRepository = get(),
+            fileSystemTool = get(),
+            shellTool = get(),
+            webTool = get(),
+            json = get()
+        )
+    }
+
+    // ViewModel
+    viewModel {
+        ChatViewModel(
+            application = get(),
+            chatRepository = get(),
+            settingsRepository = get(),
+            orchestrator = get(),
+            contextMeterManager = get(),
+            retryInterceptor = get()
         )
     }
 }

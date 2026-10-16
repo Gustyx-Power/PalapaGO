@@ -61,23 +61,23 @@ Dokumen ini menjadi rujukan utama bagi AI Coding Agent (Antigravity, Claude Code
 
 ## 4. Status Fase Pengerjaan (5-Phase Roadmap)
 
-- [ ] **Fase 1: Pondasi & Core Network**
+- [x] **Fase 1: Pondasi & Core Network**
   - Setup Gradle (`build.gradle.kts`, `settings.gradle.kts`, `libs.versions.toml`)
   - Modul Data Models (`core:model`: `Message`, `ToolCall`, `TokenUsage`, `CanvasArtifact`, dll.)
   - Modul Database (`core:database`: Room DB untuk Chat & Sesi, DataStore Preferences untuk BYOK & Settings)
   - Modul Jaringan (`core:network`: OkHttp 4.12, SSE Stream Parser, Smart Exponential Backoff Retry Interceptor untuk HTTP 429/5xx, Agnes API Service)
-- [ ] **Fase 2: UI Gemini & Rich Markdown**
+- [x] **Fase 2: UI Gemini & Rich Markdown**
   - Modul Design System (`core:designsystem`: Material 3 Dynamic Theme, Gemini Typography, Palet Warna)
   - Modul Markdown (`core:markdown`: Syntax Highlighting, Horizontal Scrollable Table, Copy Action)
   - Modul Chat UI (`feature:chat`: TopBar Dinamis, Context Meter Pill, Collapsible Thinking Accordion, Full-width Response, Floating Input Capsule, Vision Base64 Compressor)
-- [ ] **Fase 3: Engine Agent, File & Shell Tools**
+- [x] **Fase 3: Engine Agent, File & Shell Tools**
   - Modul Tools (`domain:tools`: `FileSystemTool`, `ShellTool` via `ProcessBuilder`)
   - Modul Agent (`domain:agent`: `AgentOrchestrator` Multi-Turn Execution Loop & State Machine)
   - Modul Workspace UI (`feature:workspace`: Diff Approval Dialog Hijau/Merah, Terminal Log Viewer, Directory Picker)
-- [ ] **Fase 4: Web Search & Mode Canvas**
+- [x] **Fase 4: Web Search & Mode Canvas**
   - Modul Web Tools (`domain:tools/WebTool`: DuckDuckGo Lite Scraper & Jsoup Markdown Extractor)
   - Modul Canvas (`feature:canvas`: 3-Tab BottomSheet / Fullscreen: Code Editor, WebView Live Preview, Local Sync)
-- [ ] **Fase 5: Settings BYOK & Pemolesan Akhir**
+- [x] **Fase 5: Settings BYOK & Pemolesan Akhir**
   - Modul Settings (`feature:settings`: BYOK API Key, Base URL, Model Selection, Max Retries, YOLO Toggle)
   - Context Compactor (`domain:context/ContextMeterManager`: Otomatisasi ringkasan percakapan)
   - Foreground Service: Menjaga Agent Loop tetap hidup saat aplikasi diminimalkan
