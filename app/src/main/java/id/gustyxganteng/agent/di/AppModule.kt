@@ -83,6 +83,7 @@ val appModule = module {
             application = get(),
             chatRepository = get(),
             settingsRepository = get(),
+            workspaceDao = get(),
             orchestrator = get(),
             contextMeterManager = get(),
             retryInterceptor = get()

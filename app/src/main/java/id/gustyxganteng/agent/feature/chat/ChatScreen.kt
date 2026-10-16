@@ -89,6 +89,7 @@ import id.gustyxganteng.agent.feature.chat.ui.components.ThinkingAccordion
 import id.gustyxganteng.agent.feature.chat.ui.components.ToolExecutionCard
 import id.gustyxganteng.agent.feature.workspace.DiffApprovalDialog
 import id.gustyxganteng.agent.feature.workspace.ShellApprovalDialog
+import id.gustyxganteng.agent.feature.workspace.WorkspaceManagerBottomSheet
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -106,6 +107,7 @@ fun ChatScreen(
 
     var inputText by remember { mutableStateOf("") }
     val attachedImages = remember { mutableStateListOf<String>() }
+    var showWorkspaceManager by remember { mutableStateOf(false) }
 
     // Image Picker Launcher
     val imagePicker = rememberLauncherForActivityResult(
@@ -378,9 +380,7 @@ fun ChatScreen(
                     isYoloModeActive = uiState.appSettings?.yoloMode == true,
                     isStreaming = isStreamingActive,
                     attachedImagesCount = attachedImages.size,
-                    onOpenWorkspaceManager = {
-                        // Akan disambungkan ke WorkspaceManagerBottomSheet di Tahap 3
-                    },
+                    onOpenWorkspaceManager = { showWorkspaceManager = true },
                     onToggleWebSearch = { viewModel.toggleWebSearch() },
                     onOpenCanvas = {
                         viewModel.openCanvas(
@@ -405,6 +405,19 @@ fun ChatScreen(
                 )
             }
         }
+    }
+
+    // Modal Workspace Manager BottomSheet
+    if (showWorkspaceManager) {
+        WorkspaceManagerBottomSheet(
+            currentWorkspacePath = uiState.currentSession?.workspacePath ?: uiState.appSettings?.activeWorkspacePath,
+            recentWorkspaces = uiState.recentWorkspaces,
+            onDismiss = { showWorkspaceManager = false },
+            onWorkspaceSelected = { path ->
+                viewModel.updateActiveWorkspace(path)
+                showWorkspaceManager = false
+            }
+        )
     }
 
     // Modal Approval Dialog

@@ -18,6 +18,10 @@ import id.gustyxganteng.agent.domain.agent.AgentState
 import id.gustyxganteng.agent.domain.context.ContextMeterManager
 import id.gustyxganteng.agent.domain.context.ContextMeterStatus
 import id.gustyxganteng.agent.R
+import id.gustyxganteng.agent.core.database.dao.WorkspaceDao
+import id.gustyxganteng.agent.core.database.entity.WorkspaceEntity
+import id.gustyxganteng.agent.domain.tools.WorkspacePathResolver
+import java.io.File
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -35,13 +39,15 @@ data class ChatUiState(
     val contextStatus: ContextMeterStatus? = null,
     val rateLimitStatus: RateLimitStatus? = null,
     val appSettings: AppSettings? = null,
-    val activeCanvasArtifact: CanvasArtifact? = null
+    val activeCanvasArtifact: CanvasArtifact? = null,
+    val recentWorkspaces: List<WorkspaceEntity> = emptyList()
 )
 
 class ChatViewModel(
     application: Application,
     private val chatRepository: ChatRepository,
     private val settingsRepository: AppSettingsRepository,
+    private val workspaceDao: WorkspaceDao,
     private val orchestrator: AgentOrchestrator,
     private val contextMeterManager: ContextMeterManager,
     private val retryInterceptor: SmartRetryInterceptor
@@ -56,7 +62,8 @@ class ChatViewModel(
         val sessions: List<ChatSession>,
         val currentId: String,
         val messages: List<Message>,
-        val settings: AppSettings
+        val settings: AppSettings,
+        val recentWorkspaces: List<WorkspaceEntity>
     )
 
     val uiState: StateFlow<ChatUiState> = combine(
@@ -64,9 +71,10 @@ class ChatViewModel(
             chatRepository.getAllSessions(),
             _currentSessionId,
             _messages,
-            settingsRepository.settings
-        ) { sessions, currentId, messages, settings ->
-            SessionContext(sessions, currentId, messages, settings)
+            settingsRepository.settings,
+            workspaceDao.getAllWorkspaces()
+        ) { sessions, currentId, messages, settings, workspaces ->
+            SessionContext(sessions, currentId, messages, settings, workspaces)
         },
         orchestrator.agentState,
         _activeCanvas,
@@ -85,7 +93,8 @@ class ChatViewModel(
             contextStatus = contextStatus,
             rateLimitStatus = rateLimit,
             appSettings = sessionCtx.settings,
-            activeCanvasArtifact = canvas
+            activeCanvasArtifact = canvas,
+            recentWorkspaces = sessionCtx.recentWorkspaces
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ChatUiState())
 
@@ -206,10 +215,22 @@ class ChatViewModel(
     }
 
     fun updateActiveWorkspace(path: String) {
+        val normalized = WorkspacePathResolver.normalizePath(path)
         viewModelScope.launch {
-            settingsRepository.updateActiveWorkspace(path)
-            val current = uiState.value.currentSession ?: return@launch
-            chatRepository.saveSession(current.copy(workspacePath = path))
+            settingsRepository.updateActiveWorkspace(normalized)
+            val current = uiState.value.currentSession
+            if (current != null) {
+                chatRepository.saveSession(current.copy(workspacePath = normalized))
+            }
+            val wsName = File(normalized).name.ifEmpty { "Workspace" }
+            workspaceDao.insertOrUpdate(
+                WorkspaceEntity(
+                    id = normalized,
+                    name = wsName,
+                    rootPath = normalized,
+                    lastUsedAt = System.currentTimeMillis()
+                )
+            )
         }
     }
 

@@ -89,12 +89,15 @@ class FileSystemTool {
     private val ignoredDirectories = setOf(".git", "node_modules", "build", ".gradle", ".idea", ".cxx")
 
     fun resolveSafeFile(workspaceRoot: String, relativePath: String): File {
-        val rootFile = File(workspaceRoot).canonicalFile
+        val normalizedRoot = WorkspacePathResolver.normalizePath(workspaceRoot)
+        val rootFile = File(normalizedRoot).canonicalFile
+        rootFile.mkdirs()
         val targetFile = File(rootFile, relativePath).canonicalFile
 
         if (!targetFile.path.startsWith(rootFile.path)) {
             throw SecurityException("Akses ditolak: Path '$relativePath' berada di luar workspace '${rootFile.path}'")
         }
+        targetFile.parentFile?.mkdirs()
         return targetFile
     }
 

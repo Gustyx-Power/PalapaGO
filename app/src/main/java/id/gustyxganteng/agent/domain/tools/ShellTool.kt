@@ -48,15 +48,14 @@ class ShellTool {
         val subDir = args["working_dir"]?.jsonPrimitive?.content
         val timeoutMs = args["timeout_ms"]?.jsonPrimitive?.longOrNull ?: 30000L
 
+        val normalizedRoot = WorkspacePathResolver.normalizePath(workspaceRoot)
         val workingDirFile = if (!subDir.isNullOrEmpty()) {
-            File(workspaceRoot, subDir).canonicalFile
+            File(normalizedRoot, subDir).canonicalFile
         } else {
-            File(workspaceRoot).canonicalFile
+            File(normalizedRoot).canonicalFile
         }
 
-        if (!workingDirFile.exists()) {
-            workingDirFile.mkdirs()
-        }
+        workingDirFile.mkdirs()
 
         // Tentukan shell binary
         val termuxBash = File("/data/data/com.termux/files/usr/bin/bash")
