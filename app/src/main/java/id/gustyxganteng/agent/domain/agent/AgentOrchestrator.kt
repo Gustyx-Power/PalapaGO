@@ -193,6 +193,20 @@ class AgentOrchestrator(
             val finalContent = contentBuilder.toString().trim()
             val finalReasoning = reasoningBuilder.toString().trim().ifEmpty { null }
 
+            // Fallback token calculation untuk reasoning jika tidak disediakan API
+            val adjustedUsage = if (usage != null) {
+                if (usage!!.reasoningTokens == 0 && !finalReasoning.isNullOrEmpty()) {
+                    val fallbackReasoningTokens = (finalReasoning.length / 4).coerceAtLeast(1)
+                    usage!!.copy(reasoningTokens = fallbackReasoningTokens)
+                } else {
+                    usage
+                }
+            } else if (!finalReasoning.isNullOrEmpty()) {
+                TokenUsage(
+                    reasoningTokens = (finalReasoning.length / 4).coerceAtLeast(1)
+                )
+            } else null
+
             // Simpan respon assistant
             val assistantMessage = Message(
                 sessionId = sessionId,
@@ -201,7 +215,7 @@ class AgentOrchestrator(
                 reasoningContent = finalReasoning,
                 thinkingDurationMs = thinkingDuration,
                 toolCalls = accumulatedToolCalls,
-                tokenUsage = usage
+                tokenUsage = adjustedUsage
             )
             chatRepository.saveMessage(assistantMessage)
 

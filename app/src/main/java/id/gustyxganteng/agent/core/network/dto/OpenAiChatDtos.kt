@@ -85,6 +85,8 @@ data class StreamDeltaDto(
     val content: String? = null,
     @SerialName("reasoning_content")
     val reasoningContent: String? = null,
+    val thinking: String? = null,
+    val reasoning: String? = null,
     @SerialName("tool_calls")
     val toolCalls: List<ToolCallDto>? = null
 )

@@ -21,6 +21,9 @@ class SseStreamParser(
 ) {
     fun parseStream(responseBody: ResponseBody): Flow<StreamEvent> = flow {
         val reader = BufferedReader(InputStreamReader(responseBody.byteStream(), Charsets.UTF_8))
+        var isInsideThinkTag = false
+        var accumulatedThinkingChars = 0
+
         try {
             var line: String? = reader.readLine()
             while (line != null) {
@@ -34,40 +37,59 @@ class SseStreamParser(
                     if (data.isNotEmpty()) {
                         try {
                             val chunk = json.decodeFromString<ChatCompletionChunk>(data)
-                            
-                            // Emit token usage jika ada di chunk
-                            chunk.usage?.let { u ->
-                                emit(
-                                    StreamEvent.UsageUpdate(
-                                        TokenUsage(
-                                            promptTokens = u.promptTokens,
-                                            completionTokens = u.completionTokens,
-                                            totalTokens = u.totalTokens,
-                                            reasoningTokens = u.completionTokensDetails?.reasoningTokens ?: 0
-                                        )
-                                    )
-                                )
-                            }
 
                             // Emit delta choices
                             for (choice in chunk.choices) {
                                 val delta = choice.delta ?: continue
-                                
-                                // Reasoning delta
-                                delta.reasoningContent?.let { reasoning ->
-                                    if (reasoning.isNotEmpty()) {
-                                        emit(StreamEvent.ReasoningDelta(reasoning))
+
+                                // 1. Ekstrak teks berpikir dari reasoning_content, thinking, atau reasoning
+                                val explicitReasoning = delta.reasoningContent
+                                    ?: delta.thinking
+                                    ?: delta.reasoning
+
+                                if (!explicitReasoning.isNullOrEmpty()) {
+                                    accumulatedThinkingChars += explicitReasoning.length
+                                    emit(StreamEvent.ReasoningDelta(explicitReasoning))
+                                }
+
+                                // 2. Ekstrak delta content dan pisahkan tag <think>...</think> secara real-time
+                                delta.content?.let { rawContent ->
+                                    if (rawContent.isNotEmpty()) {
+                                        var currentText = rawContent
+
+                                        while (currentText.isNotEmpty()) {
+                                            if (!isInsideThinkTag) {
+                                                if (currentText.contains("<think>")) {
+                                                    val beforeTag = currentText.substringBefore("<think>")
+                                                    if (beforeTag.isNotEmpty()) {
+                                                        emit(StreamEvent.ContentDelta(beforeTag))
+                                                    }
+                                                    isInsideThinkTag = true
+                                                    currentText = currentText.substringAfter("<think>")
+                                                } else {
+                                                    emit(StreamEvent.ContentDelta(currentText))
+                                                    currentText = ""
+                                                }
+                                            } else {
+                                                if (currentText.contains("</think>")) {
+                                                    val thinkText = currentText.substringBefore("</think>")
+                                                    if (thinkText.isNotEmpty()) {
+                                                        accumulatedThinkingChars += thinkText.length
+                                                        emit(StreamEvent.ReasoningDelta(thinkText))
+                                                    }
+                                                    isInsideThinkTag = false
+                                                    currentText = currentText.substringAfter("</think>")
+                                                } else {
+                                                    accumulatedThinkingChars += currentText.length
+                                                    emit(StreamEvent.ReasoningDelta(currentText))
+                                                    currentText = ""
+                                                }
+                                            }
+                                        }
                                     }
                                 }
 
-                                // Normal content delta
-                                delta.content?.let { text ->
-                                    if (text.isNotEmpty()) {
-                                        emit(StreamEvent.ContentDelta(text))
-                                    }
-                                }
-
-                                // Tool calls delta
+                                // 3. Tool calls delta
                                 delta.toolCalls?.forEach { toolCall ->
                                     emit(
                                         StreamEvent.ToolCallChunk(
@@ -79,7 +101,30 @@ class SseStreamParser(
                                     )
                                 }
                             }
-                        } catch (e: Exception) {
+
+                            // 4. Token usage calculation dengan fallback thinkingTokens
+                            chunk.usage?.let { u ->
+                                val apiReasoningTokens = u.completionTokensDetails?.reasoningTokens ?: 0
+                                val computedReasoningTokens = if (apiReasoningTokens > 0) {
+                                    apiReasoningTokens
+                                } else if (accumulatedThinkingChars > 0) {
+                                    (accumulatedThinkingChars / 4).coerceAtLeast(1)
+                                } else {
+                                    0
+                                }
+
+                                emit(
+                                    StreamEvent.UsageUpdate(
+                                        TokenUsage(
+                                            promptTokens = u.promptTokens,
+                                            completionTokens = u.completionTokens,
+                                            totalTokens = u.totalTokens,
+                                            reasoningTokens = computedReasoningTokens
+                                        )
+                                    )
+                                )
+                            }
+                        } catch (_: Exception) {
                             // Abaikan chunk malformed atau keep-alive ping
                         }
                     }
