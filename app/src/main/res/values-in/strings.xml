@@ -1,0 +1,108 @@
+<resources>
+    <string name="app_name">GG Agent</string>
+    <string name="app_subtitle">Agen Coding &amp; Workspace AI Android</string>
+
+    <!-- TopBar & Navigation -->
+    <string name="topbar_menu">Menu</string>
+    <string name="model_fast_desc">%1$s (Cepat)</string>
+    <string name="model_pro_desc">%1$s (Tingkat Lanjut)</string>
+    <string name="compacting_context">Meringkas konteks percakapan...</string>
+
+    <!-- Drawer -->
+    <string name="new_chat">Percakapan Baru</string>
+    <string name="chat_history">Riwayat Sesi</string>
+    <string name="settings_and_byok">Pengaturan &amp; BYOK</string>
+    <string name="delete">Hapus</string>
+    <string name="default_session_title">Obrolan Baru</string>
+
+    <!-- Action Chips & Input Capsule -->
+    <string name="chip_workspace">Workspace</string>
+    <string name="chip_select_folder">Pilih Folder</string>
+    <string name="chip_web_search">Pencarian Web</string>
+    <string name="chip_canvas">Canvas</string>
+    <string name="chip_yolo">Auto-Setujui</string>
+    <string name="input_placeholder">Tanyakan apa saja atau perintahkan agent...</string>
+    <string name="cd_attach">Lampiran</string>
+    <string name="cd_send">Kirim</string>
+    <string name="cd_stop">Berhenti</string>
+    <string name="cd_close">Tutup</string>
+    <string name="cd_copy">Salin</string>
+    <string name="cd_open_in_canvas">Buka di Canvas</string>
+
+    <!-- Thinking & Status -->
+    <string name="thinking_in_progress">Sedang berpikir...</string>
+    <string name="thinking_done">Proses berpikir (%1$s dtk)</string>
+    <string name="responding_in_progress">Sedang merespons...</string>
+    <string name="text_copied">Teks disalin ke papan klip</string>
+    <string name="tool_execution_running">Menjalankan: %1$s</string>
+    <string name="tool_execution_success">Berhasil dieksekusi</string>
+    <string name="tool_execution_error">Gagal dieksekusi (%1$s)</string>
+    <string name="tool_execution_result">Hasil eksekusi: %1$s</string>
+
+    <!-- Rate Limit -->
+    <string name="rate_limit_warning">Terkena limit API (%1$d). Mencoba lagi dalam %2$ds... (Percobaan %3$d/%4$d)</string>
+    <string name="cancel">Batal</string>
+
+    <!-- Workspace & Folder Picker -->
+    <string name="workspace_manager_title">Manajer Workspace</string>
+    <string name="workspace_pick_folder">Pilih Folder dari Penyimpanan HP</string>
+    <string name="workspace_create_new">Buat Folder Proyek Baru</string>
+    <string name="workspace_recent_title">Workspace Terakhir</string>
+    <string name="workspace_folder_name_label">Nama Folder</string>
+    <string name="workspace_folder_name_hint">contoh: my-awesome-app</string>
+    <string name="workspace_created_success">Workspace dibuat di %1$s</string>
+    <string name="workspace_select_button">Pilih</string>
+    <string name="storage_permission_title">Izin Akses Semua File Dibutuhkan</string>
+    <string name="storage_permission_desc">GG Agent membutuhkan izin Akses Semua File untuk membaca dan menulis kode di workspace pilihan Anda.</string>
+    <string name="storage_permission_grant">Berikan Izin</string>
+
+    <!-- Approvals -->
+    <string name="approval_diff_title">Persetujuan Modifikasi File</string>
+    <string name="approval_shell_title">Konfirmasi Eksekusi Terminal</string>
+    <string name="approval_action">Aksi: %1$s</string>
+    <string name="approval_target">Target: %1$s</string>
+    <string name="approval_shell_desc">Agent ingin menjalankan perintah terminal berikut di workspace Anda:</string>
+    <string name="approve">Setujui</string>
+    <string name="reject">Tolak</string>
+    <string name="run">Jalankan</string>
+    <string name="approval_rejected_msg">Operasi dibatalkan oleh pengguna (Persetujuan Ditolak).</string>
+
+    <!-- Canvas -->
+    <string name="canvas_title_default">Dokumen Canvas</string>
+    <string name="canvas_scratchpad_title">Catatan Cepat</string>
+    <string name="canvas_scratchpad_content"># Canvas Baru\nTulis ide atau kode di sini...</string>
+    <string name="canvas_tab_preview">Pratinjau</string>
+    <string name="canvas_tab_code">Kode</string>
+    <string name="canvas_tab_sync">Sinkronkan File</string>
+    <string name="canvas_language">Bahasa: %1$s</string>
+    <string name="canvas_save_to_workspace">Simpan ke Workspace</string>
+    <string name="canvas_saved_success">Disimpan ke %1$s</string>
+    <string name="canvas_open_button">Buka Canvas</string>
+    <string name="canvas_prompt_placeholder">Minta AI edit Canvas ini...</string>
+    <string name="canvas_file_path_label">Path Relatif File (misal: src/index.html)</string>
+    <string name="canvas_active_workspace">Workspace Aktif: %1$s</string>
+    <string name="canvas_no_workspace">Belum dipilih</string>
+    <string name="canvas_ai_response">Respon AI</string>
+    <string name="canvas_snippet">Cuplikan (%1$s)</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Pengaturan &amp; BYOK</string>
+    <string name="settings_byok_header">Konfigurasi API Agnes (BYOK)</string>
+    <string name="settings_api_key_label">API Key Agnes (Bearer)</string>
+    <string name="settings_base_url_label">Base URL</string>
+    <string name="settings_model_header">Pilihan Model Default</string>
+    <string name="settings_custom_model_label">Nama Model Kustom</string>
+    <string name="settings_security_header">Keamanan &amp; Resiliensi</string>
+    <string name="settings_max_retries">Batas Maksimal Percobaan Ulang (Retry): %1$d kali</string>
+    <string name="settings_yolo_title">Auto-Setujui (Mode YOLO)</string>
+    <string name="settings_yolo_desc">Mengeksekusi penulisan file dan shell tanpa dialog konfirmasi.</string>
+    <string name="settings_save_button">Simpan Pengaturan</string>
+    <string name="settings_saved_toast">Pengaturan berhasil disimpan!</string>
+
+    <!-- Foreground Service & Misc -->
+    <string name="service_notification_title">GG Agent</string>
+    <string name="service_notification_text">GG Agent sedang memproses tugas coding Anda...</string>
+    <string name="service_channel_name">Eksekusi Latar Belakang GG Agent</string>
+    <string name="service_channel_desc">Notifikasi saat GG Agent mengeksekusi di latar belakang</string>
+    <string name="image_compress_failed">Gagal mengompres gambar: %1$s</string>
+</resources>

@@ -12,6 +12,7 @@ import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import id.gustyxganteng.agent.MainActivity
+import id.gustyxganteng.agent.R
 
 class AgentForegroundService : Service {
 
@@ -23,10 +24,10 @@ class AgentForegroundService : Service {
         const val ACTION_START = "ACTION_START"
         const val ACTION_STOP = "ACTION_STOP"
 
-        fun start(context: Context, statusText: String = "Agent sedang aktif...") {
+        fun start(context: Context, statusText: String? = null) {
             val intent = Intent(context, AgentForegroundService::class.java).apply {
                 action = ACTION_START
-                putExtra("status", statusText)
+                putExtra("status", statusText ?: context.getString(R.string.service_notification_text))
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(intent)
@@ -56,7 +57,7 @@ class AgentForegroundService : Service {
                 return START_NOT_STICKY
             }
             else -> {
-                val status = intent?.getStringExtra("status") ?: "GG Agent sedang memproses kode..."
+                val status = intent?.getStringExtra("status") ?: getString(R.string.service_notification_text)
                 val notification = buildNotification(status)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
                     startForeground(
@@ -81,7 +82,7 @@ class AgentForegroundService : Service {
         )
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
-            .setContentTitle("GG Agent")
+            .setContentTitle(getString(R.string.service_notification_title))
             .setContentText(statusText)
             .setSmallIcon(android.R.drawable.stat_notify_sync)
             .setOngoing(true)
@@ -94,10 +95,10 @@ class AgentForegroundService : Service {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "GG Agent Background Execution",
+                getString(R.string.service_channel_name),
                 NotificationManager.IMPORTANCE_LOW
             ).apply {
-                description = "Notifikasi saat GG Agent mengeksekusi multi-turn tools di background"
+                description = getString(R.string.service_channel_desc)
             }
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(channel)

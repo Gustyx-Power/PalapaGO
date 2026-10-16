@@ -2,10 +2,8 @@ package id.gustyxganteng.agent.feature.workspace
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,13 +27,14 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import id.gustyxganteng.agent.R
 
 @Composable
 fun DiffApprovalDialog(
@@ -56,7 +55,7 @@ fun DiffApprovalDialog(
         },
         title = {
             Text(
-                text = "Persetujuan Modifikasi File",
+                text = stringResource(R.string.approval_diff_title),
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
             )
         },
@@ -67,13 +66,13 @@ fun DiffApprovalDialog(
                     .verticalScroll(rememberScrollState())
             ) {
                 Text(
-                    text = "Aksi: $toolName",
+                    text = stringResource(R.string.approval_action, toolName),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.primary
                 )
                 if (targetPath != null) {
                     Text(
-                        text = "Target: $targetPath",
+                        text = stringResource(R.string.approval_target, targetPath),
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
@@ -104,14 +103,14 @@ fun DiffApprovalDialog(
             ) {
                 Icon(Icons.Default.Check, contentDescription = null)
                 Spacer(Modifier.width(6.dp))
-                Text("Izinkan (Approve)")
+                Text(stringResource(R.string.approve))
             }
         },
         dismissButton = {
             OutlinedButton(onClick = onReject) {
                 Icon(Icons.Default.Close, contentDescription = null)
                 Spacer(Modifier.width(6.dp))
-                Text("Tolak (Reject)")
+                Text(stringResource(R.string.reject))
             }
         }
     )
@@ -135,7 +134,7 @@ fun ShellApprovalDialog(
         },
         title = {
             Text(
-                text = "Konfirmasi Eksekusi Terminal",
+                text = stringResource(R.string.approval_shell_title),
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
             )
         },
@@ -146,7 +145,7 @@ fun ShellApprovalDialog(
                     .verticalScroll(rememberScrollState())
             ) {
                 Text(
-                    text = "Agent ingin menjalankan perintah berikut di workspace Anda:",
+                    text = stringResource(R.string.approval_shell_desc),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -180,14 +179,14 @@ fun ShellApprovalDialog(
             ) {
                 Icon(Icons.Default.Check, contentDescription = null)
                 Spacer(Modifier.width(6.dp))
-                Text("Jalankan (Run)")
+                Text(stringResource(R.string.run))
             }
         },
         dismissButton = {
             OutlinedButton(onClick = onReject) {
                 Icon(Icons.Default.Close, contentDescription = null)
                 Spacer(Modifier.width(6.dp))
-                Text("Batalkan")
+                Text(stringResource(R.string.cancel))
             }
         }
     )

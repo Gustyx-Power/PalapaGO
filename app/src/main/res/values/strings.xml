@@ -1,3 +1,108 @@
 <resources>
     <string name="app_name">GG Agent</string>
+    <string name="app_subtitle">Android AI Workspace &amp; Coding Agent</string>
+
+    <!-- TopBar & Navigation -->
+    <string name="topbar_menu">Menu</string>
+    <string name="model_fast_desc">%1$s (Fast)</string>
+    <string name="model_pro_desc">%1$s (Advanced)</string>
+    <string name="compacting_context">Compacting conversation context...</string>
+
+    <!-- Drawer -->
+    <string name="new_chat">New Chat</string>
+    <string name="chat_history">Chat History</string>
+    <string name="settings_and_byok">Settings &amp; BYOK</string>
+    <string name="delete">Delete</string>
+    <string name="default_session_title">New Chat</string>
+
+    <!-- Action Chips & Input Capsule -->
+    <string name="chip_workspace">Workspace</string>
+    <string name="chip_select_folder">Select Folder</string>
+    <string name="chip_web_search">Web Search</string>
+    <string name="chip_canvas">Canvas</string>
+    <string name="chip_yolo">Auto-Approve</string>
+    <string name="input_placeholder">Ask anything or command agent...</string>
+    <string name="cd_attach">Attachment</string>
+    <string name="cd_send">Send</string>
+    <string name="cd_stop">Stop</string>
+    <string name="cd_close">Close</string>
+    <string name="cd_copy">Copy</string>
+    <string name="cd_open_in_canvas">Open in Canvas</string>
+
+    <!-- Thinking & Status -->
+    <string name="thinking_in_progress">Thinking...</string>
+    <string name="thinking_done">Thought process (%1$s s)</string>
+    <string name="responding_in_progress">Responding...</string>
+    <string name="text_copied">Text copied to clipboard</string>
+    <string name="tool_execution_running">Executing: %1$s</string>
+    <string name="tool_execution_success">Executed successfully</string>
+    <string name="tool_execution_error">Execution error (%1$s)</string>
+    <string name="tool_execution_result">Execution result: %1$s</string>
+
+    <!-- Rate Limit -->
+    <string name="rate_limit_warning">API Rate limit reached (%1$d). Retrying in %2$ds... (Attempt %3$d/%4$d)</string>
+    <string name="cancel">Cancel</string>
+
+    <!-- Workspace & Folder Picker -->
+    <string name="workspace_manager_title">Workspace Manager</string>
+    <string name="workspace_pick_folder">Pick Folder from Device Storage</string>
+    <string name="workspace_create_new">Create New Project Folder</string>
+    <string name="workspace_recent_title">Recent Workspaces</string>
+    <string name="workspace_folder_name_label">Folder Name</string>
+    <string name="workspace_folder_name_hint">e.g. my-awesome-app</string>
+    <string name="workspace_created_success">Workspace created at %1$s</string>
+    <string name="workspace_select_button">Select</string>
+    <string name="storage_permission_title">All Files Access Required</string>
+    <string name="storage_permission_desc">GG Agent requires All Files Access permission to read and write code in your selected workspace.</string>
+    <string name="storage_permission_grant">Grant Permission</string>
+
+    <!-- Approvals -->
+    <string name="approval_diff_title">File Modification Approval</string>
+    <string name="approval_shell_title">Terminal Execution Confirmation</string>
+    <string name="approval_action">Action: %1$s</string>
+    <string name="approval_target">Target: %1$s</string>
+    <string name="approval_shell_desc">Agent requests to execute the following terminal command in your workspace:</string>
+    <string name="approve">Approve</string>
+    <string name="reject">Reject</string>
+    <string name="run">Run</string>
+    <string name="approval_rejected_msg">Operation cancelled by user (Approval Rejected).</string>
+
+    <!-- Canvas -->
+    <string name="canvas_title_default">Canvas Document</string>
+    <string name="canvas_scratchpad_title">Scratchpad</string>
+    <string name="canvas_scratchpad_content"># New Canvas\nWrite your thoughts or code here...</string>
+    <string name="canvas_tab_preview">Preview</string>
+    <string name="canvas_tab_code">Code</string>
+    <string name="canvas_tab_sync">Sync File</string>
+    <string name="canvas_language">Language: %1$s</string>
+    <string name="canvas_save_to_workspace">Save to Workspace</string>
+    <string name="canvas_saved_success">Saved to %1$s</string>
+    <string name="canvas_open_button">Open Canvas</string>
+    <string name="canvas_prompt_placeholder">Ask AI to edit this Canvas...</string>
+    <string name="canvas_file_path_label">Relative File Path (e.g. src/index.html)</string>
+    <string name="canvas_active_workspace">Active Workspace: %1$s</string>
+    <string name="canvas_no_workspace">None selected</string>
+    <string name="canvas_ai_response">AI Response</string>
+    <string name="canvas_snippet">Snippet (%1$s)</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings &amp; BYOK</string>
+    <string name="settings_byok_header">Agnes API Configuration (BYOK)</string>
+    <string name="settings_api_key_label">Agnes API Key (Bearer)</string>
+    <string name="settings_base_url_label">Base URL</string>
+    <string name="settings_model_header">Default Model Selection</string>
+    <string name="settings_custom_model_label">Custom Model Name</string>
+    <string name="settings_security_header">Security &amp; Resilience</string>
+    <string name="settings_max_retries">Max Retry Attempts: %1$d times</string>
+    <string name="settings_yolo_title">Auto-Approve (YOLO Mode)</string>
+    <string name="settings_yolo_desc">Execute file writing and shell commands without confirmation dialogs.</string>
+    <string name="settings_save_button">Save Settings</string>
+    <string name="settings_saved_toast">Settings saved successfully!</string>
+
+    <!-- Foreground Service & Misc -->
+    <string name="service_notification_title">GG Agent</string>
+    <string name="service_notification_text">GG Agent is processing your coding task...</string>
+    <string name="service_channel_name">GG Agent Background Execution</string>
+    <string name="service_channel_desc">Notifications during multi-turn agent execution</string>
+    <string name="image_compress_failed">Failed to compress image: %1$s</string>
 </resources>

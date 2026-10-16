@@ -17,6 +17,7 @@ import id.gustyxganteng.agent.domain.agent.AgentOrchestrator
 import id.gustyxganteng.agent.domain.agent.AgentState
 import id.gustyxganteng.agent.domain.context.ContextMeterManager
 import id.gustyxganteng.agent.domain.context.ContextMeterStatus
+import id.gustyxganteng.agent.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -126,7 +127,7 @@ class ChatViewModel(
             val settings = uiState.value.appSettings
             val newSession = ChatSession(
                 id = UUID.randomUUID().toString(),
-                title = "Obrolan Baru",
+                title = getApplication<Application>().getString(R.string.default_session_title),
                 model = settings?.selectedModel ?: "agnes-3.0-flash",
                 workspacePath = settings?.activeWorkspacePath
             )
@@ -158,7 +159,7 @@ class ChatViewModel(
             chatRepository.saveMessage(userMsg)
 
             // Jalankan Foreground Service agar proses tidak di-kill OS
-            AgentForegroundService.start(getApplication(), "GG Agent sedang mengeksekusi instruksi...")
+            AgentForegroundService.start(getApplication(), getApplication<Application>().getString(R.string.service_notification_text))
 
             orchestrator.runTurn(
                 scope = viewModelScope,

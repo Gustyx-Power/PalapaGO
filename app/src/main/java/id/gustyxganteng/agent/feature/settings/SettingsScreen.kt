@@ -1,7 +1,6 @@
 package id.gustyxganteng.agent.feature.settings
 
 import android.widget.Toast
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -47,13 +46,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import id.gustyxganteng.agent.R
 import id.gustyxganteng.agent.core.database.AppSettingsRepository
 import kotlinx.coroutines.launch
 
@@ -87,10 +86,10 @@ fun SettingsScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Pengaturan & BYOK", style = MaterialTheme.typography.titleMedium) },
+                title = { Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.titleMedium) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Kembali")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_close))
                     }
                 }
             )
@@ -114,13 +113,13 @@ fun SettingsScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Key, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(8.dp))
-                        Text("Konfigurasi API Agnes (BYOK)", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+                        Text(stringResource(R.string.settings_byok_header), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
                     }
 
                     OutlinedTextField(
                         value = apiKey,
                         onValueChange = { apiKey = it },
-                        label = { Text("Agnes API Key (Bearer)") },
+                        label = { Text(stringResource(R.string.settings_api_key_label)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth(),
                         visualTransformation = if (showApiKey) VisualTransformation.None else PasswordVisualTransformation(),
@@ -134,7 +133,7 @@ fun SettingsScreen(
                     OutlinedTextField(
                         value = baseUrl,
                         onValueChange = { baseUrl = it },
-                        label = { Text("Base URL") },
+                        label = { Text(stringResource(R.string.settings_base_url_label)) },
                         placeholder = { Text("https://apihub.agnes-ai.com/v1") },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
@@ -152,26 +151,26 @@ fun SettingsScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Speed, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(8.dp))
-                        Text("Pilihan Model Default", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+                        Text(stringResource(R.string.settings_model_header), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
                     }
 
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         FilterChip(
                             selected = selectedModel == "agnes-3.0-flash",
                             onClick = { selectedModel = "agnes-3.0-flash" },
-                            label = { Text("agnes-3.0-flash") }
+                            label = { Text(stringResource(R.string.model_fast_desc, "agnes-3.0-flash")) }
                         )
                         FilterChip(
                             selected = selectedModel == "agnes-3.0-pro",
                             onClick = { selectedModel = "agnes-3.0-pro" },
-                            label = { Text("agnes-3.0-pro") }
+                            label = { Text(stringResource(R.string.model_pro_desc, "agnes-3.0-pro")) }
                         )
                     }
 
                     OutlinedTextField(
                         value = selectedModel,
                         onValueChange = { selectedModel = it },
-                        label = { Text("Nama Model Kustom") },
+                        label = { Text(stringResource(R.string.settings_custom_model_label)) },
                         singleLine = true,
                         modifier = Modifier.fillMaxWidth()
                     )
@@ -188,11 +187,14 @@ fun SettingsScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(Icons.Default.Security, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                         Spacer(Modifier.width(8.dp))
-                        Text("Keamanan & Resiliensi", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+                        Text(stringResource(R.string.settings_security_header), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
                     }
 
                     // Max Retries
-                    Text("Batas Maksimal Percobaan Ulang (Retry): ${maxRetries.toInt()} kali", style = MaterialTheme.typography.bodyMedium)
+                    Text(
+                        stringResource(R.string.settings_max_retries, maxRetries.toInt()),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                     Slider(
                         value = maxRetries,
                         onValueChange = { maxRetries = it },
@@ -207,11 +209,11 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("⚡ YOLO Mode (Auto-Approve)", fontWeight = FontWeight.SemiBold)
+                            Text(stringResource(R.string.settings_yolo_title), fontWeight = FontWeight.SemiBold)
                             Text(
-                                "Mengeksekusi penulisan file dan shell tanpa dialog konfirmasi.",
+                                stringResource(R.string.settings_yolo_desc),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = if (yoloMode) Color(0xFFFF9800) else MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         Switch(
@@ -232,7 +234,7 @@ fun SettingsScreen(
                         settingsRepository.updateSelectedModel(selectedModel)
                         settingsRepository.updateMaxRetries(maxRetries.toInt())
                         settingsRepository.updateYoloMode(yoloMode)
-                        Toast.makeText(context, "Pengaturan berhasil disimpan!", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, context.getString(R.string.settings_saved_toast), Toast.LENGTH_SHORT).show()
                         onNavigateBack()
                     }
                 },
@@ -240,7 +242,7 @@ fun SettingsScreen(
             ) {
                 Icon(Icons.Default.Save, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
-                Text("Simpan Pengaturan")
+                Text(stringResource(R.string.settings_save_button))
             }
         }
     }
