@@ -81,7 +81,8 @@ import id.gustyxganteng.agent.core.model.Message
 import id.gustyxganteng.agent.core.model.MessageRole
 import id.gustyxganteng.agent.core.util.ImageCompressor
 import id.gustyxganteng.agent.domain.agent.AgentState
-import id.gustyxganteng.agent.feature.canvas.CanvasBottomSheet
+import id.gustyxganteng.agent.domain.tools.WorkspacePathResolver
+import id.gustyxganteng.agent.feature.canvas.CanvasModalSheet
 import id.gustyxganteng.agent.feature.chat.ui.components.CanvasPreviewCard
 import id.gustyxganteng.agent.feature.chat.ui.components.GeminiBottomCapsule
 import id.gustyxganteng.agent.feature.chat.ui.components.GeminiTopBar
@@ -441,16 +442,17 @@ fun ChatScreen(
         }
     }
 
-    // Modal Canvas BottomSheet
+    // Modal Canvas Sheet
     uiState.activeCanvasArtifact?.let { canvasArtifact ->
-        CanvasBottomSheet(
+        CanvasModalSheet(
             artifact = canvasArtifact,
             workspacePath = uiState.currentSession?.workspacePath ?: uiState.appSettings?.activeWorkspacePath,
             onDismiss = { viewModel.closeCanvas() },
             onSaveToWorkspace = { path, content ->
                 val root = uiState.currentSession?.workspacePath ?: uiState.appSettings?.activeWorkspacePath ?: "/sdcard"
-                File(root, path).parentFile?.mkdirs()
-                File(root, path).writeText(content)
+                val normalizedRoot = WorkspacePathResolver.normalizePath(root)
+                File(normalizedRoot, path).parentFile?.mkdirs()
+                File(normalizedRoot, path).writeText(content)
             },
             onSendInstructionToAgent = { instruction, currentContent ->
                 viewModel.sendMessage("Perbarui dokumen Canvas (${canvasArtifact.title}) dengan instruksi: $instruction\n\nIsi kode sekarang:\n```\n$currentContent\n```")
@@ -528,6 +530,31 @@ fun ChatMessageItem(
                     outputContent = null,
                     modifier = Modifier.padding(vertical = 3.dp)
                 )
+
+                if (toolCall.function.name == "open_canvas") {
+                    val canvasTitle = try {
+                        org.json.JSONObject(toolCall.function.arguments).optString("title", context.getString(R.string.canvas_title_default))
+                    } catch (e: Exception) {
+                        context.getString(R.string.canvas_title_default)
+                    }
+                    val canvasLang = try {
+                        org.json.JSONObject(toolCall.function.arguments).optString("language", "markdown")
+                    } catch (e: Exception) {
+                        "markdown"
+                    }
+                    val canvasContent = try {
+                        org.json.JSONObject(toolCall.function.arguments).optString("content", "")
+                    } catch (e: Exception) {
+                        ""
+                    }
+                    CanvasPreviewCard(
+                        title = canvasTitle,
+                        language = canvasLang,
+                        onOpenCanvas = {
+                            onOpenCanvas(canvasTitle, canvasLang, canvasContent)
+                        }
+                    )
+                }
             }
 
             // Markdown Body
@@ -541,12 +568,14 @@ fun ChatMessageItem(
             // Inline Canvas Preview Card trigger if full code document is found
             val isCanvasEligible = message.content.contains("<!DOCTYPE html>", ignoreCase = true) ||
                 message.content.contains("<html", ignoreCase = true)
-            if (isCanvasEligible) {
+            if (isCanvasEligible && message.toolCalls.none { it.function.name == "open_canvas" }) {
+                val cleanWebDoc = extractCanvasContent(message.content)
+                val webTitle = stringResource(R.string.canvas_web_preview_title)
                 CanvasPreviewCard(
-                    title = "Live Web Document",
+                    title = webTitle,
                     language = "html",
                     onOpenCanvas = {
-                        onOpenCanvas("Live Web Document", "html", message.content)
+                        onOpenCanvas(webTitle, "html", cleanWebDoc)
                     }
                 )
             }
@@ -612,3 +641,19 @@ fun ChatMessageItem(
         )
     }
 }
+
+private fun extractCanvasContent(rawContent: String): String {
+    val htmlBlockRegex = """```(?:html|web)?\s*\n([\s\S]*?)```""".toRegex(RegexOption.IGNORE_CASE)
+    val match = htmlBlockRegex.find(rawContent)
+    if (match != null) {
+        return match.groupValues[1].trim()
+    }
+    val docStart = rawContent.indexOf("<!DOCTYPE", ignoreCase = true)
+    val tagStart = if (docStart >= 0) docStart else rawContent.indexOf("<html", ignoreCase = true)
+    val tagEnd = rawContent.lastIndexOf("</html>", ignoreCase = true)
+    if (tagStart >= 0 && tagEnd > tagStart) {
+        return rawContent.substring(tagStart, tagEnd + "</html>".length).trim()
+    }
+    return rawContent
+}
+

@@ -84,6 +84,8 @@
     <string name="canvas_no_workspace">Belum dipilih</string>
     <string name="canvas_ai_response">Respon AI</string>
     <string name="canvas_snippet">Cuplikan (%1$s)</string>
+    <string name="canvas_web_preview_title">Dokumen Web Langsung</string>
+    <string name="save">Simpan</string>
 
     <!-- Settings -->
     <string name="settings_title">Pengaturan &amp; BYOK</string>

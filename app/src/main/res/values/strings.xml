@@ -84,6 +84,8 @@
     <string name="canvas_no_workspace">None selected</string>
     <string name="canvas_ai_response">AI Response</string>
     <string name="canvas_snippet">Snippet (%1$s)</string>
+    <string name="canvas_web_preview_title">Live Web Document</string>
+    <string name="save">Save</string>
 
     <!-- Settings -->
     <string name="settings_title">Settings &amp; BYOK</string>
