@@ -79,6 +79,7 @@ import id.gustyxganteng.agent.core.markdown.MarkdownContent
 import id.gustyxganteng.agent.core.model.CanvasArtifact
 import id.gustyxganteng.agent.core.model.Message
 import id.gustyxganteng.agent.core.model.MessageRole
+import id.gustyxganteng.agent.core.model.TokenUsage
 import id.gustyxganteng.agent.core.util.ImageCompressor
 import id.gustyxganteng.agent.domain.agent.AgentState
 import id.gustyxganteng.agent.domain.tools.WorkspacePathResolver
@@ -133,6 +134,15 @@ fun ChatScreen(
     LaunchedEffect(uiState.messages.size) {
         if (uiState.messages.isNotEmpty()) {
             listState.animateScrollToItem(uiState.messages.size - 1)
+        }
+    }
+
+    LaunchedEffect(uiState.agentState) {
+        if (uiState.agentState is AgentState.Streaming) {
+            val target = uiState.messages.size
+            if (target >= 0) {
+                listState.scrollToItem(target)
+            }
         }
     }
 
@@ -310,17 +320,37 @@ fun ChatScreen(
                                     )
                                 }
 
-                                if (!streaming.reasoning.isNullOrBlank()) {
+                                if (streaming.isThinking || !streaming.reasoning.isNullOrBlank()) {
                                     ThinkingAccordion(
                                         reasoningContent = streaming.reasoning,
                                         thinkingDurationMs = streaming.thinkingElapsedMs,
-                                        isCurrentlyStreaming = true
+                                        isCurrentlyStreaming = streaming.isThinking
                                     )
                                     Spacer(Modifier.height(8.dp))
                                 }
 
                                 if (streaming.content.isNotBlank()) {
                                     MarkdownContent(markdown = streaming.content)
+                                }
+
+                                // Live token metadata & streaming status footer
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(top = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    val outTokens = (streaming.content.length / 4).coerceAtLeast(1)
+                                    val statusText = if (streaming.isThinking) {
+                                        stringResource(R.string.streaming_thinking_meta, streaming.thinkingTokens)
+                                    } else {
+                                        stringResource(R.string.streaming_typing_meta, streaming.thinkingTokens, outTokens)
+                                    }
+                                    Text(
+                                        text = statusText,
+                                        fontSize = 11.sp,
+                                        color = GeminiTextSecondary
+                                    )
                                 }
                             }
                         }
@@ -588,14 +618,34 @@ fun ChatMessageItem(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Token details
-                message.tokenUsage?.let { usage ->
+                // Token details with dynamic reasoning calculation
+                val thinkTokens = message.tokenUsage?.reasoningTokens?.takeIf { it > 0 }
+                    ?: message.reasoningContent?.let { (it.length / 4).coerceAtLeast(1) }
+                    ?: 0
+
+                val effectiveUsage = message.tokenUsage?.let { u ->
+                    if (u.reasoningTokens == 0 && thinkTokens > 0) {
+                        u.copy(reasoningTokens = thinkTokens)
+                    } else u
+                } ?: if (message.content.isNotEmpty() || thinkTokens > 0) {
+                    val outTokens = (message.content.length / 4).coerceAtLeast(1)
+                    TokenUsage(
+                        promptTokens = 0,
+                        completionTokens = outTokens,
+                        totalTokens = outTokens + thinkTokens,
+                        reasoningTokens = thinkTokens
+                    )
+                } else null
+
+                if (effectiveUsage != null) {
                     Text(
-                        text = usage.toCompactString(),
+                        text = effectiveUsage.toCompactString(),
                         fontSize = 11.sp,
                         color = GeminiTextSecondary
                     )
-                } ?: Spacer(Modifier.width(1.dp))
+                } else {
+                    Spacer(Modifier.width(1.dp))
+                }
 
                 Row {
                     IconButton(

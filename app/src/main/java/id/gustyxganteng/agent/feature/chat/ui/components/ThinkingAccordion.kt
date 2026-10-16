@@ -128,7 +128,7 @@ fun ThinkingAccordion(
                 Column {
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        text = reasoningContent ?: "",
+                        text = if (!reasoningContent.isNullOrBlank()) reasoningContent else stringResource(R.string.thinking_in_progress),
                         style = MaterialTheme.typography.bodySmall,
                         color = GeminiTextSecondary,
                         lineHeight = 18.sp

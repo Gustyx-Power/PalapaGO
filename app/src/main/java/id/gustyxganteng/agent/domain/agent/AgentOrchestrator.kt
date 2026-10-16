@@ -30,7 +30,13 @@ import kotlinx.serialization.json.jsonPrimitive
 
 sealed interface AgentState {
     data object Idle : AgentState
-    data class Streaming(val content: String, val reasoning: String?, val thinkingElapsedMs: Long?) : AgentState
+    data class Streaming(
+        val content: String,
+        val reasoning: String?,
+        val thinkingElapsedMs: Long?,
+        val isThinking: Boolean = false,
+        val thinkingTokens: Int = 0
+    ) : AgentState
     data class AwaitingApproval(
         val toolCall: ToolCall,
         val toolName: String,
@@ -137,16 +143,30 @@ class AgentOrchestrator(
 
         while (continueLoop && turnCount < maxTurns) {
             turnCount++
-            val messages = chatRepository.getMessagesForSessionSync(sessionId)
+            val dbMessages = chatRepository.getMessagesForSessionSync(sessionId)
+            val systemPrompt = AgentSystemPrompt.getPrompt(workspacePath, yoloMode)
+            val systemMessage = Message(
+                sessionId = sessionId,
+                role = MessageRole.SYSTEM,
+                content = systemPrompt
+            )
+            val messages = listOf(systemMessage) + dbMessages.filter { it.role != MessageRole.SYSTEM }
 
             val reasoningBuilder = StringBuilder()
             val contentBuilder = StringBuilder()
             val toolCallMap = mutableMapOf<Int, MutableToolCallBuilder>()
             var usage: TokenUsage? = null
-            var thinkingStart = System.currentTimeMillis()
+            val thinkingStart = System.currentTimeMillis()
             var thinkingDuration: Long? = null
+            var isCurrentlyThinking = true
 
-            _agentState.value = AgentState.Streaming(content = "", reasoning = "", thinkingElapsedMs = 0)
+            _agentState.value = AgentState.Streaming(
+                content = "",
+                reasoning = "",
+                thinkingElapsedMs = 0,
+                isThinking = true,
+                thinkingTokens = 0
+            )
 
             agnesApiService.streamChat(
                 baseUrl = baseUrl,
@@ -160,18 +180,32 @@ class AgentOrchestrator(
                         reasoningBuilder.append(event.text)
                         val elapsed = System.currentTimeMillis() - thinkingStart
                         thinkingDuration = elapsed
+                        val tokens = (reasoningBuilder.length / 4).coerceAtLeast(1)
                         _agentState.value = AgentState.Streaming(
                             content = contentBuilder.toString(),
                             reasoning = reasoningBuilder.toString(),
-                            thinkingElapsedMs = elapsed
+                            thinkingElapsedMs = elapsed,
+                            isThinking = true,
+                            thinkingTokens = tokens
                         )
                     }
                     is StreamEvent.ContentDelta -> {
+                        if (isCurrentlyThinking) {
+                            isCurrentlyThinking = false
+                            if (thinkingDuration == null && reasoningBuilder.isNotEmpty()) {
+                                thinkingDuration = System.currentTimeMillis() - thinkingStart
+                            }
+                        }
                         contentBuilder.append(event.text)
+                        val tokens = if (reasoningBuilder.isNotEmpty()) {
+                            (reasoningBuilder.length / 4).coerceAtLeast(1)
+                        } else 0
                         _agentState.value = AgentState.Streaming(
                             content = contentBuilder.toString(),
                             reasoning = reasoningBuilder.toString().ifEmpty { null },
-                            thinkingElapsedMs = thinkingDuration
+                            thinkingElapsedMs = thinkingDuration,
+                            isThinking = false,
+                            thinkingTokens = tokens
                         )
                     }
                     is StreamEvent.ToolCallChunk -> {
@@ -192,18 +226,24 @@ class AgentOrchestrator(
             val accumulatedToolCalls = toolCallMap.values.mapNotNull { it.build() }
             val finalContent = contentBuilder.toString().trim()
             val finalReasoning = reasoningBuilder.toString().trim().ifEmpty { null }
+            val computedThinkingTokens = if (!finalReasoning.isNullOrEmpty()) {
+                (finalReasoning.length / 4).coerceAtLeast(1)
+            } else 0
 
             // Fallback token calculation untuk reasoning jika tidak disediakan API
             val adjustedUsage = if (usage != null) {
-                if (usage!!.reasoningTokens == 0 && !finalReasoning.isNullOrEmpty()) {
-                    val fallbackReasoningTokens = (finalReasoning.length / 4).coerceAtLeast(1)
-                    usage!!.copy(reasoningTokens = fallbackReasoningTokens)
+                if (usage!!.reasoningTokens == 0 && computedThinkingTokens > 0) {
+                    usage!!.copy(reasoningTokens = computedThinkingTokens)
                 } else {
                     usage
                 }
-            } else if (!finalReasoning.isNullOrEmpty()) {
+            } else if (computedThinkingTokens > 0 || finalContent.isNotEmpty()) {
+                val completionTokens = (finalContent.length / 4).coerceAtLeast(1)
                 TokenUsage(
-                    reasoningTokens = (finalReasoning.length / 4).coerceAtLeast(1)
+                    promptTokens = 0,
+                    completionTokens = completionTokens,
+                    totalTokens = completionTokens + computedThinkingTokens,
+                    reasoningTokens = computedThinkingTokens
                 )
             } else null
 
