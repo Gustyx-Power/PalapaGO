@@ -110,13 +110,6 @@ fun GeminiTopBar(
                             showModelMenu = false
                         }
                     )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.model_pro_desc, "agnes-3.0-pro")) },
-                        onClick = {
-                            onSelectModel("agnes-3.0-pro")
-                            showModelMenu = false
-                        }
-                    )
                 }
             }
 

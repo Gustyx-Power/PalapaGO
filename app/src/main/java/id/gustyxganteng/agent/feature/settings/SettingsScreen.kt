@@ -77,7 +77,7 @@ fun SettingsScreen(
         settings?.let {
             apiKey = it.apiKey
             baseUrl = it.baseUrl
-            selectedModel = it.selectedModel
+            selectedModel = if (it.selectedModel == "agnes-3.0-pro") "agnes-3.0-flash" else it.selectedModel
             maxRetries = it.maxRetries.toFloat()
             yoloMode = it.yoloMode
         }
@@ -159,11 +159,6 @@ fun SettingsScreen(
                             selected = selectedModel == "agnes-3.0-flash",
                             onClick = { selectedModel = "agnes-3.0-flash" },
                             label = { Text(stringResource(R.string.model_fast_desc, "agnes-3.0-flash")) }
-                        )
-                        FilterChip(
-                            selected = selectedModel == "agnes-3.0-pro",
-                            onClick = { selectedModel = "agnes-3.0-pro" },
-                            label = { Text(stringResource(R.string.model_pro_desc, "agnes-3.0-pro")) }
                         )
                     }
 

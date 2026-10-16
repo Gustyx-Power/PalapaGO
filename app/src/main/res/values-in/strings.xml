@@ -32,6 +32,8 @@
     <!-- Thinking & Status -->
     <string name="thinking_in_progress">Sedang berpikir...</string>
     <string name="thinking_done">Proses berpikir (%1$s dtk)</string>
+    <string name="thinking_analyzing_placeholder">Menganalisis maksud prompt, mengevaluasi risiko, mencari referensi, dan merencanakan langkah...</string>
+    <string name="thinking_done_no_detail">Proses berpikir selesai</string>
     <string name="streaming_thinking_meta">Berpikir | Think: %1$d</string>
     <string name="streaming_typing_meta">Mengetik | Think: %1$d | Out: %2$d</string>
     <string name="responding_in_progress">Sedang merespons...</string>

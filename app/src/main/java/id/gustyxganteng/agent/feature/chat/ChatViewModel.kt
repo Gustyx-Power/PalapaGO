@@ -82,7 +82,8 @@ class ChatViewModel(
     ) { sessionCtx, agentState, canvas, rateLimit ->
         val currentSession = sessionCtx.sessions.find { it.id == sessionCtx.currentId } ?: sessionCtx.sessions.firstOrNull()
         val totalTokens = sessionCtx.messages.mapNotNull { it.tokenUsage?.totalTokens }.maxOrNull() ?: 0
-        val model = currentSession?.model ?: sessionCtx.settings.selectedModel
+        val rawModel = currentSession?.model ?: sessionCtx.settings.selectedModel
+        val model = if (rawModel == "agnes-3.0-pro") "agnes-3.0-flash" else rawModel
         val contextStatus = contextMeterManager.calculateStatus(totalTokens, model)
 
         ChatUiState(
@@ -137,7 +138,7 @@ class ChatViewModel(
             val newSession = ChatSession(
                 id = UUID.randomUUID().toString(),
                 title = getApplication<Application>().getString(R.string.default_session_title),
-                model = settings?.selectedModel ?: "agnes-3.0-flash",
+                model = if (settings?.selectedModel == "agnes-3.0-pro") "agnes-3.0-flash" else (settings?.selectedModel ?: "agnes-3.0-flash"),
                 workspacePath = settings?.activeWorkspacePath
             )
             chatRepository.saveSession(newSession)
@@ -175,7 +176,7 @@ class ChatViewModel(
                 sessionId = session.id,
                 baseUrl = settings.baseUrl,
                 apiKey = settings.apiKey,
-                model = session.model,
+                model = if (session.model == "agnes-3.0-pro") "agnes-3.0-flash" else session.model,
                 workspacePath = session.workspacePath ?: settings.activeWorkspacePath,
                 yoloMode = settings.yoloMode,
                 enableWebSearch = settings.webSearchEnabled,

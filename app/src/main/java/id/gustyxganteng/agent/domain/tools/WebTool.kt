@@ -20,10 +20,10 @@ class WebTool {
             ToolDefinition(
                 function = FunctionSpec(
                     name = "web_search",
-                    description = "Mencari informasi terkini dari internet melalui DuckDuckGo Lite dan mengembalikan daftar judul, URL, serta ringkasan snippet.",
+                    description = "Mencari informasi terkini, referensi kode, dokumentasi API, dan pustaka dari internet. Gunakan secara mandiri dan proaktif jika membutuhkan referensi teknis agar hasil implementasi lebih baik dan akurat.",
                     parameters = ToolParametersSchema(
                         properties = mapOf(
-                            "query" to PropertySchema("string", "Kata kunci pencarian."),
+                            "query" to PropertySchema("string", "Kata kunci pencarian referensi atau dokumentasi."),
                             "max_results" to PropertySchema("integer", "Jumlah hasil maksimal yang ingin diambil (default 5).")
                         ),
                         required = listOf("query")
@@ -33,10 +33,10 @@ class WebTool {
             ToolDefinition(
                 function = FunctionSpec(
                     name = "read_webpage",
-                    description = "Mengambil isi halaman web dan mengekstrak teks utama menjadi format Markdown yang bersih dan hemat token.",
+                    description = "Mengambil isi lengkap halaman web atau artikel dokumentasi dari URL dan mengekstraknya menjadi teks Markdown yang bersih.",
                     parameters = ToolParametersSchema(
                         properties = mapOf(
-                            "url" to PropertySchema("string", "URL halaman web yang ingin dibaca.")
+                            "url" to PropertySchema("string", "URL halaman web atau dokumentasi yang ingin dibaca.")
                         ),
                         required = listOf("url")
                     )

@@ -32,6 +32,8 @@
     <!-- Thinking & Status -->
     <string name="thinking_in_progress">Thinking...</string>
     <string name="thinking_done">Thought process (%1$s s)</string>
+    <string name="thinking_analyzing_placeholder">Analyzing prompt intent, assessing risks, researching references, and formulating plan...</string>
+    <string name="thinking_done_no_detail">Thinking completed</string>
     <string name="streaming_thinking_meta">Thinking | Think: %1$d</string>
     <string name="streaming_typing_meta">Streaming | Think: %1$d | Out: %2$d</string>
     <string name="responding_in_progress">Responding...</string>

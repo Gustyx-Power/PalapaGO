@@ -45,8 +45,8 @@ class AppSettingsRepository(private val context: Context) {
             maxRetries = preferences[PreferencesKeys.MAX_RETRIES] ?: 5,
             yoloMode = preferences[PreferencesKeys.YOLO_MODE] ?: false,
             activeWorkspacePath = preferences[PreferencesKeys.ACTIVE_WORKSPACE_PATH],
-            webSearchEnabled = preferences[PreferencesKeys.WEB_SEARCH_ENABLED] ?: false,
-            canvasEnabled = preferences[PreferencesKeys.CANVAS_ENABLED] ?: false
+            webSearchEnabled = preferences[PreferencesKeys.WEB_SEARCH_ENABLED] ?: true,
+            canvasEnabled = preferences[PreferencesKeys.CANVAS_ENABLED] ?: true
         )
     }
 

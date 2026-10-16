@@ -30,7 +30,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -47,6 +49,8 @@ import id.gustyxganteng.agent.core.designsystem.GeminiSparkleIcon
 import id.gustyxganteng.agent.core.designsystem.GeminiSurfaceVariant
 import id.gustyxganteng.agent.core.designsystem.GeminiTextPrimary
 import id.gustyxganteng.agent.core.designsystem.GeminiTextSecondary
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 @Composable
 fun ThinkingAccordion(
@@ -58,6 +62,19 @@ fun ThinkingAccordion(
     if (reasoningContent.isNullOrBlank() && !isCurrentlyStreaming) return
 
     var expanded by remember { mutableStateOf(false) }
+
+    // Live ticking timer for real-time streaming feedback
+    var liveElapsedSec by remember { mutableFloatStateOf(0.1f) }
+
+    LaunchedEffect(isCurrentlyStreaming) {
+        if (isCurrentlyStreaming) {
+            val start = System.currentTimeMillis()
+            while (isActive) {
+                delay(100)
+                liveElapsedSec = ((System.currentTimeMillis() - start) / 1000f).coerceAtLeast(0.1f)
+            }
+        }
+    }
 
     // Spinning animation while actively thinking
     val infiniteTransition = rememberInfiniteTransition(label = "sparkle_rotation")
@@ -71,11 +88,12 @@ fun ThinkingAccordion(
         label = "rotation"
     )
 
-    val durationSec = String.format(
-        java.util.Locale.US,
-        "%.1f",
-        ((thinkingDurationMs ?: 1500) / 1000.0)
-    )
+    val durationSec = if (isCurrentlyStreaming) {
+        String.format(java.util.Locale.US, "%.1f", liveElapsedSec)
+    } else {
+        val finalMs = thinkingDurationMs ?: (liveElapsedSec * 1000).toLong().coerceAtLeast(800)
+        String.format(java.util.Locale.US, "%.1f", finalMs / 1000.0)
+    }
 
     Surface(
         shape = RoundedCornerShape(16.dp),
@@ -90,7 +108,7 @@ fun ThinkingAccordion(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Sparkle Icon (spinning if streaming)
+                // Sparkle Icon (spinning if actively streaming thinking)
                 GeminiSparkleIcon(
                     size = 16.dp,
                     tint = GeminiPrimary,
@@ -127,8 +145,15 @@ fun ThinkingAccordion(
             ) {
                 Column {
                     Spacer(Modifier.height(8.dp))
+                    val detailText = if (!reasoningContent.isNullOrBlank()) {
+                        reasoningContent
+                    } else if (isCurrentlyStreaming) {
+                        stringResource(R.string.thinking_analyzing_placeholder)
+                    } else {
+                        stringResource(R.string.thinking_done_no_detail)
+                    }
                     Text(
-                        text = if (!reasoningContent.isNullOrBlank()) reasoningContent else stringResource(R.string.thinking_in_progress),
+                        text = detailText,
                         style = MaterialTheme.typography.bodySmall,
                         color = GeminiTextSecondary,
                         lineHeight = 18.sp

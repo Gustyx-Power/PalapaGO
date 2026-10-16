@@ -58,28 +58,40 @@ class SseStreamParser(
 
                                         while (currentText.isNotEmpty()) {
                                             if (!isInsideThinkTag) {
-                                                if (currentText.contains("<think>")) {
-                                                    val beforeTag = currentText.substringBefore("<think>")
+                                                val thinkTag = when {
+                                                    currentText.contains("<think>", ignoreCase = true) -> "<think>"
+                                                    currentText.contains("<thought>", ignoreCase = true) -> "<thought>"
+                                                    else -> null
+                                                }
+
+                                                if (thinkTag != null) {
+                                                    val beforeTag = currentText.substringBefore(thinkTag)
                                                     if (beforeTag.isNotEmpty()) {
                                                         currentContentBuffer.append(beforeTag)
                                                         emit(StreamEvent.ContentDelta(beforeTag))
                                                     }
                                                     isInsideThinkTag = true
-                                                    currentText = currentText.substringAfter("<think>")
+                                                    currentText = currentText.substringAfter(thinkTag)
                                                 } else {
                                                     currentContentBuffer.append(currentText)
                                                     emit(StreamEvent.ContentDelta(currentText))
                                                     currentText = ""
                                                 }
                                             } else {
-                                                if (currentText.contains("</think>")) {
-                                                    val thinkText = currentText.substringBefore("</think>")
+                                                val closeTag = when {
+                                                    currentText.contains("</think>", ignoreCase = true) -> "</think>"
+                                                    currentText.contains("</thought>", ignoreCase = true) -> "</thought>"
+                                                    else -> null
+                                                }
+
+                                                if (closeTag != null) {
+                                                    val thinkText = currentText.substringBefore(closeTag)
                                                     if (thinkText.isNotEmpty()) {
                                                         currentThinkingBuffer.append(thinkText)
                                                         emit(StreamEvent.ReasoningDelta(thinkText))
                                                     }
                                                     isInsideThinkTag = false
-                                                    currentText = currentText.substringAfter("</think>")
+                                                    currentText = currentText.substringAfter(closeTag)
                                                 } else {
                                                     currentThinkingBuffer.append(currentText)
                                                     emit(StreamEvent.ReasoningDelta(currentText))

@@ -144,7 +144,7 @@ class AgentOrchestrator(
         while (continueLoop && turnCount < maxTurns) {
             turnCount++
             val dbMessages = chatRepository.getMessagesForSessionSync(sessionId)
-            val systemPrompt = AgentSystemPrompt.getPrompt(workspacePath, yoloMode)
+            val systemPrompt = AgentSystemPrompt.getPrompt(workspacePath, yoloMode, hasWebTools = enableWebSearch)
             val systemMessage = Message(
                 sessionId = sessionId,
                 role = MessageRole.SYSTEM,
