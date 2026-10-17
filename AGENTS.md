@@ -92,3 +92,23 @@ Saat mengeksekusi Fase 1, AI Agent harus memastikan:
 3. SSE parser di `core:network` mampu menangkap event stream secara realtime tanpa memory leak.
 4. Smart Retry Interceptor menangani HTTP 429, 502, 503, dan 504 dengan membaca header `Retry-After` atau menerapkan exponential backoff.
 5. Room database & DataStore tersambung dengan entitas sesi percakapan, pesan, dan konfigurasi API Key.
+
+---
+
+## 6. Standar Anti-AI Slop (Writing, UI/UX Design, & Clean Code)
+
+Seluruh kontribusi kode, desain antarmuka, dan teks WAJIB mematuhi skill `no-ai-slop`:
+1. **Frontend & Jetpack Compose**:
+   - Dilarang keras glassmorphism berlebihan, gradasi neon ungu/cyan/indigo, dan text gradient.
+   - Gunakan intentional surface layering (Canvas `#0B0C0E` -> Card `#131417` -> Elevated `#1B1D22`) dengan border hairline tipis (`1px`).
+   - Jangan gunakan emoji teks sebagai icon di kartu atau tombol; gunakan Vector Icon Material.
+   - Hindari layout klise landing page AI (hero pill glowing, 3 kartu simetris seragam, fake testimonial/pricing).
+2. **Rekayasa Perangkat Lunak & Kode**:
+   - Zero narrator comments (`// Initialize state`, `// Handle click`, `<!-- Footer -->`). Tulis komentar hanya untuk alasan non-obvious *WHY*.
+   - Larangan keras placeholder malas (`// ... rest of code`, `// TODO`). Tulis implementasi lengkap dan fungsional.
+   - Hindari over-engineering, defensive coding berlebihan, dan abstraksi kosong (interface-implementation 1-to-1 yang tidak perlu).
+3. **Komunikasi & Tulisan (EN & ID)**:
+   - Mulai langsung ke inti jawaban/tindakan tanpa pembuka penjilat (*"Tentu!"*, *"Siap!"*, *"Pertanyaan bagus!"*).
+   - Larang kata klise AI: *delve, foster, leverage, utilize, seamless, cutting-edge, inovasi terdepan, solusi komprehensif, di era digital yang terus berkembang*.
+   - Tidak ada rekap 10 poin membanggakan diri setelah menulis kode. Cukup jelaskan 1-2 kalimat esensial secara profesional.
+
