@@ -66,6 +66,41 @@ class ShellTool {
             "/system/bin/sh"
         }
 
+        if (!hasTermux) {
+            val cmdLower = command.lowercase()
+            val isGradleOrJava = cmdLower.contains("gradlew") ||
+                cmdLower.contains("gradle ") ||
+                cmdLower.contains("javac ") ||
+                cmdLower.contains("kotlinc ") ||
+                (cmdLower.contains("java ") && !cmdLower.contains("javascript")) ||
+                cmdLower.contains("assembledebug") ||
+                cmdLower.contains("assemblerelease")
+
+            val hasJavaInSystem = File("/system/bin/java").exists() || File("/system/xbin/java").exists()
+            if (isGradleOrJava && !hasJavaInSystem) {
+                return@withContext ToolExecutionResult(
+                    toolCallId = toolCallId,
+                    toolName = "execute_shell",
+                    stderr = "Android /system/bin/sh tidak memiliki runtime OpenJDK/Gradle bawaan. Filesystem penyimpanan bersama (/sdcard) juga diproteksi oleh kernel Android dengan opsi 'noexec', sehingga mendownload binary JDK ke /sdcard akan menghasilkan 'Permission denied'.\n\nSOLUSI RESMI GG AGENT:\n1. Eksekusi & Uji Coba Interaktif: Panggil tool 'open_canvas(title = \"...\", language = \"android\", content = \"...\")'. Canvas GG Agent memiliki Android Device Simulator & Jetpack Compose Live Runtime terintegrasi sehingga aplikasi langsung aktif, interaktif, dan dapat diuji pengguna di HP mereka tanpa Termux.\n2. Build File .apk Fisik: Sediakan file GitHub Actions workflow (.github/workflows/build-apk.yml) agar pengguna dapat mengunduh file .apk asli dari GitHub Actions CI secara gratis, atau sediakan skrip build_in_termux.sh bagi pengguna yang memiliki Termux.",
+                    exitCode = 127,
+                    isSuccess = false
+                )
+            }
+
+            val isAttemptingJdkInstall = (cmdLower.contains("wget") || cmdLower.contains("curl")) &&
+                (cmdLower.contains("jdk") || cmdLower.contains("openjdk") || cmdLower.contains("temurin"))
+            val isWritingToSdcard = workingDirFile.absolutePath.startsWith("/storage") || workingDirFile.absolutePath.startsWith("/sdcard")
+            if (isAttemptingJdkInstall && isWritingToSdcard) {
+                return@withContext ToolExecutionResult(
+                    toolCallId = toolCallId,
+                    toolName = "execute_shell",
+                    stderr = "Dibatalkan: Kernel Android menerapkan proteksi 'noexec' pada direktori /sdcard dan seluruh shared storage. Binary JDK yang diekstrak ke /sdcard tidak dapat dieksekusi. Gunakan 'open_canvas(language = \"android\", ...)' untuk preview interaktif di Canvas tanpa Termux, dan sediakan file workflow GitHub Actions (.github/workflows/build-apk.yml) untuk kompilasi file fisik .apk.",
+                    exitCode = 1,
+                    isSuccess = false
+                )
+            }
+        }
+
         val processBuilder = ProcessBuilder(shellExecutable, "-c", command)
         processBuilder.directory(workingDirFile)
 
