@@ -63,13 +63,15 @@ class SseStreamParser(
                                                 val lower = pendingBuffer.toString().lowercase()
                                                 val thinkIdx = lower.indexOf("<think>")
                                                 val thoughtIdx = lower.indexOf("<thought>")
-                                                val matchIdx = when {
-                                                    thinkIdx != -1 && thoughtIdx != -1 -> minOf(thinkIdx, thoughtIdx)
-                                                    thinkIdx != -1 -> thinkIdx
-                                                    thoughtIdx != -1 -> thoughtIdx
-                                                    else -> -1
+                                                val reasoningIdx = lower.indexOf("<reasoning>")
+                                                val validIndices = listOf(thinkIdx, thoughtIdx, reasoningIdx).filter { it != -1 }
+                                                val matchIdx = validIndices.minOrNull() ?: -1
+                                                val matchTagLen = when (matchIdx) {
+                                                    thinkIdx -> 7
+                                                    thoughtIdx -> 9
+                                                    reasoningIdx -> 11
+                                                    else -> 0
                                                 }
-                                                val matchTagLen = if (matchIdx == thinkIdx) 7 else 9
 
                                                 if (matchIdx != -1) {
                                                     val before = pendingBuffer.substring(0, matchIdx)
@@ -80,13 +82,13 @@ class SseStreamParser(
                                                     pendingBuffer.delete(0, matchIdx + matchTagLen)
                                                     isInsideThinkTag = true
                                                 } else {
-                                                    // Cek apakah ada akhiran pendingBuffer yang berpotensi merupakan prefix dari <think> atau <thought>
+                                                    // Cek apakah ada akhiran pendingBuffer yang berpotensi merupakan prefix dari <think>, <thought>, atau <reasoning>
                                                     val str = pendingBuffer.toString()
                                                     var prefixLen = 0
-                                                    val maxCheck = minOf(str.length, 8)
+                                                    val maxCheck = minOf(str.length, 10)
                                                     for (k in maxCheck downTo 1) {
                                                         val suffix = str.takeLast(k).lowercase()
-                                                        if ("<think>".startsWith(suffix) || "<thought>".startsWith(suffix)) {
+                                                        if ("<think>".startsWith(suffix) || "<thought>".startsWith(suffix) || "<reasoning>".startsWith(suffix)) {
                                                             prefixLen = k
                                                             break
                                                         }
@@ -111,13 +113,15 @@ class SseStreamParser(
                                                 val lower = pendingBuffer.toString().lowercase()
                                                 val closeThinkIdx = lower.indexOf("</think>")
                                                 val closeThoughtIdx = lower.indexOf("</thought>")
-                                                val matchIdx = when {
-                                                    closeThinkIdx != -1 && closeThoughtIdx != -1 -> minOf(closeThinkIdx, closeThoughtIdx)
-                                                    closeThinkIdx != -1 -> closeThinkIdx
-                                                    closeThoughtIdx != -1 -> closeThoughtIdx
-                                                    else -> -1
+                                                val closeReasoningIdx = lower.indexOf("</reasoning>")
+                                                val validCloseIndices = listOf(closeThinkIdx, closeThoughtIdx, closeReasoningIdx).filter { it != -1 }
+                                                val matchIdx = validCloseIndices.minOrNull() ?: -1
+                                                val matchTagLen = when (matchIdx) {
+                                                    closeThinkIdx -> 8
+                                                    closeThoughtIdx -> 10
+                                                    closeReasoningIdx -> 12
+                                                    else -> 0
                                                 }
-                                                val matchTagLen = if (matchIdx == closeThinkIdx) 8 else 10
 
                                                 if (matchIdx != -1) {
                                                     val thinkText = pendingBuffer.substring(0, matchIdx)
@@ -128,13 +132,13 @@ class SseStreamParser(
                                                     pendingBuffer.delete(0, matchIdx + matchTagLen)
                                                     isInsideThinkTag = false
                                                 } else {
-                                                    // Cek apakah ada akhiran yang merupakan prefix dari </think> atau </thought>
+                                                    // Cek apakah ada akhiran yang merupakan prefix dari </think>, </thought>, atau </reasoning>
                                                     val str = pendingBuffer.toString()
                                                     var prefixLen = 0
-                                                    val maxCheck = minOf(str.length, 9)
+                                                    val maxCheck = minOf(str.length, 11)
                                                     for (k in maxCheck downTo 1) {
                                                         val suffix = str.takeLast(k).lowercase()
-                                                        if ("</think>".startsWith(suffix) || "</thought>".startsWith(suffix)) {
+                                                        if ("</think>".startsWith(suffix) || "</thought>".startsWith(suffix) || "</reasoning>".startsWith(suffix)) {
                                                             prefixLen = k
                                                             break
                                                         }

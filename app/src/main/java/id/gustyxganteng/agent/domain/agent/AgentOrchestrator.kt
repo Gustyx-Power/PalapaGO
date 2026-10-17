@@ -150,7 +150,17 @@ class AgentOrchestrator(
                 role = MessageRole.SYSTEM,
                 content = systemPrompt
             )
-            val messages = listOf(systemMessage) + dbMessages.filter { it.role != MessageRole.SYSTEM }
+            val filteredDbMessages = dbMessages.filter { it.role != MessageRole.SYSTEM }
+            val messages = mutableListOf<Message>()
+            messages.add(systemMessage)
+            filteredDbMessages.forEachIndexed { index, msg ->
+                if (index == filteredDbMessages.lastIndex && msg.role == MessageRole.USER) {
+                    val thinkEnforcement = "\n\n[Instruction: You MUST begin your response with <think> and write your deep internal reasoning monologue before any tool call or response text.]"
+                    messages.add(msg.copy(content = msg.content + thinkEnforcement))
+                } else {
+                    messages.add(msg)
+                }
+            }
 
             val reasoningBuilder = StringBuilder()
             val contentBuilder = StringBuilder()
@@ -162,7 +172,7 @@ class AgentOrchestrator(
 
             _agentState.value = AgentState.Streaming(
                 content = "",
-                reasoning = "",
+                reasoning = null,
                 thinkingElapsedMs = 0,
                 isThinking = true,
                 thinkingTokens = 0
