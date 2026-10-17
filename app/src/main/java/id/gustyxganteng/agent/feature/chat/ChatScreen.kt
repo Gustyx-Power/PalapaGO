@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -58,8 +59,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -107,6 +110,8 @@ fun ChatScreen(
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
     val context = LocalContext.current
+    val density = LocalDensity.current
+    var bottomBarHeightDp by remember { mutableStateOf(84.dp) }
 
     var inputText by remember { mutableStateOf("") }
     val attachedImages = remember { mutableStateListOf<String>() }
@@ -138,12 +143,16 @@ fun ChatScreen(
         }
     }
 
-    LaunchedEffect(uiState.agentState) {
-        if (uiState.agentState is AgentState.Streaming) {
-            val target = uiState.messages.size
-            if (target >= 0) {
-                listState.scrollToItem(target)
+    val streamingLength = (uiState.agentState as? AgentState.Streaming)?.content?.length ?: 0
+    val reasoningLength = (uiState.agentState as? AgentState.Streaming)?.reasoning?.length ?: 0
+    LaunchedEffect(uiState.agentState, streamingLength, reasoningLength) {
+        when (uiState.agentState) {
+            is AgentState.Streaming,
+            is AgentState.ExecutingTool,
+            is AgentState.Error -> {
+                listState.scrollToItem(uiState.messages.size)
             }
+            else -> {}
         }
     }
 
@@ -287,9 +296,11 @@ fun ChatScreen(
                 // Messages List
                 LazyColumn(
                     state = listState,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(bottom = 120.dp)
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(
+                        top = 8.dp,
+                        bottom = bottomBarHeightDp + 16.dp
+                    )
                 ) {
                     items(uiState.messages) { message ->
                         ChatMessageItem(
@@ -435,7 +446,7 @@ fun ChatScreen(
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
-                            .padding(bottom = 110.dp, start = 16.dp, end = 16.dp)
+                            .padding(bottom = bottomBarHeightDp + 8.dp, start = 16.dp, end = 16.dp)
                             .fillMaxWidth()
                     ) {
                         Row(
@@ -490,7 +501,11 @@ fun ChatScreen(
                         }
                     },
                     onStopStreaming = { viewModel.stopStreaming() },
-                    modifier = Modifier.align(Alignment.BottomCenter)
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .onGloballyPositioned { coordinates ->
+                            bottomBarHeightDp = with(density) { coordinates.size.height.toDp() }
+                        }
                 )
             }
         }
