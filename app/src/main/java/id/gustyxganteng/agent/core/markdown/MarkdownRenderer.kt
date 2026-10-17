@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
+import id.gustyxganteng.agent.R
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Edit
@@ -186,101 +188,175 @@ fun MarkdownContent(
 ) {
     val nodes = MarkdownParser.parse(markdown)
 
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        nodes.forEach { node ->
-            when (node) {
-                is MarkdownNode.Header -> {
-                    val style = when (node.level) {
-                        1 -> MaterialTheme.typography.headlineMedium
-                        2 -> MaterialTheme.typography.titleLarge
-                        3 -> MaterialTheme.typography.titleMedium
-                        else -> MaterialTheme.typography.titleSmall
-                    }
-                    Text(
-                        text = node.text,
-                        style = style.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.onSurface,
-                        modifier = Modifier.padding(top = 4.dp, bottom = 2.dp)
-                    )
-                }
-                is MarkdownNode.Paragraph -> {
-                    val downloadLinks = extractDownloadLinks(node.text)
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(
-                            text = formatInlineMarkdown(node.text),
-                            style = MaterialTheme.typography.bodyLarge.copy(lineHeight = 22.sp),
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        downloadLinks.forEach { link ->
-                            MarkdownDownloadButton(label = link.label, url = link.url)
-                        }
-                    }
-                }
-                is MarkdownNode.CodeBlock -> {
-                    CodeBlockCard(
-                        language = node.language,
-                        code = node.code,
-                        onOpenInCanvas = onOpenInCanvas
-                    )
-                }
-                is MarkdownNode.BlockQuote -> {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 4.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .width(4.dp)
-                                .height(24.dp)
-                                .background(
-                                    MaterialTheme.colorScheme.primary,
-                                    RoundedCornerShape(2.dp)
-                                )
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = formatInlineMarkdown(node.text),
-                            style = MaterialTheme.typography.bodyMedium.copy(
-                                fontStyle = FontStyle.Italic,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+    SelectionContainer {
+        Column(
+            modifier = modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            nodes.forEach { node ->
+                when (node) {
+                    is MarkdownNode.Header -> {
+                        val (style, topPad, botPad) = when (node.level) {
+                            1 -> Triple(
+                                MaterialTheme.typography.titleLarge.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 20.sp,
+                                    lineHeight = 26.sp
+                                ),
+                                10.dp,
+                                4.dp
                             )
+                            2 -> Triple(
+                                MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 17.sp,
+                                    lineHeight = 23.sp
+                                ),
+                                8.dp,
+                                3.dp
+                            )
+                            3 -> Triple(
+                                MaterialTheme.typography.titleSmall.copy(
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 15.sp,
+                                    lineHeight = 21.sp
+                                ),
+                                6.dp,
+                                2.dp
+                            )
+                            else -> Triple(
+                                MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 14.sp,
+                                    lineHeight = 20.sp
+                                ),
+                                4.dp,
+                                2.dp
+                            )
+                        }
+                        Text(
+                            text = node.text,
+                            style = style,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(top = topPad, bottom = botPad)
                         )
                     }
-                }
-                is MarkdownNode.BulletItem -> {
-                    val downloadLinks = extractDownloadLinks(node.text)
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Row(modifier = Modifier.fillMaxWidth().padding(start = 8.dp)) {
-                            Text("• ", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+                    is MarkdownNode.Paragraph -> {
+                        val downloadLinks = extractDownloadLinks(node.text)
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(
                                 text = formatInlineMarkdown(node.text),
-                                style = MaterialTheme.typography.bodyMedium,
+                                style = MaterialTheme.typography.bodyLarge.copy(
+                                    fontSize = 14.5.sp,
+                                    lineHeight = 23.sp,
+                                    letterSpacing = 0.15.sp
+                                ),
                                 color = MaterialTheme.colorScheme.onSurface
                             )
-                        }
-                        downloadLinks.forEach { link ->
-                            Box(modifier = Modifier.padding(start = 24.dp)) {
+                            downloadLinks.forEach { link ->
                                 MarkdownDownloadButton(label = link.label, url = link.url)
                             }
                         }
                     }
-                }
-                is MarkdownNode.NumberedItem -> {
-                    Row(modifier = Modifier.fillMaxWidth().padding(start = 8.dp)) {
-                        Text("${node.number}. ", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
-                        Text(
-                            text = formatInlineMarkdown(node.text),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface
+                    is MarkdownNode.CodeBlock -> {
+                        CodeBlockCard(
+                            language = node.language,
+                            code = node.code,
+                            onOpenInCanvas = onOpenInCanvas
                         )
                     }
-                }
-                is MarkdownNode.Table -> {
-                    TableCard(node.headers, node.rows)
+                    is MarkdownNode.BlockQuote -> {
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f),
+                            shape = RoundedCornerShape(topEnd = 8.dp, bottomEnd = 8.dp),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.15f))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .width(3.dp)
+                                        .height(24.dp)
+                                        .background(MaterialTheme.colorScheme.primary, RoundedCornerShape(2.dp))
+                                )
+                                Spacer(modifier = Modifier.width(10.dp))
+                                Text(
+                                    text = formatInlineMarkdown(node.text),
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontStyle = FontStyle.Italic,
+                                        lineHeight = 22.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                )
+                            }
+                        }
+                    }
+                    is MarkdownNode.BulletItem -> {
+                        val downloadLinks = extractDownloadLinks(node.text)
+                        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(start = 4.dp, top = 2.dp, bottom = 2.dp),
+                                verticalAlignment = Alignment.Top
+                            ) {
+                                Text(
+                                    text = "•",
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp,
+                                    modifier = Modifier.padding(top = 1.dp)
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = formatInlineMarkdown(node.text),
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontSize = 14.5.sp,
+                                        lineHeight = 22.sp
+                                    ),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            downloadLinks.forEach { link ->
+                                Box(modifier = Modifier.padding(start = 24.dp)) {
+                                    MarkdownDownloadButton(label = link.label, url = link.url)
+                                }
+                            }
+                        }
+                    }
+                    is MarkdownNode.NumberedItem -> {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 4.dp, top = 2.dp, bottom = 2.dp),
+                            verticalAlignment = Alignment.Top
+                        ) {
+                            Text(
+                                text = "${node.number}.",
+                                color = MaterialTheme.colorScheme.primary,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                                modifier = Modifier.padding(top = 1.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                text = formatInlineMarkdown(node.text),
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontSize = 14.5.sp,
+                                    lineHeight = 22.sp
+                                ),
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                    is MarkdownNode.Table -> {
+                        TableCard(node.headers, node.rows)
+                    }
                 }
             }
         }
@@ -295,11 +371,13 @@ fun CodeBlockCard(
     onOpenInCanvas: ((title: String, language: String, content: String) -> Unit)? = null
 ) {
     val clipboard = LocalClipboardManager.current
+    val context = LocalContext.current
     val displayLang = language.ifEmpty { "text" }
 
     Surface(
         shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.surfaceVariant,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)),
         modifier = modifier.fillMaxWidth()
     ) {
         Column {
@@ -320,13 +398,14 @@ fun CodeBlockCard(
                     IconButton(
                         onClick = {
                             clipboard.setText(AnnotatedString(code))
+                            Toast.makeText(context, context.getString(R.string.text_copied), Toast.LENGTH_SHORT).show()
                         }
                     ) {
                         Icon(
                             imageVector = Icons.Default.ContentCopy,
                             contentDescription = "Salin Kode",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(4.dp)
+                            modifier = Modifier.size(18.dp)
                         )
                     }
 
@@ -340,7 +419,7 @@ fun CodeBlockCard(
                                 imageVector = Icons.Default.Edit,
                                 contentDescription = "Buka di Canvas",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(4.dp)
+                                modifier = Modifier.size(18.dp)
                             )
                         }
                     }
@@ -353,13 +432,13 @@ fun CodeBlockCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState())
-                    .padding(12.dp)
+                    .padding(14.dp)
             ) {
                 Text(
                     text = code,
                     fontFamily = FontFamily.Monospace,
                     fontSize = 13.sp,
-                    lineHeight = 18.sp,
+                    lineHeight = 19.sp,
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
@@ -614,7 +693,7 @@ fun downloadOrOpenUrl(context: Context, url: String, suggestedTitle: String? = n
 fun formatInlineMarkdown(text: String): AnnotatedString {
     return buildAnnotatedString {
         var cursor = 0
-        val regex = Regex("(\\*\\*.*?\\*\\*|\\*.*?\\*|`.*?`|\\[[^\\]]+\\]\\([^)]+\\))")
+        val regex = Regex("(\\*\\*\\*.*?\\*\\*\\*|\\*\\*.*?\\*\\*|\\*.*?\\*|~~.*?~~|`.*?`|\\[[^\\]]+\\]\\([^)]+\\))")
         val matches = regex.findAll(text)
 
         for (match in matches) {
@@ -625,21 +704,40 @@ fun formatInlineMarkdown(text: String): AnnotatedString {
 
             val value = match.value
             when {
-                value.startsWith("**") && value.endsWith("**") -> {
+                value.startsWith("***") && value.endsWith("***") && value.length >= 6 -> {
+                    val inner = value.removeSurrounding("***")
+                    pushStyle(SpanStyle(fontWeight = FontWeight.Bold, fontStyle = FontStyle.Italic))
+                    append(inner)
+                    pop()
+                }
+                value.startsWith("**") && value.endsWith("**") && value.length >= 4 -> {
                     val inner = value.removeSurrounding("**")
                     pushStyle(SpanStyle(fontWeight = FontWeight.Bold))
                     append(inner)
                     pop()
                 }
-                value.startsWith("*") && value.endsWith("*") -> {
+                value.startsWith("*") && value.endsWith("*") && value.length >= 2 -> {
                     val inner = value.removeSurrounding("*")
                     pushStyle(SpanStyle(fontStyle = FontStyle.Italic))
                     append(inner)
                     pop()
                 }
-                value.startsWith("`") && value.endsWith("`") -> {
+                value.startsWith("~~") && value.endsWith("~~") && value.length >= 4 -> {
+                    val inner = value.removeSurrounding("~~")
+                    pushStyle(SpanStyle(textDecoration = TextDecoration.LineThrough))
+                    append(inner)
+                    pop()
+                }
+                value.startsWith("`") && value.endsWith("`") && value.length >= 2 -> {
                     val inner = value.removeSurrounding("`")
-                    pushStyle(SpanStyle(fontFamily = FontFamily.Monospace, background = Color(0x33888888)))
+                    pushStyle(
+                        SpanStyle(
+                            fontFamily = FontFamily.Monospace,
+                            background = Color(0xFF1E222A),
+                            color = Color(0xFFA8C7FA),
+                            fontSize = 13.sp
+                        )
+                    )
                     append(" $inner ")
                     pop()
                 }
