@@ -21,12 +21,11 @@ class ContextMeterManager(
     private val agnesApiService: AgnesApiService
 ) {
     fun getModelCapacity(model: String, claudeMaxMode: Boolean = false): Int {
-        if (claudeMaxMode) return 200_000
         val lower = model.lowercase()
         return when {
-            lower.contains("flash") || lower.contains("pro") || lower.contains("agnes") -> 1_000_000
+            lower.contains("flash") || lower.contains("pro") || lower.contains("agnes") || lower.contains("gemini") -> 1_000_000
             lower.contains("gpt-4o") -> 128_000
-            lower.contains("claude") -> 200_000
+            lower.contains("claude") && !claudeMaxMode -> 200_000
             else -> 1_000_000
         }
     }
