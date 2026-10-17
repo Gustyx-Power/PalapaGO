@@ -10,6 +10,7 @@ import id.gustyxganteng.agent.core.network.SmartRetryInterceptor
 import id.gustyxganteng.agent.core.network.SseStreamParser
 import id.gustyxganteng.agent.domain.agent.AgentOrchestrator
 import id.gustyxganteng.agent.domain.context.ContextMeterManager
+import id.gustyxganteng.agent.domain.tools.AcademicTool
 import id.gustyxganteng.agent.domain.tools.FileSystemTool
 import id.gustyxganteng.agent.domain.tools.ShellTool
 import id.gustyxganteng.agent.domain.tools.WebTool
@@ -65,6 +66,7 @@ val appModule = module {
     single { FileSystemTool() }
     single { ShellTool() }
     single { WebTool() }
+    single { AcademicTool() }
     single { ContextMeterManager(get(), get()) }
     single {
         AgentOrchestrator(
@@ -73,6 +75,7 @@ val appModule = module {
             fileSystemTool = get(),
             shellTool = get(),
             webTool = get(),
+            academicTool = get(),
             json = get()
         )
     }

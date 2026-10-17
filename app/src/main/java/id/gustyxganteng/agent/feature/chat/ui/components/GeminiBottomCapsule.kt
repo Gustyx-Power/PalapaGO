@@ -33,6 +33,7 @@ import androidx.compose.material.icons.rounded.DashboardCustomize
 import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.PhotoCamera
+import androidx.compose.material.icons.rounded.School
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -76,12 +77,14 @@ fun GeminiBottomCapsule(
     onInputTextChanged: (String) -> Unit,
     activeWorkspacePath: String?,
     isWebSearchActive: Boolean,
+    isAcademicActive: Boolean = false,
     isYoloModeActive: Boolean,
     isStreaming: Boolean,
     attachedImages: List<String> = emptyList(),
     onRemoveAttachedImage: (Int) -> Unit = {},
     onOpenWorkspaceManager: () -> Unit,
     onToggleWebSearch: () -> Unit,
+    onToggleAcademic: () -> Unit = {},
     onOpenCanvas: () -> Unit,
     onToggleYolo: () -> Unit,
     onAttachImage: () -> Unit,
@@ -167,6 +170,38 @@ fun GeminiBottomCapsule(
                             leadingIcon = {
                                 Icon(
                                     imageVector = Icons.Rounded.Language,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                containerColor = GeminiSurfaceVariant,
+                                labelColor = GeminiTextSecondary,
+                                iconColor = GeminiTextSecondary,
+                                selectedContainerColor = GeminiActiveChipContainer,
+                                selectedLabelColor = GeminiActiveChipContent,
+                                selectedLeadingIconColor = GeminiActiveChipContent
+                            ),
+                            border = null
+                        )
+                    }
+
+                    // Academic Research Chip
+                    item {
+                        FilterChip(
+                            selected = isAcademicActive,
+                            onClick = onToggleAcademic,
+                            modifier = Modifier.height(28.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            label = {
+                                Text(
+                                    text = stringResource(R.string.chip_academic),
+                                    fontSize = 11.sp
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = Icons.Rounded.School,
                                     contentDescription = null,
                                     modifier = Modifier.size(14.dp)
                                 )

@@ -11,6 +11,7 @@ import id.gustyxganteng.agent.core.model.ToolCall
 import id.gustyxganteng.agent.core.model.ToolDefinition
 import id.gustyxganteng.agent.core.model.ToolExecutionResult
 import id.gustyxganteng.agent.core.network.AgnesApiService
+import id.gustyxganteng.agent.domain.tools.AcademicTool
 import id.gustyxganteng.agent.domain.tools.CanvasTool
 import id.gustyxganteng.agent.domain.tools.FileSystemTool
 import id.gustyxganteng.agent.domain.tools.ShellTool
@@ -62,6 +63,7 @@ class AgentOrchestrator(
     private val fileSystemTool: FileSystemTool,
     private val shellTool: ShellTool,
     private val webTool: WebTool,
+    private val academicTool: AcademicTool = AcademicTool(),
     private val json: Json = Json { ignoreUnknownKeys = true }
 ) {
     private val _agentState = MutableStateFlow<AgentState>(AgentState.Idle)
@@ -110,7 +112,8 @@ class AgentOrchestrator(
         useTermuxEnv: Boolean,
         claudeMaxMode: Boolean = true,
         antiAiSlopMode: Boolean = true,
-        tavilyDeepSearchEnabled: Boolean = false
+        tavilyDeepSearchEnabled: Boolean = false,
+        academicMode: Boolean = false
     ) {
         val previousJob = activeJob
         activeJob?.cancel()
@@ -128,7 +131,8 @@ class AgentOrchestrator(
                     useTermuxEnv = useTermuxEnv,
                     claudeMaxMode = claudeMaxMode,
                     antiAiSlopMode = antiAiSlopMode,
-                    tavilyDeepSearchEnabled = tavilyDeepSearchEnabled
+                    tavilyDeepSearchEnabled = tavilyDeepSearchEnabled,
+                    academicMode = academicMode
                 )
             } catch (e: CancellationException) {
                 // Jangan ubah CancellationException menjadi AgentState.Error
@@ -155,7 +159,8 @@ class AgentOrchestrator(
         useTermuxEnv: Boolean,
         claudeMaxMode: Boolean = true,
         antiAiSlopMode: Boolean = true,
-        tavilyDeepSearchEnabled: Boolean = false
+        tavilyDeepSearchEnabled: Boolean = false,
+        academicMode: Boolean = false
     ) {
         var continueLoop = true
         var turnCount = 0
@@ -171,6 +176,9 @@ class AgentOrchestrator(
         if (enableWebSearch) {
             activeTools.addAll(WebTool.DEFINITIONS)
         }
+        if (enableWebSearch || academicMode) {
+            activeTools.addAll(AcademicTool.DEFINITIONS)
+        }
         activeTools.add(CanvasTool.DEFINITION)
 
         while (continueLoop && turnCount < maxTurns) {
@@ -181,7 +189,8 @@ class AgentOrchestrator(
                 yoloMode = yoloMode,
                 hasWebTools = enableWebSearch,
                 claudeMaxMode = claudeMaxMode,
-                antiAiSlopMode = antiAiSlopMode
+                antiAiSlopMode = antiAiSlopMode,
+                academicMode = academicMode
             )
             val systemMessage = Message(
                 sessionId = sessionId,
@@ -561,6 +570,14 @@ class AgentOrchestrator(
                         val url = parsedArgs["url"]?.jsonPrimitive?.content ?: ""
                         "Membaca dokumentasi web: $url"
                     }
+                    "search_academic_papers" -> {
+                        val query = parsedArgs["query"]?.jsonPrimitive?.content ?: ""
+                        "Mencari jurnal ilmiah: '$query'"
+                    }
+                    "verify_doi_or_citation" -> {
+                        val doi = parsedArgs["doi"]?.jsonPrimitive?.content ?: ""
+                        "Memverifikasi DOI: $doi"
+                    }
                     "open_canvas" -> {
                         val title = parsedArgs["title"]?.jsonPrimitive?.content ?: "dokumen"
                         "Membuka Canvas: $title"
@@ -601,6 +618,8 @@ class AgentOrchestrator(
             "web_search" -> webTool.search(toolCallId, args, useTavilyDeepSearch = tavilyDeepSearchEnabled)
             "wikipedia_search" -> webTool.wikipediaSearch(toolCallId, args)
             "read_webpage" -> webTool.readWebpage(toolCallId, args)
+            "search_academic_papers" -> academicTool.searchAcademicPapers(toolCallId, args)
+            "verify_doi_or_citation" -> academicTool.verifyDoiOrCitation(toolCallId, args)
             "open_canvas" -> canvasTool.execute(toolCallId, args)
             else -> ToolExecutionResult(toolCallId, toolName, stderr = "Tool tidak dikenal: $toolName", isSuccess = false)
         }

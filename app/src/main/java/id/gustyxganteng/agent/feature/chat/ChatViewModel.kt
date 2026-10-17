@@ -197,7 +197,8 @@ class ChatViewModel(
                 useTermuxEnv = true,
                 claudeMaxMode = settings.claudeMaxMode,
                 antiAiSlopMode = settings.antiAiSlopMode,
-                tavilyDeepSearchEnabled = settings.tavilyDeepSearchEnabled
+                tavilyDeepSearchEnabled = settings.tavilyDeepSearchEnabled,
+                academicMode = settings.academicMode
             )
         }
     }
@@ -236,7 +237,8 @@ class ChatViewModel(
                 useTermuxEnv = true,
                 claudeMaxMode = settings.claudeMaxMode,
                 antiAiSlopMode = settings.antiAiSlopMode,
-                tavilyDeepSearchEnabled = settings.tavilyDeepSearchEnabled
+                tavilyDeepSearchEnabled = settings.tavilyDeepSearchEnabled,
+                academicMode = settings.academicMode
             )
         }
     }
@@ -301,6 +303,13 @@ class ChatViewModel(
         val current = uiState.value.appSettings?.webSearchEnabled ?: false
         viewModelScope.launch {
             settingsRepository.updateWebSearchEnabled(!current)
+        }
+    }
+
+    fun toggleAcademicMode() {
+        val current = uiState.value.appSettings?.academicMode ?: false
+        viewModelScope.launch {
+            settingsRepository.updateAcademicMode(!current)
         }
     }
 

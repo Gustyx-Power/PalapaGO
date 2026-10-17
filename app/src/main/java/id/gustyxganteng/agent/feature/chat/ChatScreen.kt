@@ -629,6 +629,7 @@ fun ChatScreen(
                     onInputTextChanged = { inputText = it },
                     activeWorkspacePath = uiState.currentSession?.workspacePath ?: uiState.appSettings?.activeWorkspacePath,
                     isWebSearchActive = uiState.appSettings?.webSearchEnabled == true,
+                    isAcademicActive = uiState.appSettings?.academicMode == true,
                     isYoloModeActive = uiState.appSettings?.yoloMode == true,
                     isStreaming = isStreamingActive,
                     attachedImages = attachedImages.toList(),
@@ -639,6 +640,7 @@ fun ChatScreen(
                     },
                     onOpenWorkspaceManager = { showWorkspaceManager = true },
                     onToggleWebSearch = { viewModel.toggleWebSearch() },
+                    onToggleAcademic = { viewModel.toggleAcademicMode() },
                     onOpenCanvas = {
                         viewModel.openCanvas(
                             CanvasArtifact(

@@ -21,6 +21,7 @@
     <string name="chip_workspace">Workspace</string>
     <string name="chip_select_folder">Pilih Folder</string>
     <string name="chip_web_search">Pencarian Web</string>
+    <string name="chip_academic">Riset / Jurnal</string>
     <string name="chip_canvas">Canvas</string>
     <string name="chip_yolo">Auto-Setujui</string>
     <string name="input_placeholder">Tanyakan apa saja atau perintahkan agent...</string>

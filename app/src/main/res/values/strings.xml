@@ -21,6 +21,7 @@
     <string name="chip_workspace">Workspace</string>
     <string name="chip_select_folder">Select Folder</string>
     <string name="chip_web_search">Web Search</string>
+    <string name="chip_academic">Papers / Research</string>
     <string name="chip_canvas">Canvas</string>
     <string name="chip_yolo">Auto-Approve</string>
     <string name="input_placeholder">Ask anything or command agent...</string>

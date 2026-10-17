@@ -22,6 +22,7 @@ data class AppSettings(
     val yoloMode: Boolean,
     val antiAiSlopMode: Boolean = true,
     val tavilyDeepSearchEnabled: Boolean = false,
+    val academicMode: Boolean = false,
     val activeWorkspacePath: String?,
     val webSearchEnabled: Boolean,
     val canvasEnabled: Boolean,
@@ -39,6 +40,7 @@ class AppSettingsRepository(private val context: Context) {
         val YOLO_MODE = booleanPreferencesKey("yolo_mode")
         val ANTI_AI_SLOP_MODE = booleanPreferencesKey("anti_ai_slop_mode")
         val TAVILY_DEEP_SEARCH = booleanPreferencesKey("tavily_deep_search")
+        val ACADEMIC_MODE = booleanPreferencesKey("academic_mode")
         val ACTIVE_WORKSPACE_PATH = stringPreferencesKey("active_workspace_path")
         val WEB_SEARCH_ENABLED = booleanPreferencesKey("web_search_enabled")
         val CANVAS_ENABLED = booleanPreferencesKey("canvas_enabled")
@@ -63,6 +65,7 @@ class AppSettingsRepository(private val context: Context) {
             yoloMode = preferences[PreferencesKeys.YOLO_MODE] ?: false,
             antiAiSlopMode = preferences[PreferencesKeys.ANTI_AI_SLOP_MODE] ?: true,
             tavilyDeepSearchEnabled = preferences[PreferencesKeys.TAVILY_DEEP_SEARCH] ?: false,
+            academicMode = preferences[PreferencesKeys.ACADEMIC_MODE] ?: false,
             activeWorkspacePath = preferences[PreferencesKeys.ACTIVE_WORKSPACE_PATH],
             webSearchEnabled = preferences[PreferencesKeys.WEB_SEARCH_ENABLED] ?: true,
             canvasEnabled = preferences[PreferencesKeys.CANVAS_ENABLED] ?: true,
@@ -97,6 +100,10 @@ class AppSettingsRepository(private val context: Context) {
 
     suspend fun updateTavilyDeepSearch(enabled: Boolean) {
         context.dataStore.edit { it[PreferencesKeys.TAVILY_DEEP_SEARCH] = enabled }
+    }
+
+    suspend fun updateAcademicMode(enabled: Boolean) {
+        context.dataStore.edit { it[PreferencesKeys.ACADEMIC_MODE] = enabled }
     }
 
     suspend fun updateActiveWorkspace(path: String?) {
