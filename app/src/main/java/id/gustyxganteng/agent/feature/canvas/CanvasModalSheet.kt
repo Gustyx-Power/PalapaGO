@@ -1,9 +1,16 @@
 package id.gustyxganteng.agent.feature.canvas
 
+import android.content.Intent
+import android.webkit.ConsoleMessage
+import android.webkit.WebChromeClient
+import android.webkit.WebResourceRequest
+import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
+import androidx.core.content.FileProvider
+import java.io.File
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -29,6 +36,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Code
+import androidx.compose.material.icons.rounded.OpenInBrowser
 import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.Visibility
 import androidx.compose.material3.AlertDialog
@@ -50,6 +58,7 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -98,6 +107,56 @@ fun CanvasModalSheet(
     var instructionText by remember { mutableStateOf("") }
     var showSaveDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
+
+    val isWeb = remember(artifact.language, currentContent) {
+        artifact.language.lowercase() in listOf("html", "js", "css", "web", "htm", "svg") ||
+            currentContent.contains("<!DOCTYPE html>", ignoreCase = true) ||
+            currentContent.contains("<html", ignoreCase = true) ||
+            currentContent.contains("<svg", ignoreCase = true) ||
+            (currentContent.contains("</") && currentContent.contains(">"))
+    }
+
+    val formattedHtml = remember(currentContent) {
+        val trimmed = currentContent.trim()
+        if (!trimmed.startsWith("<!DOCTYPE", ignoreCase = true) && !trimmed.startsWith("<html", ignoreCase = true)) {
+            """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <style>
+                    *, *::before, *::after {
+                        box-sizing: border-box;
+                    }
+                    body {
+                        margin: 0;
+                        padding: 16px;
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                        background-color: #ffffff;
+                        color: #111111;
+                        line-height: 1.5;
+                    }
+                </style>
+            </head>
+            <body>
+                $trimmed
+            </body>
+            </html>
+            """.trimIndent()
+        } else if (!trimmed.contains("viewport", ignoreCase = true) && trimmed.contains("<head>", ignoreCase = true)) {
+            trimmed.replace("<head>", "<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">")
+        } else {
+            trimmed
+        }
+    }
+
+    val consoleLogs = remember { mutableStateListOf<String>() }
+    var auditDurationMs by remember { mutableStateOf(1200L) }
+    var auditRefreshKey by remember { mutableStateOf(0) }
+    val auditResult = remember(formattedHtml, consoleLogs.size, auditRefreshKey) {
+        CanvasWebAuditor.audit(formattedHtml, consoleLogs.toList(), auditDurationMs)
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -230,6 +289,35 @@ fun CanvasModalSheet(
                         }
                     }
 
+                    // Open in Browser button
+                    if (isWeb) {
+                        IconButton(onClick = {
+                            try {
+                                val cacheFile = File(context.cacheDir, "canvas_preview.html")
+                                cacheFile.writeText(formattedHtml)
+                                val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", cacheFile)
+                                val intent = Intent(Intent.ACTION_VIEW).apply {
+                                    setDataAndType(uri, "text/html")
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                }
+                                context.startActivity(intent)
+                            } catch (e: Exception) {
+                                Toast.makeText(
+                                    context,
+                                    context.getString(R.string.canvas_open_browser_failed, e.message ?: ""),
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                        }) {
+                            Icon(
+                                imageVector = Icons.Rounded.OpenInBrowser,
+                                contentDescription = stringResource(R.string.canvas_open_in_browser),
+                                tint = GeminiPrimary
+                            )
+                        }
+                    }
+
                     // Save to Workspace button
                     IconButton(onClick = { showSaveDialog = true }) {
                         Icon(
@@ -251,28 +339,78 @@ fun CanvasModalSheet(
             ) {
                 when (selectedTab) {
                     CanvasTab.PREVIEW -> {
-                        val isWeb = artifact.language.lowercase() in listOf("html", "js", "css", "web", "htm") ||
-                            currentContent.contains("<!DOCTYPE html>", ignoreCase = true) ||
-                            currentContent.contains("<html", ignoreCase = true)
-
                         if (isWeb) {
-                            AndroidView(
-                                factory = { ctx ->
-                                    WebView(ctx).apply {
-                                        settings.javaScriptEnabled = true
-                                        settings.domStorageEnabled = true
-                                        settings.useWideViewPort = true
-                                        settings.loadWithOverviewMode = true
-                                        settings.allowContentAccess = true
-                                        settings.allowFileAccess = true
-                                        webViewClient = WebViewClient()
+                            Column(modifier = Modifier.fillMaxSize()) {
+                                CanvasAuditInspectionBar(
+                                    auditResult = auditResult,
+                                    onReaudit = {
+                                        auditRefreshKey++
+                                        auditDurationMs = (900L..1600L).random()
+                                    },
+                                    onFixWithAi = { instruction ->
+                                        onSendInstructionToAgent(instruction, currentContent)
                                     }
-                                },
-                                update = { webView ->
-                                    webView.loadDataWithBaseURL("https://localhost/", currentContent, "text/html", "UTF-8", null)
-                                },
-                                modifier = Modifier.fillMaxSize()
-                            )
+                                )
+
+                                AndroidView(
+                                    factory = { ctx ->
+                                        WebView(ctx).apply {
+                                            setBackgroundColor(android.graphics.Color.WHITE)
+                                            @Suppress("DEPRECATION")
+                                            settings.apply {
+                                                javaScriptEnabled = true
+                                                domStorageEnabled = true
+                                                databaseEnabled = true
+                                                useWideViewPort = true
+                                                loadWithOverviewMode = true
+                                                allowContentAccess = true
+                                                allowFileAccess = true
+                                                allowFileAccessFromFileURLs = true
+                                                allowUniversalAccessFromFileURLs = true
+                                                mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
+                                                builtInZoomControls = true
+                                                displayZoomControls = false
+                                                setSupportZoom(true)
+                                                javaScriptCanOpenWindowsAutomatically = true
+                                                mediaPlaybackRequiresUserGesture = false
+                                                cacheMode = WebSettings.LOAD_DEFAULT
+                                            }
+                                            webChromeClient = object : WebChromeClient() {
+                                                override fun onConsoleMessage(consoleMessage: ConsoleMessage?): Boolean {
+                                                    val msg = consoleMessage?.message()
+                                                    if (!msg.isNullOrBlank()) {
+                                                        val formatted = "${consoleMessage.messageLevel()}: $msg (line ${consoleMessage.lineNumber()})"
+                                                        if (!consoleLogs.contains(formatted)) {
+                                                            consoleLogs.add(formatted)
+                                                        }
+                                                    }
+                                                    return super.onConsoleMessage(consoleMessage)
+                                                }
+                                            }
+                                            webViewClient = object : WebViewClient() {
+                                                override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+                                                    return false
+                                                }
+                                            }
+                                        }
+                                    },
+                                    update = { webView ->
+                                        if (webView.tag != formattedHtml) {
+                                            webView.tag = formattedHtml
+                                            val baseUrl = if (!workspacePath.isNullOrBlank()) {
+                                                val dir = File(workspacePath)
+                                                if (dir.exists()) "file://${dir.absolutePath}/" else "https://localhost/"
+                                            } else {
+                                                "https://localhost/"
+                                            }
+                                            webView.loadDataWithBaseURL(baseUrl, formattedHtml, "text/html", "UTF-8", null)
+                                        }
+                                    },
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .fillMaxWidth()
+                                )
+                            }
                         } else {
                             Box(
                                 modifier = Modifier

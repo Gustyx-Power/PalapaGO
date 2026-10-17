@@ -96,6 +96,17 @@
     <string name="canvas_ai_response">Respon AI</string>
     <string name="canvas_snippet">Cuplikan (%1$s)</string>
     <string name="canvas_web_preview_title">Dokumen Web Langsung</string>
+    <string name="canvas_open_in_browser">Buka di Browser</string>
+    <string name="canvas_open_browser_failed">Gagal membuka browser: %1$s</string>
+    <string name="canvas_audit_title">Inspeksi Web AI Antigravity</string>
+    <string name="canvas_audit_verified">TERVERIFIKASI</string>
+    <string name="canvas_audit_warning">PERIKSA</string>
+    <string name="canvas_audit_tokens">%1$d token • %2$s</string>
+    <string name="canvas_audit_ui_title">Inspeksi Tampilan &amp; Layout</string>
+    <string name="canvas_audit_func_title">Fungsi &amp; Interaktivitas</string>
+    <string name="canvas_audit_console_title">Konsol Runtime</string>
+    <string name="canvas_audit_fix_button">Minta AI Perbaiki Masalah</string>
+    <string name="canvas_audit_rescan_button">Inspeksi Ulang</string>
     <string name="save">Simpan</string>
 
     <!-- Settings -->

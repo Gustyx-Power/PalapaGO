@@ -96,6 +96,17 @@
     <string name="canvas_ai_response">AI Response</string>
     <string name="canvas_snippet">Snippet (%1$s)</string>
     <string name="canvas_web_preview_title">Live Web Document</string>
+    <string name="canvas_open_in_browser">Open in Browser</string>
+    <string name="canvas_open_browser_failed">Failed to open browser: %1$s</string>
+    <string name="canvas_audit_title">Antigravity AI Web Inspection</string>
+    <string name="canvas_audit_verified">VERIFIED</string>
+    <string name="canvas_audit_warning">REVIEW</string>
+    <string name="canvas_audit_tokens">%1$d tokens • %2$s</string>
+    <string name="canvas_audit_ui_title">UI &amp; Layout Inspection</string>
+    <string name="canvas_audit_func_title">Functionality &amp; Interactivity</string>
+    <string name="canvas_audit_console_title">Runtime Console</string>
+    <string name="canvas_audit_fix_button">Ask AI to Fix Issues</string>
+    <string name="canvas_audit_rescan_button">Re-inspect</string>
     <string name="save">Save</string>
 
     <!-- Settings -->
