@@ -6,6 +6,13 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator
 
 @Serializable
+data class ThinkingConfigDto(
+    val type: String = "enabled",
+    @SerialName("budget_tokens")
+    val budgetTokens: Int = 2048
+)
+
+@Serializable
 data class ChatCompletionRequest(
     val model: String,
     val messages: List<ChatMessageDto>,
@@ -15,7 +22,14 @@ data class ChatCompletionRequest(
     val stream: Boolean = true,
     @SerialName("stream_options")
     val streamOptions: StreamOptionsDto = StreamOptionsDto(includeUsage = true),
-    val temperature: Double? = 0.7
+    val temperature: Double? = 0.7,
+    @SerialName("max_tokens")
+    val maxTokens: Int? = 8192,
+    val thinking: ThinkingConfigDto? = ThinkingConfigDto(),
+    @SerialName("reasoning_effort")
+    val reasoningEffort: String? = "medium",
+    @SerialName("include_reasoning")
+    val includeReasoning: Boolean = true
 )
 
 @Serializable
@@ -67,7 +81,10 @@ data class FunctionCallDto(
 data class ChatCompletionChunk(
     val id: String? = null,
     val model: String? = null,
+    val type: String? = null,
+    val index: Int? = null,
     val choices: List<StreamChoiceDto> = emptyList(),
+    val delta: StreamDeltaDto? = null,
     val usage: TokenUsageDto? = null
 )
 
@@ -81,8 +98,10 @@ data class StreamChoiceDto(
 
 @Serializable
 data class StreamDeltaDto(
+    val type: String? = null,
     val role: String? = null,
     val content: String? = null,
+    val text: String? = null,
     @SerialName("reasoning_content")
     val reasoningContent: String? = null,
     val thinking: String? = null,

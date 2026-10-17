@@ -39,6 +39,26 @@ class SseStreamParser(
                         try {
                             val chunk = json.decodeFromString<ChatCompletionChunk>(data)
 
+                            // Dukungan Anthropic root delta (jika gateway mem-forward format Anthropic)
+                            val rootDelta = chunk.delta
+                            if (rootDelta != null) {
+                                val rootReasoning = rootDelta.reasoningContent
+                                    ?: rootDelta.thinking
+                                    ?: rootDelta.reasoning
+                                    ?: if (rootDelta.type == "thinking_delta") (rootDelta.text ?: rootDelta.content) else null
+
+                                if (!rootReasoning.isNullOrEmpty()) {
+                                    currentThinkingBuffer.append(rootReasoning)
+                                    emit(StreamEvent.ReasoningDelta(rootReasoning))
+                                } else {
+                                    val rootText = rootDelta.text ?: rootDelta.content
+                                    if (!rootText.isNullOrEmpty() && rootDelta.type != "thinking_delta") {
+                                        currentContentBuffer.append(rootText)
+                                        emit(StreamEvent.ContentDelta(rootText))
+                                    }
+                                }
+                            }
+
                             // 1. Ekstrak delta choices
                             for (choice in chunk.choices) {
                                 val delta = choice.delta ?: continue

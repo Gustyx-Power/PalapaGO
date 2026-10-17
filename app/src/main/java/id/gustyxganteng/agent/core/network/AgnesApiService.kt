@@ -55,8 +55,9 @@ class AgnesApiServiceImpl(
         messages: List<Message>,
         tools: List<ToolDefinition>?
     ): Flow<StreamEvent> {
-        val sanitizedBaseUrl = baseUrl.trimEnd('/')
-        val endpoint = "$sanitizedBaseUrl/chat/completions"
+        val cleanBase = baseUrl.trim().trimEnd('/')
+        val baseWithV1 = if (cleanBase.endsWith("/v1")) cleanBase else "$cleanBase/v1"
+        val endpoint = "$baseWithV1/chat/completions"
 
         val chatDtos = messages.map { msg ->
             val roleStr = when (msg.role) {
@@ -126,6 +127,8 @@ class AgnesApiServiceImpl(
         val request = Request.Builder()
             .url(endpoint)
             .addHeader("Authorization", "Bearer $apiKey")
+            .addHeader("x-api-key", apiKey)
+            .addHeader("anthropic-version", "2023-06-01")
             .addHeader("Accept", "text/event-stream")
             .addHeader("Cache-Control", "no-cache")
             .addHeader("Connection", "keep-alive")
