@@ -39,12 +39,10 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -95,189 +93,187 @@ fun GeminiBottomCapsule(
 ) {
     Surface(
         color = GeminiSurface,
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(24.dp),
         border = BorderStroke(1.dp, GeminiSurfaceVariant),
-        shadowElevation = 3.dp,
+        shadowElevation = 4.dp,
         modifier = modifier
             .fillMaxWidth()
             .navigationBarsPadding()
-            .padding(horizontal = 10.dp, vertical = 4.dp)
+            .padding(horizontal = 10.dp, vertical = 6.dp)
     ) {
         Column(
-            modifier = Modifier.padding(top = 6.dp, bottom = 4.dp, start = 4.dp, end = 4.dp)
+            modifier = Modifier.padding(top = 8.dp, bottom = 8.dp, start = 6.dp, end = 6.dp)
         ) {
-            CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 6.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 2.dp)
-                ) {
-                    // Workspace Chip
-                    item {
-                        val wsLabel = if (activeWorkspacePath != null) {
-                            File(activeWorkspacePath).name.ifEmpty { stringResource(R.string.chip_workspace) }
-                        } else {
-                            stringResource(R.string.chip_select_folder)
-                        }
-
-                        FilterChip(
-                            selected = activeWorkspacePath != null,
-                            onClick = onOpenWorkspaceManager,
-                            modifier = Modifier.height(28.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            label = {
-                                Text(
-                                    text = wsLabel,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    fontSize = 11.sp
-                                )
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Rounded.FolderOpen,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                containerColor = GeminiSurfaceVariant,
-                                labelColor = GeminiTextSecondary,
-                                iconColor = GeminiTextSecondary,
-                                selectedContainerColor = GeminiActiveChipContainer,
-                                selectedLabelColor = GeminiActiveChipContent,
-                                selectedLeadingIconColor = GeminiActiveChipContent
-                            ),
-                            border = null
-                        )
+            LazyRow(
+                contentPadding = PaddingValues(horizontal = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 6.dp)
+            ) {
+                // Workspace Chip
+                item {
+                    val wsLabel = if (activeWorkspacePath != null) {
+                        File(activeWorkspacePath).name.ifEmpty { stringResource(R.string.chip_workspace) }
+                    } else {
+                        stringResource(R.string.chip_select_folder)
                     }
 
-                    // Web Search Chip
-                    item {
-                        FilterChip(
-                            selected = isWebSearchActive,
-                            onClick = onToggleWebSearch,
-                            modifier = Modifier.height(28.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            label = {
-                                Text(
-                                    text = stringResource(R.string.chip_web_search),
-                                    fontSize = 11.sp
-                                )
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Rounded.Language,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                containerColor = GeminiSurfaceVariant,
-                                labelColor = GeminiTextSecondary,
-                                iconColor = GeminiTextSecondary,
-                                selectedContainerColor = GeminiActiveChipContainer,
-                                selectedLabelColor = GeminiActiveChipContent,
-                                selectedLeadingIconColor = GeminiActiveChipContent
-                            ),
-                            border = null
-                        )
-                    }
+                    FilterChip(
+                        selected = activeWorkspacePath != null,
+                        onClick = onOpenWorkspaceManager,
+                        modifier = Modifier.height(34.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        label = {
+                            Text(
+                                text = wsLabel,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                fontSize = 12.sp
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Rounded.FolderOpen,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            containerColor = GeminiSurfaceVariant,
+                            labelColor = GeminiTextSecondary,
+                            iconColor = GeminiTextSecondary,
+                            selectedContainerColor = GeminiActiveChipContainer,
+                            selectedLabelColor = GeminiActiveChipContent,
+                            selectedLeadingIconColor = GeminiActiveChipContent
+                        ),
+                        border = null
+                    )
+                }
 
-                    // Academic Research Chip
-                    item {
-                        FilterChip(
-                            selected = isAcademicActive,
-                            onClick = onToggleAcademic,
-                            modifier = Modifier.height(28.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            label = {
-                                Text(
-                                    text = stringResource(R.string.chip_academic),
-                                    fontSize = 11.sp
-                                )
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Rounded.School,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                containerColor = GeminiSurfaceVariant,
-                                labelColor = GeminiTextSecondary,
-                                iconColor = GeminiTextSecondary,
-                                selectedContainerColor = GeminiActiveChipContainer,
-                                selectedLabelColor = GeminiActiveChipContent,
-                                selectedLeadingIconColor = GeminiActiveChipContent
-                            ),
-                            border = null
-                        )
-                    }
+                // Web Search Chip
+                item {
+                    FilterChip(
+                        selected = isWebSearchActive,
+                        onClick = onToggleWebSearch,
+                        modifier = Modifier.height(34.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        label = {
+                            Text(
+                                text = stringResource(R.string.chip_web_search),
+                                fontSize = 12.sp
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Rounded.Language,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            containerColor = GeminiSurfaceVariant,
+                            labelColor = GeminiTextSecondary,
+                            iconColor = GeminiTextSecondary,
+                            selectedContainerColor = GeminiActiveChipContainer,
+                            selectedLabelColor = GeminiActiveChipContent,
+                            selectedLeadingIconColor = GeminiActiveChipContent
+                        ),
+                        border = null
+                    )
+                }
 
-                    // Canvas Chip
-                    item {
-                        FilterChip(
-                            selected = false,
-                            onClick = onOpenCanvas,
-                            modifier = Modifier.height(28.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            label = {
-                                Text(
-                                    text = stringResource(R.string.chip_canvas),
-                                    fontSize = 11.sp
-                                )
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Rounded.DashboardCustomize,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                containerColor = GeminiSurfaceVariant,
-                                labelColor = GeminiTextSecondary,
-                                iconColor = GeminiTextSecondary
-                            ),
-                            border = null
-                        )
-                    }
+                // Academic Research Chip
+                item {
+                    FilterChip(
+                        selected = isAcademicActive,
+                        onClick = onToggleAcademic,
+                        modifier = Modifier.height(34.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        label = {
+                            Text(
+                                text = stringResource(R.string.chip_academic),
+                                fontSize = 12.sp
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Rounded.School,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            containerColor = GeminiSurfaceVariant,
+                            labelColor = GeminiTextSecondary,
+                            iconColor = GeminiTextSecondary,
+                            selectedContainerColor = GeminiActiveChipContainer,
+                            selectedLabelColor = GeminiActiveChipContent,
+                            selectedLeadingIconColor = GeminiActiveChipContent
+                        ),
+                        border = null
+                    )
+                }
 
-                    // YOLO Mode Chip
-                    item {
-                        FilterChip(
-                            selected = isYoloModeActive,
-                            onClick = onToggleYolo,
-                            modifier = Modifier.height(28.dp),
-                            shape = RoundedCornerShape(8.dp),
-                            label = {
-                                Text(
-                                    text = stringResource(R.string.chip_yolo),
-                                    fontSize = 11.sp
-                                )
-                            },
-                            leadingIcon = {
-                                Icon(
-                                    imageVector = Icons.Rounded.Bolt,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                            },
-                            colors = FilterChipDefaults.filterChipColors(
-                                containerColor = GeminiSurfaceVariant,
-                                labelColor = GeminiTextSecondary,
-                                iconColor = GeminiTextSecondary,
-                                selectedContainerColor = GeminiActiveChipContainer,
-                                selectedLabelColor = GeminiActiveChipContent,
-                                selectedLeadingIconColor = GeminiActiveChipContent
-                            ),
-                            border = null
-                        )
-                    }
+                // Canvas Chip
+                item {
+                    FilterChip(
+                        selected = false,
+                        onClick = onOpenCanvas,
+                        modifier = Modifier.height(34.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        label = {
+                            Text(
+                                text = stringResource(R.string.chip_canvas),
+                                fontSize = 12.sp
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Rounded.DashboardCustomize,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            containerColor = GeminiSurfaceVariant,
+                            labelColor = GeminiTextSecondary,
+                            iconColor = GeminiTextSecondary
+                        ),
+                        border = null
+                    )
+                }
+
+                // YOLO Mode Chip
+                item {
+                    FilterChip(
+                        selected = isYoloModeActive,
+                        onClick = onToggleYolo,
+                        modifier = Modifier.height(34.dp),
+                        shape = RoundedCornerShape(10.dp),
+                        label = {
+                            Text(
+                                text = stringResource(R.string.chip_yolo),
+                                fontSize = 12.sp
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Rounded.Bolt,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            containerColor = GeminiSurfaceVariant,
+                            labelColor = GeminiTextSecondary,
+                            iconColor = GeminiTextSecondary,
+                            selectedContainerColor = GeminiActiveChipContainer,
+                            selectedLabelColor = GeminiActiveChipContent,
+                            selectedLeadingIconColor = GeminiActiveChipContent
+                        ),
+                        border = null
+                    )
                 }
             }
 
@@ -286,7 +282,7 @@ fun GeminiBottomCapsule(
                 LazyRow(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     itemsIndexed(attachedImages) { index, base64Str ->
@@ -302,8 +298,8 @@ fun GeminiBottomCapsule(
 
                         Box(
                             modifier = Modifier
-                                .size(52.dp)
-                                .clip(RoundedCornerShape(8.dp))
+                                .size(58.dp)
+                                .clip(RoundedCornerShape(10.dp))
                                 .background(GeminiSurfaceVariant)
                         ) {
                             if (bitmap != null) {
@@ -317,9 +313,9 @@ fun GeminiBottomCapsule(
                             Box(
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)
-                                    .padding(2.dp)
-                                    .size(16.dp)
-                                    .background(Color.Black.copy(alpha = 0.65f), CircleShape)
+                                    .padding(3.dp)
+                                    .size(20.dp)
+                                    .background(Color.Black.copy(alpha = 0.7f), CircleShape)
                                     .clickable { onRemoveAttachedImage(index) },
                                 contentAlignment = Alignment.Center
                             ) {
@@ -327,7 +323,7 @@ fun GeminiBottomCapsule(
                                     imageVector = Icons.Default.Close,
                                     contentDescription = "Hapus gambar",
                                     tint = Color.White,
-                                    modifier = Modifier.size(10.dp)
+                                    modifier = Modifier.size(12.dp)
                                 )
                             }
                         }
@@ -336,110 +332,111 @@ fun GeminiBottomCapsule(
             }
 
             // Main Input Row
-            CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 0.dp) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 4.dp, vertical = 2.dp),
-                    verticalAlignment = Alignment.CenterVertically
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Attachment Button
+                IconButton(
+                    onClick = onAttachImage,
+                    modifier = Modifier.size(42.dp)
                 ) {
-                    // Attachment Button
-                    IconButton(
-                        onClick = onAttachImage,
-                        modifier = Modifier.size(34.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.AddCircleOutline,
-                            contentDescription = stringResource(R.string.cd_attach),
-                            tint = GeminiTextSecondary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-
-                    // Camera Button
-                    IconButton(
-                        onClick = onCaptureCamera,
-                        modifier = Modifier.size(34.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.PhotoCamera,
-                            contentDescription = stringResource(R.string.cd_camera),
-                            tint = GeminiTextSecondary,
-                            modifier = Modifier.size(20.dp)
-                        )
-                    }
-
-                    Spacer(Modifier.width(4.dp))
-
-                    // Text Input
-                    BasicTextField(
-                        value = inputText,
-                        onValueChange = onInputTextChanged,
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(vertical = 4.dp),
-                        textStyle = MaterialTheme.typography.bodyMedium.copy(
-                            color = GeminiTextPrimary,
-                            fontSize = 14.sp
-                        ),
-                        maxLines = 4,
-                        cursorBrush = SolidColor(GeminiPrimary),
-                        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
-                        decorationBox = { innerTextField ->
-                            Box(
-                                modifier = Modifier.fillMaxWidth(),
-                                contentAlignment = Alignment.CenterStart
-                            ) {
-                                if (inputText.isEmpty()) {
-                                    Text(
-                                        text = stringResource(R.string.input_placeholder),
-                                        style = MaterialTheme.typography.bodyMedium.copy(fontSize = 14.sp),
-                                        color = GeminiTextSecondary.copy(alpha = 0.7f),
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                                innerTextField()
-                            }
-                        }
+                    Icon(
+                        imageVector = Icons.Rounded.AddCircleOutline,
+                        contentDescription = stringResource(R.string.cd_attach),
+                        tint = GeminiTextSecondary,
+                        modifier = Modifier.size(22.dp)
                     )
+                }
 
-                    Spacer(Modifier.width(6.dp))
+                // Camera Button
+                IconButton(
+                    onClick = onCaptureCamera,
+                    modifier = Modifier.size(42.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.PhotoCamera,
+                        contentDescription = stringResource(R.string.cd_camera),
+                        tint = GeminiTextSecondary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
 
-                    // Send / Stop Button
-                    if (isStreaming) {
-                        IconButton(
-                            onClick = onStopStreaming,
+                Spacer(Modifier.width(4.dp))
+
+                // Text Input
+                BasicTextField(
+                    value = inputText,
+                    onValueChange = onInputTextChanged,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(vertical = 4.dp),
+                    textStyle = MaterialTheme.typography.bodyLarge.copy(
+                        color = GeminiTextPrimary,
+                        fontSize = 15.sp,
+                        lineHeight = 22.sp
+                    ),
+                    maxLines = 5,
+                    cursorBrush = SolidColor(GeminiPrimary),
+                    keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+                    decorationBox = { innerTextField ->
+                        Box(
                             modifier = Modifier
-                                .size(34.dp)
-                                .background(GeminiError, CircleShape)
+                                .fillMaxWidth()
+                                .padding(vertical = 2.dp),
+                            contentAlignment = Alignment.CenterStart
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.Stop,
-                                contentDescription = stringResource(R.string.cd_stop),
-                                tint = GeminiBackground,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-                    } else {
-                        val canSend = inputText.isNotBlank() || attachedImages.isNotEmpty()
-                        IconButton(
-                            onClick = onSend,
-                            enabled = canSend,
-                            modifier = Modifier
-                                .size(34.dp)
-                                .background(
-                                    if (canSend) GeminiPrimary else GeminiSurfaceVariant,
-                                    CircleShape
+                            if (inputText.isEmpty()) {
+                                Text(
+                                    text = stringResource(R.string.input_placeholder),
+                                    style = MaterialTheme.typography.bodyLarge.copy(fontSize = 15.sp),
+                                    color = GeminiTextSecondary.copy(alpha = 0.7f),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
                                 )
-                        ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.Send,
-                                contentDescription = stringResource(R.string.cd_send),
-                                tint = if (canSend) GeminiBackground else GeminiTextSecondary,
-                                modifier = Modifier.size(16.dp)
-                            )
+                            }
+                            innerTextField()
                         }
+                    }
+                )
+
+                Spacer(Modifier.width(6.dp))
+
+                // Send / Stop Button
+                if (isStreaming) {
+                    IconButton(
+                        onClick = onStopStreaming,
+                        modifier = Modifier
+                            .size(42.dp)
+                            .background(GeminiError, CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Stop,
+                            contentDescription = stringResource(R.string.cd_stop),
+                            tint = GeminiBackground,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                } else {
+                    val canSend = inputText.isNotBlank() || attachedImages.isNotEmpty()
+                    IconButton(
+                        onClick = onSend,
+                        enabled = canSend,
+                        modifier = Modifier
+                            .size(42.dp)
+                            .background(
+                                if (canSend) GeminiPrimary else GeminiSurfaceVariant,
+                                CircleShape
+                            )
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Send,
+                            contentDescription = stringResource(R.string.cd_send),
+                            tint = if (canSend) GeminiBackground else GeminiTextSecondary,
+                            modifier = Modifier.size(19.dp)
+                        )
                     }
                 }
             }
