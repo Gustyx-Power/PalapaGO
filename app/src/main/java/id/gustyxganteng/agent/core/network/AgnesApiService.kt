@@ -13,7 +13,9 @@ import id.gustyxganteng.agent.core.network.dto.ToolDto
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.add
+import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
@@ -90,9 +92,33 @@ class AgnesApiServiceImpl(
                 }
             } else null
 
+            val contentElement = when {
+                msg.imagesBase64.isNotEmpty() -> {
+                    buildJsonArray {
+                        val textToUse = if (msg.content.isNotEmpty()) msg.content else "Analisis gambar yang dilampirkan ini."
+                        add(buildJsonObject {
+                            put("type", "text")
+                            put("text", textToUse)
+                        })
+                        for (img in msg.imagesBase64) {
+                            val dataUri = if (img.startsWith("data:")) img else "data:image/jpeg;base64,$img"
+                            add(buildJsonObject {
+                                put("type", "image_url")
+                                put("image_url", buildJsonObject {
+                                    put("url", dataUri)
+                                })
+                            })
+                        }
+                    }
+                }
+                msg.content.isNotEmpty() -> JsonPrimitive(msg.content)
+                toolCallsDto != null -> null
+                else -> JsonPrimitive("")
+            }
+
             ChatMessageDto(
                 role = roleStr,
-                content = if (msg.content.isNotEmpty()) msg.content else if (toolCallsDto != null) null else "",
+                content = contentElement,
                 reasoningContent = msg.reasoningContent,
                 toolCalls = toolCallsDto,
                 toolCallId = msg.toolCallId

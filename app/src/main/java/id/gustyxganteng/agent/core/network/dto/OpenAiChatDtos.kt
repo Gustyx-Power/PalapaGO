@@ -4,6 +4,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonClassDiscriminator
+import kotlinx.serialization.json.JsonElement
 
 @Serializable
 data class ThinkingConfigDto(
@@ -41,7 +42,7 @@ data class StreamOptionsDto(
 @Serializable
 data class ChatMessageDto(
     val role: String,
-    val content: String? = null,
+    val content: JsonElement? = null,
     @SerialName("reasoning_content")
     val reasoningContent: String? = null,
     @SerialName("tool_calls")

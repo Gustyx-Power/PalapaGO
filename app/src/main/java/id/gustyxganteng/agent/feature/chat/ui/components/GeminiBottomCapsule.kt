@@ -12,21 +12,27 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.rounded.AddCircleOutline
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.DashboardCustomize
 import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.Language
+import androidx.compose.material.icons.rounded.PhotoCamera
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -38,9 +44,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
@@ -67,12 +78,14 @@ fun GeminiBottomCapsule(
     isWebSearchActive: Boolean,
     isYoloModeActive: Boolean,
     isStreaming: Boolean,
-    attachedImagesCount: Int,
+    attachedImages: List<String> = emptyList(),
+    onRemoveAttachedImage: (Int) -> Unit = {},
     onOpenWorkspaceManager: () -> Unit,
     onToggleWebSearch: () -> Unit,
     onOpenCanvas: () -> Unit,
     onToggleYolo: () -> Unit,
     onAttachImage: () -> Unit,
+    onCaptureCamera: () -> Unit = {},
     onSend: () -> Unit,
     onStopStreaming: () -> Unit,
     modifier: Modifier = Modifier
@@ -233,25 +246,55 @@ fun GeminiBottomCapsule(
                 }
             }
 
-            // Attached Images Pill Row
-            if (attachedImagesCount > 0) {
-                Row(
+            // Attached Images Thumbnail Preview Row
+            if (attachedImages.isNotEmpty()) {
+                LazyRow(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp, vertical = 2.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    for (i in 1..attachedImagesCount) {
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = GeminiSurfaceVariant
+                    itemsIndexed(attachedImages) { index, base64Str ->
+                        val bitmap = remember(base64Str) {
+                            try {
+                                val cleanBase64 = if (base64Str.contains(",")) base64Str.substringAfter(",") else base64Str
+                                val bytes = android.util.Base64.decode(cleanBase64, android.util.Base64.DEFAULT)
+                                android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+                            } catch (_: Exception) {
+                                null
+                            }
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .size(52.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(GeminiSurfaceVariant)
                         ) {
-                            Text(
-                                text = "Image $i",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = GeminiTextSecondary,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
+                            if (bitmap != null) {
+                                Image(
+                                    bitmap = bitmap,
+                                    contentDescription = "Lampiran gambar $index",
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Crop
+                                )
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(2.dp)
+                                    .size(16.dp)
+                                    .background(Color.Black.copy(alpha = 0.65f), CircleShape)
+                                    .clickable { onRemoveAttachedImage(index) },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Hapus gambar",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(10.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -273,6 +316,19 @@ fun GeminiBottomCapsule(
                         Icon(
                             imageVector = Icons.Rounded.AddCircleOutline,
                             contentDescription = stringResource(R.string.cd_attach),
+                            tint = GeminiTextSecondary,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+
+                    // Camera Button
+                    IconButton(
+                        onClick = onCaptureCamera,
+                        modifier = Modifier.size(34.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.PhotoCamera,
+                            contentDescription = stringResource(R.string.cd_camera),
                             tint = GeminiTextSecondary,
                             modifier = Modifier.size(20.dp)
                         )
@@ -331,20 +387,21 @@ fun GeminiBottomCapsule(
                             )
                         }
                     } else {
+                        val canSend = inputText.isNotBlank() || attachedImages.isNotEmpty()
                         IconButton(
                             onClick = onSend,
-                            enabled = inputText.isNotBlank(),
+                            enabled = canSend,
                             modifier = Modifier
                                 .size(34.dp)
                                 .background(
-                                    if (inputText.isNotBlank()) GeminiPrimary else GeminiSurfaceVariant,
+                                    if (canSend) GeminiPrimary else GeminiSurfaceVariant,
                                     CircleShape
                                 )
                         ) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.Send,
                                 contentDescription = stringResource(R.string.cd_send),
-                                tint = if (inputText.isNotBlank()) GeminiBackground else GeminiTextSecondary,
+                                tint = if (canSend) GeminiBackground else GeminiTextSecondary,
                                 modifier = Modifier.size(16.dp)
                             )
                         }

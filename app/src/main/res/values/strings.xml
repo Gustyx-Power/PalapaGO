@@ -132,4 +132,6 @@
     <string name="service_channel_name">GG Agent Background Execution</string>
     <string name="service_channel_desc">Notifications during multi-turn agent execution</string>
     <string name="image_compress_failed">Failed to compress image: %1$s</string>
+    <string name="cd_camera">Camera</string>
+    <string name="camera_permission_required">Camera permission is required to capture photos.</string>
 </resources>

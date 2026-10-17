@@ -1,10 +1,15 @@
 package id.gustyxganteng.agent.feature.chat
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,6 +20,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -61,7 +67,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
@@ -139,6 +148,78 @@ fun ChatScreen(
                     ).show()
                 }
             }
+        }
+    }
+
+    var tempCameraUri by remember { mutableStateOf<Uri?>(null) }
+    var tempCameraFile by remember { mutableStateOf<File?>(null) }
+
+    val cameraLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success: Boolean ->
+        if (success) {
+            val uri = tempCameraUri
+            if (uri != null) {
+                scope.launch {
+                    try {
+                        val base64 = ImageCompressor.compressUriToBase64(context, uri)
+                        attachedImages.add(base64)
+                    } catch (e: Exception) {
+                        Toast.makeText(
+                            context,
+                            context.getString(R.string.image_compress_failed, e.message ?: ""),
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    } finally {
+                        tempCameraFile?.delete()
+                        tempCameraFile = null
+                        tempCameraUri = null
+                    }
+                }
+            }
+        } else {
+            tempCameraFile?.delete()
+            tempCameraFile = null
+            tempCameraUri = null
+        }
+    }
+
+    val cameraPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted: Boolean ->
+        if (isGranted) {
+            try {
+                val file = File.createTempFile("camera_capture_", ".jpg", context.cacheDir)
+                tempCameraFile = file
+                val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                tempCameraUri = uri
+                cameraLauncher.launch(uri)
+            } catch (e: Exception) {
+                Toast.makeText(context, e.message ?: "Failed to open camera", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            Toast.makeText(context, context.getString(R.string.camera_permission_required), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    val launchCamera: () -> Unit = {
+        val hasCameraPermission = ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.CAMERA
+        ) == PackageManager.PERMISSION_GRANTED
+
+        if (hasCameraPermission) {
+            try {
+                val file = File.createTempFile("camera_capture_", ".jpg", context.cacheDir)
+                tempCameraFile = file
+                val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                tempCameraUri = uri
+                cameraLauncher.launch(uri)
+            } catch (e: Exception) {
+                Toast.makeText(context, e.message ?: "Failed to open camera", Toast.LENGTH_SHORT).show()
+            }
+        } else {
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
         }
     }
 
@@ -550,7 +631,12 @@ fun ChatScreen(
                     isWebSearchActive = uiState.appSettings?.webSearchEnabled == true,
                     isYoloModeActive = uiState.appSettings?.yoloMode == true,
                     isStreaming = isStreamingActive,
-                    attachedImagesCount = attachedImages.size,
+                    attachedImages = attachedImages.toList(),
+                    onRemoveAttachedImage = { index ->
+                        if (index in attachedImages.indices) {
+                            attachedImages.removeAt(index)
+                        }
+                    },
                     onOpenWorkspaceManager = { showWorkspaceManager = true },
                     onToggleWebSearch = { viewModel.toggleWebSearch() },
                     onOpenCanvas = {
@@ -564,9 +650,11 @@ fun ChatScreen(
                     },
                     onToggleYolo = { viewModel.toggleYoloMode() },
                     onAttachImage = { imagePicker.launch("image/*") },
+                    onCaptureCamera = launchCamera,
                     onSend = {
-                        if (inputText.isNotBlank()) {
-                            viewModel.sendMessage(inputText, attachedImages.toList())
+                        if (inputText.isNotBlank() || attachedImages.isNotEmpty()) {
+                            val promptText = if (inputText.isNotBlank()) inputText else "Analisis gambar yang dilampirkan ini."
+                            viewModel.sendMessage(promptText, attachedImages.toList())
                             inputText = ""
                             attachedImages.clear()
                         }
@@ -659,11 +747,42 @@ fun ChatMessageItem(
                 modifier = Modifier.widthIn(max = 300.dp)
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
-                    Text(
-                        text = message.content,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = GeminiTextPrimary
-                    )
+                    if (message.imagesBase64.isNotEmpty()) {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(bottom = if (message.content.isNotBlank()) 8.dp else 0.dp)
+                        ) {
+                            message.imagesBase64.forEach { base64Str ->
+                                val bitmap = remember(base64Str) {
+                                    try {
+                                        val cleanBase64 = if (base64Str.contains(",")) base64Str.substringAfter(",") else base64Str
+                                        val bytes = android.util.Base64.decode(cleanBase64, android.util.Base64.DEFAULT)
+                                        android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+                                    } catch (_: Exception) {
+                                        null
+                                    }
+                                }
+                                if (bitmap != null) {
+                                    Image(
+                                        bitmap = bitmap,
+                                        contentDescription = "Gambar terlampir",
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .heightIn(max = 240.dp)
+                                            .clip(RoundedCornerShape(12.dp)),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    if (message.content.isNotBlank()) {
+                        Text(
+                            text = message.content,
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = GeminiTextPrimary
+                        )
+                    }
                 }
             }
         }
