@@ -20,6 +20,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,6 +29,10 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+
+private class StreamTimeoutException(message: String, cause: Throwable? = null) : java.io.IOException(message, cause)
+
+private const val THINK_ENFORCEMENT = "\n\n[Instruction: You MUST begin your response with <think> and write your deep internal reasoning monologue before any tool call or response text.]"
 
 sealed interface AgentState {
     data object Idle : AgentState
@@ -148,8 +153,8 @@ class AgentOrchestrator(
         var continueLoop = true
         var turnCount = 0
         val maxTurns = if (claudeMaxMode) 25 else 8
-        val budgetTokens = if (claudeMaxMode) 16384 else 4096
-        val maxTokens = if (claudeMaxMode) 32768 else 8192
+        val budgetTokens = if (claudeMaxMode) 24576 else 4096
+        val maxTokens = if (claudeMaxMode) 40960 else 8192
         val reasoningEffort = if (claudeMaxMode) "high" else "medium"
 
         // Kumpulkan definisi tool yang aktif (FileSystem dan Shell selalu aktif dengan default /storage/emulated/0)
@@ -180,8 +185,7 @@ class AgentOrchestrator(
             messages.add(systemMessage)
             filteredDbMessages.forEachIndexed { index, msg ->
                 if (index == filteredDbMessages.lastIndex && msg.role == MessageRole.USER) {
-                    val thinkEnforcement = "\n\n[Instruction: You MUST begin your response with <think> and write your deep internal reasoning monologue before any tool call or response text.]"
-                    messages.add(msg.copy(content = msg.content + thinkEnforcement))
+                    messages.add(msg.copy(content = msg.content + THINK_ENFORCEMENT))
                 } else {
                     messages.add(msg)
                 }
@@ -210,74 +214,173 @@ class AgentOrchestrator(
                 currentActivity = initialActivity
             )
 
-            agnesApiService.streamChat(
-                baseUrl = baseUrl,
-                apiKey = apiKey,
-                model = model,
-                messages = messages,
-                tools = if (activeTools.isNotEmpty()) activeTools else null,
-                budgetTokens = budgetTokens,
-                maxTokens = maxTokens,
-                reasoningEffort = reasoningEffort
-            ).collect { event ->
-                when (event) {
-                    is StreamEvent.ReasoningDelta -> {
-                        reasoningBuilder.append(event.text)
-                        val elapsed = System.currentTimeMillis() - thinkingStart
-                        thinkingDuration = elapsed
-                        val tokens = (reasoningBuilder.length / 4).coerceAtLeast(1)
+            var streamCompleted = false
+            var streamAttempt = 0
+            val maxStreamRetries = 3
+            var currentBudgetTokens = budgetTokens
+            var streamMessages = messages.toMutableList()
 
-                        val lower = reasoningBuilder.toString().lowercase()
-                        val thinkingActivity = when {
-                            lower.contains("read_file") || lower.contains("membaca") || lower.contains("baca berkas") -> "Menganalisis & membaca berkas..."
-                            lower.contains("apply_diff") || lower.contains("write_file") || lower.contains("refactor") || lower.contains("modifikasi") -> "Merencanakan perubahan & refactoring..."
-                            lower.contains("execute_shell") || lower.contains("terminal") || lower.contains("perintah") -> "Mempersiapkan eksekusi terminal..."
-                            lower.contains("web_search") || lower.contains("mencari") || lower.contains("search") -> "Mempersiapkan pencarian referensi..."
-                            lower.contains("list_directory") || lower.contains("direktori") || lower.contains("struktur") -> "Memeriksa struktur proyek..."
-                            else -> "Sedang menalar & memikirkan solusi..."
-                        }
+            while (!streamCompleted && streamAttempt <= maxStreamRetries) {
+                try {
+                    agnesApiService.streamChat(
+                        baseUrl = baseUrl,
+                        apiKey = apiKey,
+                        model = model,
+                        messages = streamMessages,
+                        tools = if (activeTools.isNotEmpty()) activeTools else null,
+                        budgetTokens = currentBudgetTokens,
+                        maxTokens = maxTokens,
+                        reasoningEffort = reasoningEffort
+                    ).collect { event ->
+                        when (event) {
+                            is StreamEvent.ReasoningDelta -> {
+                                reasoningBuilder.append(event.text)
+                                val elapsed = System.currentTimeMillis() - thinkingStart
+                                thinkingDuration = elapsed
+                                val tokens = (reasoningBuilder.length / 4).coerceAtLeast(1)
 
-                        _agentState.value = AgentState.Streaming(
-                            content = contentBuilder.toString(),
-                            reasoning = reasoningBuilder.toString(),
-                            thinkingElapsedMs = elapsed,
-                            isThinking = true,
-                            thinkingTokens = tokens,
-                            currentActivity = thinkingActivity
-                        )
-                    }
-                    is StreamEvent.ContentDelta -> {
-                        if (isCurrentlyThinking) {
-                            isCurrentlyThinking = false
-                            if (thinkingDuration == null && reasoningBuilder.isNotEmpty()) {
-                                thinkingDuration = System.currentTimeMillis() - thinkingStart
+                                val lower = reasoningBuilder.toString().lowercase()
+                                val thinkingActivity = when {
+                                    lower.contains("read_file") || lower.contains("membaca") || lower.contains("baca berkas") -> "Menganalisis & membaca berkas..."
+                                    lower.contains("apply_diff") || lower.contains("write_file") || lower.contains("refactor") || lower.contains("modifikasi") -> "Merencanakan perubahan & refactoring..."
+                                    lower.contains("execute_shell") || lower.contains("terminal") || lower.contains("perintah") -> "Mempersiapkan eksekusi terminal..."
+                                    lower.contains("web_search") || lower.contains("mencari") || lower.contains("search") -> "Mempersiapkan pencarian referensi..."
+                                    lower.contains("list_directory") || lower.contains("direktori") || lower.contains("struktur") -> "Memeriksa struktur proyek..."
+                                    else -> "Sedang menalar & memikirkan solusi..."
+                                }
+
+                                _agentState.value = AgentState.Streaming(
+                                    content = contentBuilder.toString(),
+                                    reasoning = reasoningBuilder.toString(),
+                                    thinkingElapsedMs = elapsed,
+                                    isThinking = true,
+                                    thinkingTokens = tokens,
+                                    currentActivity = thinkingActivity
+                                )
                             }
+                            is StreamEvent.ContentDelta -> {
+                                if (isCurrentlyThinking) {
+                                    isCurrentlyThinking = false
+                                    if (thinkingDuration == null && reasoningBuilder.isNotEmpty()) {
+                                        thinkingDuration = System.currentTimeMillis() - thinkingStart
+                                    }
+                                }
+                                contentBuilder.append(event.text)
+                                val tokens = if (reasoningBuilder.isNotEmpty()) {
+                                    (reasoningBuilder.length / 4).coerceAtLeast(1)
+                                } else 0
+                                _agentState.value = AgentState.Streaming(
+                                    content = contentBuilder.toString(),
+                                    reasoning = reasoningBuilder.toString().ifEmpty { null },
+                                    thinkingElapsedMs = thinkingDuration,
+                                    isThinking = false,
+                                    thinkingTokens = tokens,
+                                    currentActivity = "Menulis respons..."
+                                )
+                            }
+                            is StreamEvent.ToolCallChunk -> {
+                                if (isCurrentlyThinking) {
+                                    isCurrentlyThinking = false
+                                    if (thinkingDuration == null && reasoningBuilder.isNotEmpty()) {
+                                        thinkingDuration = System.currentTimeMillis() - thinkingStart
+                                    }
+                                }
+                                val builder = toolCallMap.getOrPut(event.index) { MutableToolCallBuilder() }
+                                event.id?.let { builder.id = it }
+                                event.name?.let { builder.name = it }
+                                builder.arguments.append(event.argumentsDelta)
+                            }
+                            is StreamEvent.UsageUpdate -> {
+                                usage = event.usage
+                            }
+                            is StreamEvent.StreamCompleted -> {
+                                streamCompleted = true
+                            }
+                            is StreamEvent.StreamError -> {
+                                val err = event.error
+                                val errMsg = event.message
+                                val isTimeout = err is java.net.SocketTimeoutException ||
+                                    err is java.io.InterruptedIOException ||
+                                    err is java.net.ConnectException ||
+                                    err is java.net.SocketException ||
+                                    err.message?.contains("timeout", ignoreCase = true) == true ||
+                                    errMsg.contains("timeout", ignoreCase = true) ||
+                                    errMsg.contains("Batas waktu", ignoreCase = true) ||
+                                    err.message?.contains("unexpected end of stream", ignoreCase = true) == true ||
+                                    err.message?.contains("connection reset", ignoreCase = true) == true ||
+                                    err.message?.contains("broken pipe", ignoreCase = true) == true
+
+                                if (isTimeout) {
+                                    throw StreamTimeoutException(errMsg, err)
+                                } else {
+                                    throw err
+                                }
+                            }
+                            else -> {}
                         }
-                        contentBuilder.append(event.text)
-                        val tokens = if (reasoningBuilder.isNotEmpty()) {
-                            (reasoningBuilder.length / 4).coerceAtLeast(1)
-                        } else 0
+                    }
+                    streamCompleted = true
+                } catch (e: CancellationException) {
+                    throw e
+                } catch (e: Throwable) {
+                    val isTimeout = e is StreamTimeoutException ||
+                        e is java.net.SocketTimeoutException ||
+                        e is java.io.InterruptedIOException ||
+                        e is java.net.ConnectException ||
+                        e is java.net.SocketException ||
+                        e.message?.contains("timeout", ignoreCase = true) == true ||
+                        e.message?.contains("Batas waktu", ignoreCase = true) == true ||
+                        e.message?.contains("unexpected end of stream", ignoreCase = true) == true ||
+                        e.message?.contains("connection reset", ignoreCase = true) == true ||
+                        e.message?.contains("broken pipe", ignoreCase = true) == true
+
+                    if (isTimeout && streamAttempt < maxStreamRetries) {
+                        streamAttempt++
+                        val currentReasoning = reasoningBuilder.toString().trim()
+                        val currentContent = contentBuilder.toString().trim()
+
                         _agentState.value = AgentState.Streaming(
                             content = contentBuilder.toString(),
-                            reasoning = reasoningBuilder.toString().ifEmpty { null },
-                            thinkingElapsedMs = thinkingDuration,
+                            reasoning = currentReasoning.ifEmpty { null },
+                            thinkingElapsedMs = thinkingDuration ?: (System.currentTimeMillis() - thinkingStart),
                             isThinking = false,
-                            thinkingTokens = tokens,
-                            currentActivity = "Menulis respons..."
+                            thinkingTokens = if (currentReasoning.isNotEmpty()) (currentReasoning.length / 4).coerceAtLeast(1) else 0,
+                            currentActivity = "Batas waktu tercapai. Otomatis melanjutkan respons ($streamAttempt/$maxStreamRetries)..."
                         )
+
+                        streamMessages = messages.map { msg ->
+                            if (msg.role == MessageRole.USER && msg.content.contains(THINK_ENFORCEMENT)) {
+                                msg.copy(content = msg.content.replace(THINK_ENFORCEMENT, ""))
+                            } else {
+                                msg
+                            }
+                        }.toMutableList()
+
+                        if (currentReasoning.isNotEmpty() && currentContent.isEmpty()) {
+                            currentBudgetTokens = 0
+                            toolCallMap.clear()
+                            streamMessages.add(
+                                Message(
+                                    sessionId = sessionId,
+                                    role = MessageRole.USER,
+                                    content = "[System Directive: Koneksi sebelumnya timeout tepat setelah proses berpikir selesai. Analisis penalaran Anda:\n\n\"\"\"\n$currentReasoning\n\"\"\"\n\nJANGAN ulangi tag <think>. Langsung lanjutkan pemanggilan tool atau penulisan respons sekarang.]"
+                                )
+                            )
+                        } else if (currentContent.isNotEmpty()) {
+                            currentBudgetTokens = 0
+                            streamMessages.add(
+                                Message(
+                                    sessionId = sessionId,
+                                    role = MessageRole.USER,
+                                    content = "[System Directive: Koneksi streaming terputus saat menulis respons. Bagian teks yang telah diterima:\n\n\"\"\"\n$currentContent\n\"\"\"\n\nLanjutkan teks berikutnya dari titik tersebut sampai tuntas.]"
+                                )
+                            )
+                        }
+
+                        delay(1500)
+                    } else {
+                        throw e
                     }
-                    is StreamEvent.ToolCallChunk -> {
-                        val builder = toolCallMap.getOrPut(event.index) { MutableToolCallBuilder() }
-                        event.id?.let { builder.id = it }
-                        event.name?.let { builder.name = it }
-                        builder.arguments.append(event.argumentsDelta)
-                    }
-                    is StreamEvent.UsageUpdate -> {
-                        usage = event.usage
-                    }
-                    is StreamEvent.StreamCompleted -> {}
-                    is StreamEvent.StreamError -> throw event.error
-                    else -> {}
                 }
             }
 

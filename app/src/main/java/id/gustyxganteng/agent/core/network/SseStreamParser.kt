@@ -266,7 +266,14 @@ class SseStreamParser(
         } catch (e: CancellationException) {
             throw e
         } catch (e: Throwable) {
-            val isTimeout = e is java.net.SocketTimeoutException || e.message?.contains("timeout", ignoreCase = true) == true
+            val isTimeout = e is java.net.SocketTimeoutException ||
+                e is java.io.InterruptedIOException ||
+                e is java.net.ConnectException ||
+                e is java.net.SocketException ||
+                e.message?.contains("timeout", ignoreCase = true) == true ||
+                e.message?.contains("unexpected end of stream", ignoreCase = true) == true ||
+                e.message?.contains("connection reset", ignoreCase = true) == true ||
+                e.message?.contains("broken pipe", ignoreCase = true) == true
             val errorMsg = if (isTimeout) {
                 "Koneksi terputus karena batas waktu (Timeout) saat menerima respons. Silakan tekan Coba Lagi."
             } else {

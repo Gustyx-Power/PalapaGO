@@ -135,8 +135,8 @@ class AgnesApiServiceImpl(
             tools = if (toolsDto.isNullOrEmpty()) null else toolsDto,
             stream = true,
             maxTokens = maxTokens,
-            thinking = id.gustyxganteng.agent.core.network.dto.ThinkingConfigDto(budgetTokens = budgetTokens),
-            reasoningEffort = reasoningEffort
+            thinking = if (budgetTokens > 0) id.gustyxganteng.agent.core.network.dto.ThinkingConfigDto(budgetTokens = budgetTokens) else null,
+            reasoningEffort = if (budgetTokens > 0) reasoningEffort else null
         )
 
         val jsonBody = json.encodeToString(requestPayload)
