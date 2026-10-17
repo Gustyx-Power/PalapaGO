@@ -353,7 +353,7 @@ fun ChatScreen(
 
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Rounded.Settings, contentDescription = null, tint = GeminiPrimary) },
-                        label = { Text(stringResource(R.string.settings_and_byok), color = GeminiTextPrimary) },
+                        label = { Text(stringResource(R.string.settings_title), color = GeminiTextPrimary) },
                         selected = false,
                         onClick = {
                             scope.launch { drawerState.close() }

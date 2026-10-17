@@ -18,15 +18,19 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Hub
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -63,7 +67,10 @@ fun NeuralSpiderStatsCard(
     isDrawerOpen: Boolean,
     modifier: Modifier = Modifier
 ) {
+    var showDialog by remember { mutableStateOf(false) }
+
     Card(
+        onClick = { showDialog = true },
         shape = RoundedCornerShape(14.dp),
         colors = CardDefaults.cardColors(containerColor = GeminiSurface),
         modifier = modifier
@@ -160,12 +167,74 @@ fun NeuralSpiderStatsCard(
             Spacer(Modifier.height(4.dp))
 
             Text(
-                text = "Akumulatif permanen sistem (lintas sesi)",
+                text = "Akumulatif permanen sistem • Ketuk untuk detail",
                 fontSize = 9.sp,
                 color = GeminiTextSecondary.copy(alpha = 0.7f),
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
         }
+    }
+
+    if (showDialog) {
+        AlertDialog(
+            onDismissRequest = { showDialog = false },
+            containerColor = GeminiSurface,
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Rounded.Hub,
+                        contentDescription = null,
+                        tint = GeminiPrimary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        text = "Detail Telemetri Sistem",
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                        color = GeminiTextPrimary
+                    )
+                }
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Text(
+                        text = "Data telemetri di bawah ini dicatat secara permanen di DataStore lokal dan tidak akan terhapus meskipun sesi percakapan dihapus.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = GeminiTextSecondary
+                    )
+                    HorizontalDivider(color = GeminiOutline.copy(alpha = 0.3f))
+                    TelemetryDetailRow("Total Eksekusi Request", "${stats.totalRequests} kali")
+                    TelemetryDetailRow("Prompt Tokens (Konteks Masuk)", String.format(Locale.US, "%,d token", stats.promptTokens))
+                    TelemetryDetailRow("Completion Tokens (Keluaran)", String.format(Locale.US, "%,d token", stats.completionTokens))
+                    TelemetryDetailRow("Total Token Kumulatif", String.format(Locale.US, "%,d token", stats.totalTokens))
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showDialog = false }) {
+                    Text("Tutup", color = GeminiPrimary, fontWeight = FontWeight.Bold)
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun TelemetryDetailRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = GeminiTextSecondary
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
+            color = GeminiTextPrimary
+        )
     }
 }
 
