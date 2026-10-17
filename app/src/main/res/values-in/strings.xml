@@ -13,7 +13,7 @@
     <!-- Drawer -->
     <string name="new_chat">Percakapan Baru</string>
     <string name="chat_history">Riwayat Sesi</string>
-    <string name="settings_and_byok">Pengaturan &amp; BYOK</string>
+    <string name="settings_and_byok">Pengaturan</string>
     <string name="delete">Hapus</string>
     <string name="default_session_title">Obrolan Baru</string>
 

@@ -54,6 +54,20 @@ class AcademicTool(
                         required = listOf("doi")
                     )
                 )
+            ),
+            ToolDefinition(
+                function = FunctionSpec(
+                    name = "download_paper_pdf",
+                    description = "Mengunduh file PDF jurnal/paper ilmiah Open-Access langsung ke penyimpanan lokal (folder workspace/papers/ atau /storage/emulated/0/Download/papers/). Menerima link PDF Open-Access atau nomor DOI resmi.",
+                    parameters = ToolParametersSchema(
+                        properties = mapOf(
+                            "url_or_doi" to PropertySchema("string", "URL unduhan PDF langsung atau nomor DOI resmi paper (contoh: 'https://arxiv.org/pdf/...' atau '10.3390/...')."),
+                            "title" to PropertySchema("string", "Judul paper atau nama file yang diinginkan (opsional)."),
+                            "target_dir" to PropertySchema("string", "Nama subfolder relatif di dalam workspace untuk menyimpan PDF (default 'papers').")
+                        ),
+                        required = listOf("url_or_doi")
+                    )
+                )
             )
         )
     }
@@ -729,6 +743,141 @@ class AcademicTool(
     private fun normalizeDoiUrl(doi: String): String {
         val clean = doi.removePrefix("https://doi.org/").removePrefix("http://dx.doi.org/").removePrefix("doi:").trim()
         return "https://doi.org/$clean"
+    }
+
+    suspend fun downloadPaperPdf(
+        toolCallId: String,
+        workspaceRoot: String,
+        args: JsonObject
+    ): ToolExecutionResult = withContext(Dispatchers.IO) {
+        val input = args["url_or_doi"]?.jsonPrimitive?.content?.trim()
+            ?: return@withContext ToolExecutionResult(toolCallId, "download_paper_pdf", stderr = "Parameter url_or_doi wajib diisi.", isSuccess = false)
+        val title = args["title"]?.jsonPrimitive?.content?.trim()
+        val customSubDir = args["target_dir"]?.jsonPrimitive?.content?.trim()?.ifEmpty { "papers" } ?: "papers"
+
+        var downloadUrl: String? = null
+
+        // 1. Jika input adalah DOI, cari link Open Access PDF via OpenAlex
+        if (input.startsWith("10.") || input.contains("doi.org/10.")) {
+            val cleanDoi = input.removePrefix("https://doi.org/").removePrefix("http://dx.doi.org/").removePrefix("doi:").trim()
+            try {
+                val openAlexUrl = "https://api.openalex.org/works/https://doi.org/$cleanDoi?mailto=ggagent@gustyxganteng.id"
+                val req = Request.Builder().url(openAlexUrl).header("Accept", "application/json").build()
+                val resp = httpClient.newCall(req).execute()
+                if (resp.isSuccessful) {
+                    val body = resp.body?.string() ?: "{}"
+                    val obj = json.parseToJsonElement(body).jsonObject
+                    val oaUrl = obj["open_access"]?.jsonObject?.get("oa_url")?.jsonPrimitive?.content
+                    val bestOaUrl = obj["best_oa_location"]?.jsonObject?.get("pdf_url")?.jsonPrimitive?.content
+                        ?: obj["best_oa_location"]?.jsonObject?.get("landing_page_url")?.jsonPrimitive?.content
+                    downloadUrl = bestOaUrl ?: oaUrl
+                }
+            } catch (_: Exception) {
+            }
+
+            if (downloadUrl.isNullOrBlank()) {
+                return@withContext ToolExecutionResult(
+                    toolCallId = toolCallId,
+                    toolName = "download_paper_pdf",
+                    stderr = "Paper dengan DOI '$cleanDoi' tidak memiliki tautan PDF publik gratis (Closed Access / Paywall penerbit).",
+                    isSuccess = false
+                )
+            }
+        } else {
+            downloadUrl = input
+        }
+
+        if (!downloadUrl.startsWith("http://") && !downloadUrl.startsWith("https://")) {
+            return@withContext ToolExecutionResult(
+                toolCallId = toolCallId,
+                toolName = "download_paper_pdf",
+                stderr = "URL PDF tidak valid: $downloadUrl",
+                isSuccess = false
+            )
+        }
+
+        val destinationFolder = if (workspaceRoot.isNotBlank() && workspaceRoot != "/storage/emulated/0") {
+            java.io.File(workspaceRoot, customSubDir)
+        } else {
+            java.io.File("/storage/emulated/0/Download/papers")
+        }
+        if (!destinationFolder.exists()) {
+            destinationFolder.mkdirs()
+        }
+
+        val baseName = if (!title.isNullOrBlank()) {
+            title.replace(Regex("[^a-zA-Z0-9_-]"), "_").take(50).trim('_')
+        } else {
+            "paper_${System.currentTimeMillis()}"
+        }
+        val targetFile = java.io.File(destinationFolder, "$baseName.pdf")
+
+        try {
+            val req = Request.Builder()
+                .url(downloadUrl)
+                .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+                .header("Accept", "application/pdf,application/octet-stream,*/*")
+                .build()
+
+            val resp = httpClient.newCall(req).execute()
+            if (!resp.isSuccessful) {
+                val code = resp.code
+                resp.close()
+                return@withContext ToolExecutionResult(
+                    toolCallId = toolCallId,
+                    toolName = "download_paper_pdf",
+                    stderr = "Server menolak unduhan PDF (HTTP $code) dari $downloadUrl",
+                    isSuccess = false
+                )
+            }
+
+            val body = resp.body ?: return@withContext ToolExecutionResult(
+                toolCallId = toolCallId,
+                toolName = "download_paper_pdf",
+                stderr = "Konten unduhan kosong dari $downloadUrl",
+                isSuccess = false
+            )
+
+            val bytes = body.bytes()
+            if (bytes.size < 1024) {
+                val textSample = String(bytes.take(200).toByteArray())
+                if (textSample.contains("<html", ignoreCase = true)) {
+                    return@withContext ToolExecutionResult(
+                        toolCallId = toolCallId,
+                        toolName = "download_paper_pdf",
+                        stderr = "Tautan unduhan mengembalikan halaman HTML web (bukan file PDF). Kemungkinan penerbit memproteksi unduhan dengan captcha: $downloadUrl",
+                        isSuccess = false
+                    )
+                }
+            }
+
+            targetFile.writeBytes(bytes)
+            val sizeKb = bytes.size / 1024
+            val sizeMb = String.format(java.util.Locale.US, "%.2f MB", sizeKb / 1024.0)
+            val cleanPath = targetFile.absolutePath
+
+            val sb = StringBuilder()
+            sb.appendLine("## Berhasil Mengunduh PDF Jurnal Ilmiah")
+            sb.appendLine("- **Judul:** ${title ?: baseName}")
+            sb.appendLine("- **Ukuran File:** $sizeMb ($sizeKb KB)")
+            sb.appendLine("- **Disimpan di:** `$cleanPath`")
+            sb.appendLine("- **Tautan File:** [Buka PDF](file://$cleanPath)")
+            sb.appendLine("\nFile PDF sudah tersimpan secara lokal dan siap dibaca atau dianalisis.")
+
+            ToolExecutionResult(
+                toolCallId = toolCallId,
+                toolName = "download_paper_pdf",
+                stdout = sb.toString().trim(),
+                isSuccess = true
+            )
+        } catch (e: Exception) {
+            ToolExecutionResult(
+                toolCallId = toolCallId,
+                toolName = "download_paper_pdf",
+                stderr = "Gagal mengunduh file PDF: ${e.message}",
+                isSuccess = false
+            )
+        }
     }
 }
 

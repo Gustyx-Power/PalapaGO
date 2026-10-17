@@ -32,6 +32,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.UUID
 
+import id.gustyxganteng.agent.core.database.GlobalUsageStats
+
 data class ChatUiState(
     val sessions: List<ChatSession> = emptyList(),
     val currentSession: ChatSession? = null,
@@ -41,7 +43,8 @@ data class ChatUiState(
     val rateLimitStatus: RateLimitStatus? = null,
     val appSettings: AppSettings? = null,
     val activeCanvasArtifact: CanvasArtifact? = null,
-    val recentWorkspaces: List<WorkspaceEntity> = emptyList()
+    val recentWorkspaces: List<WorkspaceEntity> = emptyList(),
+    val globalUsageStats: GlobalUsageStats = GlobalUsageStats()
 )
 
 class ChatViewModel(
@@ -78,10 +81,11 @@ class ChatViewModel(
         ) { sessions, currentId, messages, settings, workspaces ->
             SessionContext(sessions, currentId, messages, settings, workspaces)
         },
+        settingsRepository.globalUsageStats,
         orchestrator.agentState,
         _activeCanvas,
         _rateLimitStatus
-    ) { sessionCtx, agentState, canvas, rateLimit ->
+    ) { sessionCtx, globalStats, agentState, canvas, rateLimit ->
         val currentSession = sessionCtx.sessions.find { it.id == sessionCtx.currentId } ?: sessionCtx.sessions.firstOrNull()
         val totalTokens = sessionCtx.messages.mapNotNull { it.tokenUsage?.totalTokens }.maxOrNull() ?: 0
         val rawModel = currentSession?.model ?: sessionCtx.settings.selectedModel
@@ -97,7 +101,8 @@ class ChatViewModel(
             rateLimitStatus = rateLimit,
             appSettings = sessionCtx.settings,
             activeCanvasArtifact = canvas,
-            recentWorkspaces = sessionCtx.recentWorkspaces
+            recentWorkspaces = sessionCtx.recentWorkspaces,
+            globalUsageStats = globalStats
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), ChatUiState())
 

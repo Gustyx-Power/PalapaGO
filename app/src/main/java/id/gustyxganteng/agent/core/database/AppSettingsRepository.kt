@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import id.gustyxganteng.agent.core.network.KeyVault
@@ -13,6 +14,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "gg_agent_settings")
+
+data class GlobalUsageStats(
+    val totalRequests: Long = 0L,
+    val promptTokens: Long = 0L,
+    val completionTokens: Long = 0L,
+    val totalTokens: Long = 0L
+)
 
 data class AppSettings(
     val apiKey: String,
@@ -46,6 +54,10 @@ class AppSettingsRepository(private val context: Context) {
         val CANVAS_ENABLED = booleanPreferencesKey("canvas_enabled")
         val CLAUDE_MAX_MODE = booleanPreferencesKey("claude_max_mode")
         val ACTIVE_SESSION_ID = stringPreferencesKey("active_session_id")
+        val GLOBAL_TOTAL_REQUESTS = longPreferencesKey("global_total_requests")
+        val GLOBAL_PROMPT_TOKENS = longPreferencesKey("global_prompt_tokens")
+        val GLOBAL_COMPLETION_TOKENS = longPreferencesKey("global_completion_tokens")
+        val GLOBAL_TOTAL_TOKENS = longPreferencesKey("global_total_tokens")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { preferences ->
@@ -135,6 +147,29 @@ class AppSettingsRepository(private val context: Context) {
             } else {
                 it[PreferencesKeys.ACTIVE_SESSION_ID] = sessionId
             }
+        }
+    }
+
+    val globalUsageStats: Flow<GlobalUsageStats> = context.dataStore.data.map { preferences ->
+        GlobalUsageStats(
+            totalRequests = preferences[PreferencesKeys.GLOBAL_TOTAL_REQUESTS] ?: 0L,
+            promptTokens = preferences[PreferencesKeys.GLOBAL_PROMPT_TOKENS] ?: 0L,
+            completionTokens = preferences[PreferencesKeys.GLOBAL_COMPLETION_TOKENS] ?: 0L,
+            totalTokens = preferences[PreferencesKeys.GLOBAL_TOTAL_TOKENS] ?: 0L
+        )
+    }
+
+    suspend fun recordUsage(promptTokens: Long, completionTokens: Long, totalTokens: Long) {
+        context.dataStore.edit { preferences ->
+            val currentReq = preferences[PreferencesKeys.GLOBAL_TOTAL_REQUESTS] ?: 0L
+            val currentPrompt = preferences[PreferencesKeys.GLOBAL_PROMPT_TOKENS] ?: 0L
+            val currentComp = preferences[PreferencesKeys.GLOBAL_COMPLETION_TOKENS] ?: 0L
+            val currentTotal = preferences[PreferencesKeys.GLOBAL_TOTAL_TOKENS] ?: 0L
+
+            preferences[PreferencesKeys.GLOBAL_TOTAL_REQUESTS] = currentReq + 1
+            preferences[PreferencesKeys.GLOBAL_PROMPT_TOKENS] = currentPrompt + promptTokens.coerceAtLeast(0L)
+            preferences[PreferencesKeys.GLOBAL_COMPLETION_TOKENS] = currentComp + completionTokens.coerceAtLeast(0L)
+            preferences[PreferencesKeys.GLOBAL_TOTAL_TOKENS] = currentTotal + totalTokens.coerceAtLeast(0L)
         }
     }
 }

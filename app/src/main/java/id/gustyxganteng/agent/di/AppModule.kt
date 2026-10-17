@@ -76,6 +76,7 @@ val appModule = module {
             shellTool = get(),
             webTool = get(),
             academicTool = get(),
+            settingsRepository = get(),
             json = get()
         )
     }

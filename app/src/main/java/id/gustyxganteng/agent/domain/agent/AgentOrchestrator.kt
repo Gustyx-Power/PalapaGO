@@ -1,5 +1,6 @@
 package id.gustyxganteng.agent.domain.agent
 
+import id.gustyxganteng.agent.core.database.AppSettingsRepository
 import id.gustyxganteng.agent.core.database.ChatRepository
 import id.gustyxganteng.agent.core.model.CanvasArtifact
 import id.gustyxganteng.agent.core.model.FunctionCall
@@ -64,6 +65,7 @@ class AgentOrchestrator(
     private val shellTool: ShellTool,
     private val webTool: WebTool,
     private val academicTool: AcademicTool = AcademicTool(),
+    private val settingsRepository: AppSettingsRepository? = null,
     private val json: Json = Json { ignoreUnknownKeys = true }
 ) {
     private val _agentState = MutableStateFlow<AgentState>(AgentState.Idle)
@@ -462,6 +464,11 @@ class AgentOrchestrator(
                 tokenUsage = adjustedUsage
             )
             chatRepository.saveMessage(assistantMessage)
+            settingsRepository?.recordUsage(
+                promptTokens = adjustedUsage.promptTokens.toLong(),
+                completionTokens = adjustedUsage.completionTokens.toLong(),
+                totalTokens = adjustedUsage.totalTokens.toLong()
+            )
 
             // Jika tidak ada tool calls, loop selesai
             if (accumulatedToolCalls.isEmpty()) {
@@ -578,6 +585,10 @@ class AgentOrchestrator(
                         val doi = parsedArgs["doi"]?.jsonPrimitive?.content ?: ""
                         "Memverifikasi DOI: $doi"
                     }
+                    "download_paper_pdf" -> {
+                        val title = parsedArgs["title"]?.jsonPrimitive?.content ?: "paper"
+                        "Mengunduh PDF jurnal: '$title'"
+                    }
                     "open_canvas" -> {
                         val title = parsedArgs["title"]?.jsonPrimitive?.content ?: "dokumen"
                         "Membuka Canvas: $title"
@@ -627,6 +638,7 @@ class AgentOrchestrator(
             "read_webpage" -> webTool.readWebpage(toolCallId, args)
             "search_academic_papers" -> academicTool.searchAcademicPapers(toolCallId, args)
             "verify_doi_or_citation" -> academicTool.verifyDoiOrCitation(toolCallId, args)
+            "download_paper_pdf" -> academicTool.downloadPaperPdf(toolCallId, root, args)
             "open_canvas" -> canvasTool.execute(toolCallId, args)
             else -> ToolExecutionResult(toolCallId, toolName, stderr = "Tool tidak dikenal: $toolName", isSuccess = false)
         }

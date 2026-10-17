@@ -103,6 +103,7 @@ import id.gustyxganteng.agent.feature.canvas.CanvasModalSheet
 import id.gustyxganteng.agent.feature.chat.ui.components.CanvasPreviewCard
 import id.gustyxganteng.agent.feature.chat.ui.components.GeminiBottomCapsule
 import id.gustyxganteng.agent.feature.chat.ui.components.GeminiTopBar
+import id.gustyxganteng.agent.feature.chat.ui.components.NeuralSpiderStatsCard
 import id.gustyxganteng.agent.feature.chat.ui.components.ThinkingAccordion
 import id.gustyxganteng.agent.feature.chat.ui.components.ToolExecutionCard
 import id.gustyxganteng.agent.feature.workspace.DiffApprovalDialog
@@ -341,6 +342,14 @@ fun ChatScreen(
 
                     HorizontalDivider(color = GeminiSurfaceVariant)
                     Spacer(Modifier.height(8.dp))
+
+                    NeuralSpiderStatsCard(
+                        stats = uiState.globalUsageStats,
+                        isDrawerOpen = drawerState.isOpen,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
+                    )
 
                     NavigationDrawerItem(
                         icon = { Icon(Icons.Rounded.Settings, contentDescription = null, tint = GeminiPrimary) },

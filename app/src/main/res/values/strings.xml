@@ -13,7 +13,7 @@
     <!-- Drawer -->
     <string name="new_chat">New Chat</string>
     <string name="chat_history">Chat History</string>
-    <string name="settings_and_byok">Settings &amp; BYOK</string>
+    <string name="settings_and_byok">Settings</string>
     <string name="delete">Delete</string>
     <string name="default_session_title">New Chat</string>
 
