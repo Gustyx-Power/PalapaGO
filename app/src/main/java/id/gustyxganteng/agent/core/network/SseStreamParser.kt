@@ -24,6 +24,8 @@ class SseStreamParser(
         var isInsideThinkTag = false
         var lastReceivedUsage: TokenUsage? = null
 
+        val pendingBuffer = StringBuilder()
+
         try {
             while (true) {
                 val line = source.readUtf8Line() ?: break
@@ -51,51 +53,107 @@ class SseStreamParser(
                                     emit(StreamEvent.ReasoningDelta(explicitReasoning))
                                 }
 
-                                // Cek delta.content dan pisahkan tag <think>...</think> secara real-time
+                                // Cek delta.content dan pisahkan tag <think>...</think> secara streaming aman batas chunk
                                 delta.content?.let { rawContent ->
                                     if (rawContent.isNotEmpty()) {
-                                        var currentText = rawContent
+                                        pendingBuffer.append(rawContent)
 
-                                        while (currentText.isNotEmpty()) {
+                                        while (pendingBuffer.isNotEmpty()) {
                                             if (!isInsideThinkTag) {
-                                                val thinkTag = when {
-                                                    currentText.contains("<think>", ignoreCase = true) -> "<think>"
-                                                    currentText.contains("<thought>", ignoreCase = true) -> "<thought>"
-                                                    else -> null
+                                                val lower = pendingBuffer.toString().lowercase()
+                                                val thinkIdx = lower.indexOf("<think>")
+                                                val thoughtIdx = lower.indexOf("<thought>")
+                                                val matchIdx = when {
+                                                    thinkIdx != -1 && thoughtIdx != -1 -> minOf(thinkIdx, thoughtIdx)
+                                                    thinkIdx != -1 -> thinkIdx
+                                                    thoughtIdx != -1 -> thoughtIdx
+                                                    else -> -1
                                                 }
+                                                val matchTagLen = if (matchIdx == thinkIdx) 7 else 9
 
-                                                if (thinkTag != null) {
-                                                    val beforeTag = currentText.substringBefore(thinkTag)
-                                                    if (beforeTag.isNotEmpty()) {
-                                                        currentContentBuffer.append(beforeTag)
-                                                        emit(StreamEvent.ContentDelta(beforeTag))
+                                                if (matchIdx != -1) {
+                                                    val before = pendingBuffer.substring(0, matchIdx)
+                                                    if (before.isNotEmpty()) {
+                                                        currentContentBuffer.append(before)
+                                                        emit(StreamEvent.ContentDelta(before))
                                                     }
+                                                    pendingBuffer.delete(0, matchIdx + matchTagLen)
                                                     isInsideThinkTag = true
-                                                    currentText = currentText.substringAfter(thinkTag)
                                                 } else {
-                                                    currentContentBuffer.append(currentText)
-                                                    emit(StreamEvent.ContentDelta(currentText))
-                                                    currentText = ""
+                                                    // Cek apakah ada akhiran pendingBuffer yang berpotensi merupakan prefix dari <think> atau <thought>
+                                                    val str = pendingBuffer.toString()
+                                                    var prefixLen = 0
+                                                    val maxCheck = minOf(str.length, 8)
+                                                    for (k in maxCheck downTo 1) {
+                                                        val suffix = str.takeLast(k).lowercase()
+                                                        if ("<think>".startsWith(suffix) || "<thought>".startsWith(suffix)) {
+                                                            prefixLen = k
+                                                            break
+                                                        }
+                                                    }
+
+                                                    if (prefixLen > 0) {
+                                                        val emitLen = str.length - prefixLen
+                                                        if (emitLen > 0) {
+                                                            val toEmit = str.substring(0, emitLen)
+                                                            currentContentBuffer.append(toEmit)
+                                                            emit(StreamEvent.ContentDelta(toEmit))
+                                                            pendingBuffer.delete(0, emitLen)
+                                                        }
+                                                        break
+                                                    } else {
+                                                        currentContentBuffer.append(str)
+                                                        emit(StreamEvent.ContentDelta(str))
+                                                        pendingBuffer.clear()
+                                                    }
                                                 }
                                             } else {
-                                                val closeTag = when {
-                                                    currentText.contains("</think>", ignoreCase = true) -> "</think>"
-                                                    currentText.contains("</thought>", ignoreCase = true) -> "</thought>"
-                                                    else -> null
+                                                val lower = pendingBuffer.toString().lowercase()
+                                                val closeThinkIdx = lower.indexOf("</think>")
+                                                val closeThoughtIdx = lower.indexOf("</thought>")
+                                                val matchIdx = when {
+                                                    closeThinkIdx != -1 && closeThoughtIdx != -1 -> minOf(closeThinkIdx, closeThoughtIdx)
+                                                    closeThinkIdx != -1 -> closeThinkIdx
+                                                    closeThoughtIdx != -1 -> closeThoughtIdx
+                                                    else -> -1
                                                 }
+                                                val matchTagLen = if (matchIdx == closeThinkIdx) 8 else 10
 
-                                                if (closeTag != null) {
-                                                    val thinkText = currentText.substringBefore(closeTag)
+                                                if (matchIdx != -1) {
+                                                    val thinkText = pendingBuffer.substring(0, matchIdx)
                                                     if (thinkText.isNotEmpty()) {
                                                         currentThinkingBuffer.append(thinkText)
                                                         emit(StreamEvent.ReasoningDelta(thinkText))
                                                     }
+                                                    pendingBuffer.delete(0, matchIdx + matchTagLen)
                                                     isInsideThinkTag = false
-                                                    currentText = currentText.substringAfter(closeTag)
                                                 } else {
-                                                    currentThinkingBuffer.append(currentText)
-                                                    emit(StreamEvent.ReasoningDelta(currentText))
-                                                    currentText = ""
+                                                    // Cek apakah ada akhiran yang merupakan prefix dari </think> atau </thought>
+                                                    val str = pendingBuffer.toString()
+                                                    var prefixLen = 0
+                                                    val maxCheck = minOf(str.length, 9)
+                                                    for (k in maxCheck downTo 1) {
+                                                        val suffix = str.takeLast(k).lowercase()
+                                                        if ("</think>".startsWith(suffix) || "</thought>".startsWith(suffix)) {
+                                                            prefixLen = k
+                                                            break
+                                                        }
+                                                    }
+
+                                                    if (prefixLen > 0) {
+                                                        val emitLen = str.length - prefixLen
+                                                        if (emitLen > 0) {
+                                                            val toEmit = str.substring(0, emitLen)
+                                                            currentThinkingBuffer.append(toEmit)
+                                                            emit(StreamEvent.ReasoningDelta(toEmit))
+                                                            pendingBuffer.delete(0, emitLen)
+                                                        }
+                                                        break
+                                                    } else {
+                                                        currentThinkingBuffer.append(str)
+                                                        emit(StreamEvent.ReasoningDelta(str))
+                                                        pendingBuffer.clear()
+                                                    }
                                                 }
                                             }
                                         }
@@ -140,6 +198,19 @@ class SseStreamParser(
                         }
                     }
                 }
+            }
+
+            // Flush sisa pendingBuffer jika ada
+            if (pendingBuffer.isNotEmpty()) {
+                val remaining = pendingBuffer.toString()
+                if (isInsideThinkTag) {
+                    currentThinkingBuffer.append(remaining)
+                    emit(StreamEvent.ReasoningDelta(remaining))
+                } else {
+                    currentContentBuffer.append(remaining)
+                    emit(StreamEvent.ContentDelta(remaining))
+                }
+                pendingBuffer.clear()
             }
 
             // 3. Pastikan token usage final dipancarkan saat stream selesai

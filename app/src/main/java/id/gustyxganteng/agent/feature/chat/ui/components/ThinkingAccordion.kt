@@ -13,6 +13,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -40,6 +41,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -49,6 +51,7 @@ import id.gustyxganteng.agent.core.designsystem.GeminiSparkleIcon
 import id.gustyxganteng.agent.core.designsystem.GeminiSurfaceVariant
 import id.gustyxganteng.agent.core.designsystem.GeminiTextPrimary
 import id.gustyxganteng.agent.core.designsystem.GeminiTextSecondary
+import id.gustyxganteng.agent.core.markdown.MarkdownContent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 
@@ -57,6 +60,7 @@ fun ThinkingAccordion(
     reasoningContent: String?,
     thinkingDurationMs: Long?,
     isCurrentlyStreaming: Boolean = false,
+    thinkingTokens: Int? = null,
     modifier: Modifier = Modifier
 ) {
     if (reasoningContent.isNullOrBlank() && !isCurrentlyStreaming) return
@@ -95,6 +99,22 @@ fun ThinkingAccordion(
         String.format(java.util.Locale.US, "%.1f", finalMs / 1000.0)
     }
 
+    val effectiveTokens = if (thinkingTokens != null && thinkingTokens > 0) {
+        thinkingTokens
+    } else if (!reasoningContent.isNullOrBlank()) {
+        (reasoningContent.length / 4).coerceAtLeast(1)
+    } else {
+        0
+    }
+
+    fun formatTokens(tokens: Int): String {
+        return if (tokens >= 1000) {
+            String.format(java.util.Locale.US, "%.1fk", tokens / 1000.0)
+        } else {
+            tokens.toString()
+        }
+    }
+
     Surface(
         shape = RoundedCornerShape(16.dp),
         color = GeminiSurfaceVariant.copy(alpha = 0.5f),
@@ -117,9 +137,17 @@ fun ThinkingAccordion(
                 Spacer(Modifier.width(8.dp))
 
                 val headerText = if (isCurrentlyStreaming) {
-                    "${stringResource(R.string.thinking_in_progress)} (${durationSec}s)"
+                    if (effectiveTokens > 0) {
+                        stringResource(R.string.thinking_in_progress_with_tokens, durationSec, formatTokens(effectiveTokens))
+                    } else {
+                        "${stringResource(R.string.thinking_in_progress)} (${durationSec}s)"
+                    }
                 } else {
-                    stringResource(R.string.thinking_done, durationSec)
+                    if (effectiveTokens > 0) {
+                        stringResource(R.string.thinking_done_with_tokens, durationSec, formatTokens(effectiveTokens))
+                    } else {
+                        stringResource(R.string.thinking_done, durationSec)
+                    }
                 }
 
                 Text(
@@ -145,19 +173,36 @@ fun ThinkingAccordion(
             ) {
                 Column {
                     Spacer(Modifier.height(8.dp))
-                    val detailText = if (!reasoningContent.isNullOrBlank()) {
-                        reasoningContent
+                    if (!reasoningContent.isNullOrBlank()) {
+                        Surface(
+                            color = GeminiSurfaceVariant.copy(alpha = 0.4f),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Box(modifier = Modifier.padding(12.dp)) {
+                                MarkdownContent(
+                                    markdown = reasoningContent,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+                        }
                     } else if (isCurrentlyStreaming) {
-                        stringResource(R.string.thinking_analyzing_placeholder)
+                        Text(
+                            text = stringResource(R.string.thinking_analyzing_placeholder),
+                            style = MaterialTheme.typography.bodySmall.copy(fontStyle = FontStyle.Italic),
+                            color = GeminiTextSecondary,
+                            lineHeight = 18.sp,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                        )
                     } else {
-                        stringResource(R.string.thinking_done_no_detail)
+                        Text(
+                            text = stringResource(R.string.thinking_done_no_detail),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = GeminiTextSecondary,
+                            lineHeight = 18.sp,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                        )
                     }
-                    Text(
-                        text = detailText,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = GeminiTextSecondary,
-                        lineHeight = 18.sp
-                    )
                 }
             }
         }

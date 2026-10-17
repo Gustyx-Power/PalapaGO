@@ -81,7 +81,7 @@ class AgnesApiServiceImpl(
 
             ChatMessageDto(
                 role = roleStr,
-                content = msg.content.ifEmpty { null },
+                content = if (msg.content.isNotEmpty()) msg.content else if (toolCallsDto != null) null else "",
                 reasoningContent = msg.reasoningContent,
                 toolCalls = toolCallsDto,
                 toolCallId = msg.toolCallId

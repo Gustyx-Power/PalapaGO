@@ -545,9 +545,13 @@ fun ChatMessageItem(
 
             // Thinking Accordion
             if (!message.reasoningContent.isNullOrBlank()) {
+                val tokens = message.tokenUsage?.reasoningTokens
+                    ?: ((message.reasoningContent?.length ?: 0) / 4).coerceAtLeast(1)
                 ThinkingAccordion(
                     reasoningContent = message.reasoningContent,
-                    thinkingDurationMs = message.thinkingDurationMs
+                    thinkingDurationMs = message.thinkingDurationMs,
+                    isCurrentlyStreaming = false,
+                    thinkingTokens = tokens
                 )
                 Spacer(Modifier.height(8.dp))
             }

@@ -31,7 +31,9 @@
 
     <!-- Thinking & Status -->
     <string name="thinking_in_progress">Thinking...</string>
-    <string name="thinking_done">Thought process (%1$s s)</string>
+    <string name="thinking_done">Thought for %1$ss</string>
+    <string name="thinking_done_with_tokens">Thought for %1$ss, %2$s tokens</string>
+    <string name="thinking_in_progress_with_tokens">Thinking (%1$ss, %2$s tokens)...</string>
     <string name="thinking_analyzing_placeholder">Analyzing prompt intent, assessing risks, researching references, and formulating plan...</string>
     <string name="thinking_done_no_detail">Thinking completed</string>
     <string name="streaming_thinking_meta">Thinking | Think: %1$d</string>
