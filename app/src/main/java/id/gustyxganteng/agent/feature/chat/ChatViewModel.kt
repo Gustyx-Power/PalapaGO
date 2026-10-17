@@ -84,7 +84,7 @@ class ChatViewModel(
         val totalTokens = sessionCtx.messages.mapNotNull { it.tokenUsage?.totalTokens }.maxOrNull() ?: 0
         val rawModel = currentSession?.model ?: sessionCtx.settings.selectedModel
         val model = if (rawModel == "agnes-3.0-pro") "agnes-3.0-flash" else rawModel
-        val contextStatus = contextMeterManager.calculateStatus(totalTokens, model)
+        val contextStatus = contextMeterManager.calculateStatus(totalTokens, model, sessionCtx.settings.claudeMaxMode)
 
         ChatUiState(
             sessions = sessionCtx.sessions,
@@ -180,8 +180,15 @@ class ChatViewModel(
                 workspacePath = session.workspacePath ?: settings.activeWorkspacePath,
                 yoloMode = settings.yoloMode,
                 enableWebSearch = settings.webSearchEnabled,
-                useTermuxEnv = true
+                useTermuxEnv = true,
+                claudeMaxMode = settings.claudeMaxMode
             )
+        }
+    }
+
+    fun updateClaudeMaxMode(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.updateClaudeMaxMode(enabled)
         }
     }
 

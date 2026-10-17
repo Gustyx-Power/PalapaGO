@@ -20,7 +20,8 @@ class ContextMeterManager(
     private val chatRepository: ChatRepository,
     private val agnesApiService: AgnesApiService
 ) {
-    fun getModelCapacity(model: String): Int {
+    fun getModelCapacity(model: String, claudeMaxMode: Boolean = false): Int {
+        if (claudeMaxMode) return 200_000
         val lower = model.lowercase()
         return when {
             lower.contains("flash") || lower.contains("pro") || lower.contains("agnes") -> 1_000_000
@@ -30,8 +31,8 @@ class ContextMeterManager(
         }
     }
 
-    fun calculateStatus(usedTokens: Int, model: String): ContextMeterStatus {
-        val capacity = getModelCapacity(model)
+    fun calculateStatus(usedTokens: Int, model: String, claudeMaxMode: Boolean = false): ContextMeterStatus {
+        val capacity = getModelCapacity(model, claudeMaxMode)
         val clampedUsed = usedTokens.coerceAtLeast(0)
         val percentage = (clampedUsed.toFloat() / capacity.toFloat()) * 100f
 

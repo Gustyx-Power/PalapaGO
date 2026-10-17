@@ -21,7 +21,8 @@ data class AppSettings(
     val yoloMode: Boolean,
     val activeWorkspacePath: String?,
     val webSearchEnabled: Boolean,
-    val canvasEnabled: Boolean
+    val canvasEnabled: Boolean,
+    val claudeMaxMode: Boolean = true
 )
 
 class AppSettingsRepository(private val context: Context) {
@@ -35,6 +36,7 @@ class AppSettingsRepository(private val context: Context) {
         val ACTIVE_WORKSPACE_PATH = stringPreferencesKey("active_workspace_path")
         val WEB_SEARCH_ENABLED = booleanPreferencesKey("web_search_enabled")
         val CANVAS_ENABLED = booleanPreferencesKey("canvas_enabled")
+        val CLAUDE_MAX_MODE = booleanPreferencesKey("claude_max_mode")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { preferences ->
@@ -46,7 +48,8 @@ class AppSettingsRepository(private val context: Context) {
             yoloMode = preferences[PreferencesKeys.YOLO_MODE] ?: false,
             activeWorkspacePath = preferences[PreferencesKeys.ACTIVE_WORKSPACE_PATH],
             webSearchEnabled = preferences[PreferencesKeys.WEB_SEARCH_ENABLED] ?: true,
-            canvasEnabled = preferences[PreferencesKeys.CANVAS_ENABLED] ?: true
+            canvasEnabled = preferences[PreferencesKeys.CANVAS_ENABLED] ?: true,
+            claudeMaxMode = preferences[PreferencesKeys.CLAUDE_MAX_MODE] ?: true
         )
     }
 
@@ -86,5 +89,9 @@ class AppSettingsRepository(private val context: Context) {
 
     suspend fun updateCanvasEnabled(enabled: Boolean) {
         context.dataStore.edit { it[PreferencesKeys.CANVAS_ENABLED] = enabled }
+    }
+
+    suspend fun updateClaudeMaxMode(enabled: Boolean) {
+        context.dataStore.edit { it[PreferencesKeys.CLAUDE_MAX_MODE] = enabled }
     }
 }

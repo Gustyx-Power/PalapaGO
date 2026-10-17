@@ -28,7 +28,10 @@ interface AgnesApiService {
         apiKey: String,
         model: String,
         messages: List<Message>,
-        tools: List<ToolDefinition>? = null
+        tools: List<ToolDefinition>? = null,
+        budgetTokens: Int = 16384,
+        maxTokens: Int = 32768,
+        reasoningEffort: String = "high"
     ): Flow<StreamEvent>
 }
 
@@ -53,7 +56,10 @@ class AgnesApiServiceImpl(
         apiKey: String,
         model: String,
         messages: List<Message>,
-        tools: List<ToolDefinition>?
+        tools: List<ToolDefinition>?,
+        budgetTokens: Int,
+        maxTokens: Int,
+        reasoningEffort: String
     ): Flow<StreamEvent> {
         val cleanBase = baseUrl.trim().trimEnd('/')
         val baseWithV1 = if (cleanBase.endsWith("/v1")) cleanBase else "$cleanBase/v1"
@@ -118,7 +124,10 @@ class AgnesApiServiceImpl(
             model = model,
             messages = chatDtos,
             tools = if (toolsDto.isNullOrEmpty()) null else toolsDto,
-            stream = true
+            stream = true,
+            maxTokens = maxTokens,
+            thinking = id.gustyxganteng.agent.core.network.dto.ThinkingConfigDto(budgetTokens = budgetTokens),
+            reasoningEffort = reasoningEffort
         )
 
         val jsonBody = json.encodeToString(requestPayload)

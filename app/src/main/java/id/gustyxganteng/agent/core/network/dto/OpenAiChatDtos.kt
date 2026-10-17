@@ -9,7 +9,7 @@ import kotlinx.serialization.json.JsonClassDiscriminator
 data class ThinkingConfigDto(
     val type: String = "enabled",
     @SerialName("budget_tokens")
-    val budgetTokens: Int = 2048
+    val budgetTokens: Int = 16384
 )
 
 @Serializable
@@ -24,10 +24,10 @@ data class ChatCompletionRequest(
     val streamOptions: StreamOptionsDto = StreamOptionsDto(includeUsage = true),
     val temperature: Double? = 0.7,
     @SerialName("max_tokens")
-    val maxTokens: Int? = 8192,
+    val maxTokens: Int? = 32768,
     val thinking: ThinkingConfigDto? = ThinkingConfigDto(),
     @SerialName("reasoning_effort")
-    val reasoningEffort: String? = "medium",
+    val reasoningEffort: String? = "high",
     @SerialName("include_reasoning")
     val includeReasoning: Boolean = true
 )

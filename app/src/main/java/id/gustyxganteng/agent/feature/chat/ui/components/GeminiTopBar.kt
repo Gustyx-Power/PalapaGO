@@ -44,9 +44,11 @@ import id.gustyxganteng.agent.domain.context.ContextMeterStatus
 @Composable
 fun GeminiTopBar(
     selectedModel: String,
+    claudeMaxMode: Boolean = true,
     contextStatus: ContextMeterStatus?,
     onOpenDrawer: () -> Unit,
     onSelectModel: (String) -> Unit,
+    onToggleClaudeMaxMode: (Boolean) -> Unit = {},
     onCompactContext: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -81,7 +83,7 @@ fun GeminiTopBar(
                     modifier = Modifier.clickable { showModelMenu = true }
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
@@ -89,6 +91,20 @@ fun GeminiTopBar(
                             style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
                             color = GeminiPrimary
                         )
+                        if (claudeMaxMode) {
+                            Spacer(Modifier.width(6.dp))
+                            Surface(
+                                shape = RoundedCornerShape(4.dp),
+                                color = GeminiPrimary.copy(alpha = 0.2f)
+                            ) {
+                                Text(
+                                    text = "MAX",
+                                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.ExtraBold),
+                                    color = GeminiPrimary,
+                                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                                )
+                            }
+                        }
                         Spacer(Modifier.width(4.dp))
                         Icon(
                             imageVector = Icons.Default.ArrowDropDown,
@@ -104,9 +120,18 @@ fun GeminiTopBar(
                     onDismissRequest = { showModelMenu = false }
                 ) {
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.model_fast_desc, "agnes-3.0-flash")) },
+                        text = { Text(stringResource(R.string.model_claude_max_desc, "agnes-3.0-flash")) },
                         onClick = {
                             onSelectModel("agnes-3.0-flash")
+                            onToggleClaudeMaxMode(true)
+                            showModelMenu = false
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.model_standard_desc, "agnes-3.0-flash")) },
+                        onClick = {
+                            onSelectModel("agnes-3.0-flash")
+                            onToggleClaudeMaxMode(false)
                             showModelMenu = false
                         }
                     )

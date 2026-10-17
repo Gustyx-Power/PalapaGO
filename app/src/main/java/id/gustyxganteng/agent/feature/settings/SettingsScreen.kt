@@ -71,6 +71,7 @@ fun SettingsScreen(
     var selectedModel by remember { mutableStateOf("") }
     var maxRetries by remember { mutableFloatStateOf(5f) }
     var yoloMode by remember { mutableStateOf(false) }
+    var claudeMaxMode by remember { mutableStateOf(true) }
     var showApiKey by remember { mutableStateOf(false) }
 
     LaunchedEffect(settings) {
@@ -80,6 +81,7 @@ fun SettingsScreen(
             selectedModel = if (it.selectedModel == "agnes-3.0-pro") "agnes-3.0-flash" else it.selectedModel
             maxRetries = it.maxRetries.toFloat()
             yoloMode = it.yoloMode
+            claudeMaxMode = it.claudeMaxMode
         }
     }
 
@@ -219,6 +221,40 @@ fun SettingsScreen(
                 }
             }
 
+            // Card Agent Execution Mode (Claude Code Max)
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Default.Speed, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                        Spacer(Modifier.width(8.dp))
+                        Text(stringResource(R.string.settings_agent_mode_header), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(stringResource(R.string.settings_claude_max_title), fontWeight = FontWeight.SemiBold)
+                            Text(
+                                stringResource(R.string.settings_claude_max_desc),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = claudeMaxMode,
+                            onCheckedChange = { claudeMaxMode = it }
+                        )
+                    }
+                }
+            }
+
             Spacer(Modifier.height(8.dp))
 
             Button(
@@ -229,6 +265,7 @@ fun SettingsScreen(
                         settingsRepository.updateSelectedModel(selectedModel)
                         settingsRepository.updateMaxRetries(maxRetries.toInt())
                         settingsRepository.updateYoloMode(yoloMode)
+                        settingsRepository.updateClaudeMaxMode(claudeMaxMode)
                         Toast.makeText(context, context.getString(R.string.settings_saved_toast), Toast.LENGTH_SHORT).show()
                         onNavigateBack()
                     }

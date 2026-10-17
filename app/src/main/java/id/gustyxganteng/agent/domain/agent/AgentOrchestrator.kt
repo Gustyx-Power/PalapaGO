@@ -91,7 +91,8 @@ class AgentOrchestrator(
         workspacePath: String?,
         yoloMode: Boolean,
         enableWebSearch: Boolean,
-        useTermuxEnv: Boolean
+        useTermuxEnv: Boolean,
+        claudeMaxMode: Boolean = true
     ) {
         activeJob?.cancel()
         activeJob = scope.launch(Dispatchers.IO) {
@@ -104,7 +105,8 @@ class AgentOrchestrator(
                     workspacePath = workspacePath,
                     yoloMode = yoloMode,
                     enableWebSearch = enableWebSearch,
-                    useTermuxEnv = useTermuxEnv
+                    useTermuxEnv = useTermuxEnv,
+                    claudeMaxMode = claudeMaxMode
                 )
             } catch (e: Exception) {
                 _agentState.value = AgentState.Error(e.localizedMessage ?: "Unknown Agent error")
@@ -124,18 +126,20 @@ class AgentOrchestrator(
         workspacePath: String?,
         yoloMode: Boolean,
         enableWebSearch: Boolean,
-        useTermuxEnv: Boolean
+        useTermuxEnv: Boolean,
+        claudeMaxMode: Boolean = true
     ) {
         var continueLoop = true
         var turnCount = 0
-        val maxTurns = 15
+        val maxTurns = if (claudeMaxMode) 25 else 8
+        val budgetTokens = if (claudeMaxMode) 16384 else 4096
+        val maxTokens = if (claudeMaxMode) 32768 else 8192
+        val reasoningEffort = if (claudeMaxMode) "high" else "medium"
 
-        // Kumpulkan definisi tool yang aktif
+        // Kumpulkan definisi tool yang aktif (FileSystem dan Shell selalu aktif dengan default /storage/emulated/0)
         val activeTools = mutableListOf<ToolDefinition>()
-        if (workspacePath != null) {
-            activeTools.addAll(FileSystemTool.DEFINITIONS)
-            activeTools.add(ShellTool.DEFINITION)
-        }
+        activeTools.addAll(FileSystemTool.DEFINITIONS)
+        activeTools.add(ShellTool.DEFINITION)
         if (enableWebSearch) {
             activeTools.addAll(WebTool.DEFINITIONS)
         }
@@ -144,7 +148,12 @@ class AgentOrchestrator(
         while (continueLoop && turnCount < maxTurns) {
             turnCount++
             val dbMessages = chatRepository.getMessagesForSessionSync(sessionId)
-            val systemPrompt = AgentSystemPrompt.getPrompt(workspacePath, yoloMode, hasWebTools = enableWebSearch)
+            val systemPrompt = AgentSystemPrompt.getPrompt(
+                workspacePath = workspacePath,
+                yoloMode = yoloMode,
+                hasWebTools = enableWebSearch,
+                claudeMaxMode = claudeMaxMode
+            )
             val systemMessage = Message(
                 sessionId = sessionId,
                 role = MessageRole.SYSTEM,
@@ -183,7 +192,10 @@ class AgentOrchestrator(
                 apiKey = apiKey,
                 model = model,
                 messages = messages,
-                tools = if (activeTools.isNotEmpty()) activeTools else null
+                tools = if (activeTools.isNotEmpty()) activeTools else null,
+                budgetTokens = budgetTokens,
+                maxTokens = maxTokens,
+                reasoningEffort = reasoningEffort
             ).collect { event ->
                 when (event) {
                     is StreamEvent.ReasoningDelta -> {
@@ -240,22 +252,31 @@ class AgentOrchestrator(
                 (finalReasoning.length / 4).coerceAtLeast(1)
             } else 0
 
-            // Fallback token calculation untuk reasoning jika tidak disediakan API
+            val estimatedPromptTokens = messages.sumOf { (it.content.length / 4).coerceAtLeast(1) } +
+                (systemPrompt.length / 4) +
+                activeTools.sumOf { (it.function.description.length / 4) + 50 }
+
+            // Fallback token calculation untuk reasoning dan total konteks
             val adjustedUsage = if (usage != null) {
-                if (usage!!.reasoningTokens == 0 && computedThinkingTokens > 0) {
-                    usage!!.copy(reasoningTokens = computedThinkingTokens)
-                } else {
-                    usage
-                }
-            } else if (computedThinkingTokens > 0 || finalContent.isNotEmpty()) {
-                val completionTokens = (finalContent.length / 4).coerceAtLeast(1)
+                val rTokens = if (usage!!.reasoningTokens == 0 && computedThinkingTokens > 0) computedThinkingTokens else usage!!.reasoningTokens
+                val pTokens = if (usage!!.promptTokens == 0) estimatedPromptTokens else usage!!.promptTokens
+                val cTokens = if (usage!!.completionTokens == 0) ((finalContent.length / 4) + rTokens).coerceAtLeast(1) else usage!!.completionTokens
+                val tTokens = if (usage!!.totalTokens == 0) pTokens + cTokens else usage!!.totalTokens
+                usage!!.copy(
+                    promptTokens = pTokens,
+                    completionTokens = cTokens,
+                    totalTokens = tTokens,
+                    reasoningTokens = rTokens
+                )
+            } else {
+                val completionTokens = ((finalContent.length / 4) + computedThinkingTokens).coerceAtLeast(1)
                 TokenUsage(
-                    promptTokens = 0,
+                    promptTokens = estimatedPromptTokens,
                     completionTokens = completionTokens,
-                    totalTokens = completionTokens + computedThinkingTokens,
+                    totalTokens = estimatedPromptTokens + completionTokens,
                     reasoningTokens = computedThinkingTokens
                 )
-            } else null
+            }
 
             // Simpan respon assistant
             val assistantMessage = Message(
@@ -271,6 +292,17 @@ class AgentOrchestrator(
 
             // Jika tidak ada tool calls, loop selesai
             if (accumulatedToolCalls.isEmpty()) {
+                // Jika model selesai setelah mengeksekusi tool tapi konten responnya kosong,
+                // pancing model satu turn lagi untuk menuliskan ringkasan akhir
+                if (turnCount > 1 && finalContent.isBlank()) {
+                    val promptForSummary = Message(
+                        sessionId = sessionId,
+                        role = MessageRole.USER,
+                        content = "[System Directive: Semua aksi tool telah selesai dieksekusi. Berikan ringkasan akhir yang lengkap dan terstruktur mengenai tindakan yang telah dilakukan beserta hasilnya.]"
+                    )
+                    chatRepository.saveMessage(promptForSummary)
+                    continue
+                }
                 continueLoop = false
                 break
             }
@@ -352,10 +384,16 @@ class AgentOrchestrator(
     }
 
     private suspend fun saveToolResult(sessionId: String, toolCallId: String, result: ToolExecutionResult) {
-        val content = if (result.isSuccess) {
+        val rawContent = if (result.isSuccess) {
             result.stdout.ifEmpty { "Berhasil dieksekusi (tanpa output)." }
         } else {
             "Error: ${result.stderr.ifEmpty { "Gagal dengan exit code ${result.exitCode}" }}"
+        }
+
+        val content = if (rawContent.length > 12000) {
+            rawContent.take(12000) + "\n\n[Output dipotong untuk menjaga efisiensi context window...]"
+        } else {
+            rawContent
         }
 
         val toolMsg = Message(

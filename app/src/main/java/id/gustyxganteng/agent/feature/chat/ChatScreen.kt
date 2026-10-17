@@ -265,9 +265,11 @@ fun ChatScreen(
             topBar = {
                 GeminiTopBar(
                     selectedModel = uiState.currentSession?.model ?: uiState.appSettings?.selectedModel ?: "agnes-3.0-flash",
+                    claudeMaxMode = uiState.appSettings?.claudeMaxMode ?: true,
                     contextStatus = uiState.contextStatus,
                     onOpenDrawer = { scope.launch { drawerState.open() } },
                     onSelectModel = { viewModel.updateSessionModel(it) },
+                    onToggleClaudeMaxMode = { viewModel.updateClaudeMaxMode(it) },
                     onCompactContext = {
                         viewModel.compactSession()
                         Toast.makeText(context, context.getString(R.string.compacting_context), Toast.LENGTH_SHORT).show()
@@ -292,6 +294,7 @@ fun ChatScreen(
                         ChatMessageItem(
                             message = message,
                             modelName = uiState.currentSession?.model ?: "agnes-3.0-flash",
+                            allMessages = uiState.messages,
                             onOpenCanvas = { title, lang, content ->
                                 viewModel.openCanvas(CanvasArtifact(title = title, language = lang, content = content))
                             }
@@ -495,6 +498,7 @@ fun ChatScreen(
 fun ChatMessageItem(
     message: Message,
     modelName: String,
+    allMessages: List<Message> = emptyList(),
     onOpenCanvas: (title: String, language: String, content: String) -> Unit
 ) {
     val clipboard = LocalClipboardManager.current
@@ -686,10 +690,16 @@ fun ChatMessageItem(
             }
         }
     } else if (message.role == MessageRole.TOOL) {
+        val matchingToolCall = allMessages.asSequence()
+            .flatMap { it.toolCalls.asSequence() }
+            .firstOrNull { it.id == message.toolCallId }
+        val toolName = matchingToolCall?.function?.name ?: "Tool Result"
+        val toolArgs = matchingToolCall?.function?.arguments ?: ""
+
         // Tool Result display
         ToolExecutionCard(
-            toolName = message.toolCallId ?: "tool",
-            arguments = "",
+            toolName = toolName,
+            arguments = toolArgs,
             outputContent = message.content,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 3.dp)
         )

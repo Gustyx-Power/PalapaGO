@@ -6,6 +6,8 @@
     <string name="topbar_menu">Menu</string>
     <string name="model_fast_desc">%1$s (Fast)</string>
     <string name="model_pro_desc">%1$s (Advanced)</string>
+    <string name="model_claude_max_desc">%1$s (Claude Code Max)</string>
+    <string name="model_standard_desc">%1$s (Standard)</string>
     <string name="compacting_context">Compacting conversation context...</string>
 
     <!-- Drawer -->
@@ -104,6 +106,9 @@
     <string name="settings_max_retries">Max Retry Attempts: %1$d times</string>
     <string name="settings_yolo_title">Auto-Approve (YOLO Mode)</string>
     <string name="settings_yolo_desc">Execute file writing and shell commands without confirmation dialogs.</string>
+    <string name="settings_agent_mode_header">Agent Execution Mode</string>
+    <string name="settings_claude_max_title">Claude Code Max Mode</string>
+    <string name="settings_claude_max_desc">Deep reasoning (16k token budget), extended 25-turn autonomous loop, and end-to-end task execution matching Claude Code.</string>
     <string name="settings_save_button">Save Settings</string>
     <string name="settings_saved_toast">Settings saved successfully!</string>
 
