@@ -73,13 +73,42 @@ class FileSystemTool {
             ToolDefinition(
                 function = FunctionSpec(
                     name = "search_files",
-                    description = "Mencari kemunculan kata kunci atau teks di seluruh file dalam workspace.",
+                    description = "Mencari kemunculan kata kunci atau pola regex di seluruh file workspace dengan konteks baris sekitar.",
                     parameters = ToolParametersSchema(
                         properties = mapOf(
-                            "query" to PropertySchema("string", "Teks pencarian."),
-                            "file_pattern" to PropertySchema("string", "Ekstensi atau pola file opsional (contoh: .kt, .json).")
+                            "query" to PropertySchema("string", "Teks atau pola regex pencarian."),
+                            "file_pattern" to PropertySchema("string", "Ekstensi atau pola file opsional (contoh: .c, .h, .kt, Makefile)."),
+                            "is_regex" to PropertySchema("boolean", "Set true jika query berupa regular expression (default false)."),
+                            "context_lines" to PropertySchema("integer", "Jumlah baris konteks sebelum dan sesudah match (default 2)."),
+                            "case_sensitive" to PropertySchema("boolean", "Set true untuk pencarian case-sensitive (default false).")
                         ),
                         required = listOf("query")
+                    )
+                )
+            ),
+            ToolDefinition(
+                function = FunctionSpec(
+                    name = "search_code_symbols",
+                    description = "Mencari deklarasi simbol kode (fungsi, struct, class, macro #define, enum, typedef, hook, atau opsi Kconfig CONFIG_...) di seluruh workspace dengan cuplikan definisi lengkap dan nomor baris.",
+                    parameters = ToolParametersSchema(
+                        properties = mapOf(
+                            "symbol" to PropertySchema("string", "Nama simbol yang dicari (contoh: 'anubis_hook', 'do_execve', 'task_struct', 'CONFIG_ANUBIS')."),
+                            "file_pattern" to PropertySchema("string", "Filter pola file opsional (contoh: '.c', '.h', '.kt', 'Makefile').")
+                        ),
+                        required = listOf("symbol")
+                    )
+                )
+            ),
+            ToolDefinition(
+                function = FunctionSpec(
+                    name = "apply_unified_patch",
+                    description = "Menerapkan unified diff / patch (format standard patch dengan hunk @@ -l,s +l,s @@) ke file di workspace. Mendukung penyesuaian offset baris otomatis (toleransi fuzzy matching) saat mem-patch kernel Linux / Android.",
+                    parameters = ToolParametersSchema(
+                        properties = mapOf(
+                            "path" to PropertySchema("string", "Path file target yang akan di-patch relatif terhadap workspace root."),
+                            "patch_content" to PropertySchema("string", "Konten unified patch lengkap atau hunk diff (termasuk baris context, '-' dan '+').")
+                        ),
+                        required = listOf("path", "patch_content")
                     )
                 )
             )
@@ -244,38 +273,253 @@ class FileSystemTool {
             val query = args["query"]?.jsonPrimitive?.content
                 ?: return ToolExecutionResult(toolCallId, "search_files", stderr = "Parameter 'query' wajib diisi.", isSuccess = false)
             val pattern = args["file_pattern"]?.jsonPrimitive?.content
+            val isRegex = args["is_regex"]?.jsonPrimitive?.booleanOrNull ?: false
+            val contextLines = (args["context_lines"]?.jsonPrimitive?.intOrNull ?: 2).coerceIn(0, 5)
+            val caseSensitive = args["case_sensitive"]?.jsonPrimitive?.booleanOrNull ?: false
 
-            val rootFile = File(workspaceRoot).canonicalFile
+            val regex = try {
+                val options = if (caseSensitive) emptySet() else setOf(RegexOption.IGNORE_CASE)
+                if (isRegex) Regex(query, options) else Regex(Regex.escape(query), options)
+            } catch (e: Exception) {
+                return ToolExecutionResult(toolCallId, "search_files", stderr = "Regex tidak valid: ${e.message}", isSuccess = false)
+            }
+
+            val rootFile = File(WorkspacePathResolver.normalizePath(workspaceRoot)).canonicalFile
             val sb = StringBuilder()
             var matchCount = 0
 
             rootFile.walkTopDown()
                 .filter { !it.isDirectory && !it.path.contains("/.") && !it.path.contains("/build/") && !it.path.contains("/node_modules/") }
-                .filter { pattern == null || it.name.contains(pattern) }
+                .filter { pattern == null || it.name.contains(pattern, ignoreCase = true) }
                 .forEach { file ->
+                    if (matchCount >= 40) return@forEach
                     val lines = try { file.readLines() } catch (_: Exception) { emptyList() }
+                    val relPath = file.relativeTo(rootFile).path
+
                     lines.forEachIndexed { idx, line ->
-                        if (line.contains(query, ignoreCase = true)) {
+                        if (regex.containsMatchIn(line)) {
                             matchCount++
-                            if (matchCount <= 50) {
-                                sb.appendLine("${file.relativeTo(rootFile).path}:${idx + 1}: ${line.trim()}")
+                            if (matchCount <= 40) {
+                                if (contextLines == 0) {
+                                    sb.appendLine("$relPath:${idx + 1}: ${line.trim()}")
+                                } else {
+                                    sb.appendLine("--- $relPath (baris ${idx + 1}) ---")
+                                    val start = (idx - contextLines).coerceAtLeast(0)
+                                    val end = (idx + contextLines).coerceAtMost(lines.size - 1)
+                                    for (cIdx in start..end) {
+                                        val marker = if (cIdx == idx) ">" else " "
+                                        sb.appendLine("$marker ${cIdx + 1} | ${lines[cIdx]}")
+                                    }
+                                    sb.appendLine()
+                                }
                             }
                         }
                     }
                 }
 
-            if (matchCount > 50) {
-                sb.appendLine("... dan ${matchCount - 50} hasil lainnya.")
-            }
-
             ToolExecutionResult(
                 toolCallId = toolCallId,
                 toolName = "search_files",
-                stdout = sb.toString().ifEmpty { "Tidak ada kemunculan '$query' yang ditemukan." },
+                stdout = sb.toString().trim().ifEmpty { "Tidak ada kemunculan '$query' yang ditemukan." },
                 isSuccess = true
             )
         } catch (e: Exception) {
             ToolExecutionResult(toolCallId, "search_files", stderr = e.message ?: "Error saat search_files", isSuccess = false)
         }
+    }
+
+    fun searchCodeSymbols(toolCallId: String, workspaceRoot: String, args: JsonObject): ToolExecutionResult {
+        return try {
+            val symbol = args["symbol"]?.jsonPrimitive?.content?.trim()
+                ?: return ToolExecutionResult(toolCallId, "search_code_symbols", stderr = "Parameter 'symbol' wajib diisi.", isSuccess = false)
+            val pattern = args["file_pattern"]?.jsonPrimitive?.content
+
+            val rootFile = File(WorkspacePathResolver.normalizePath(workspaceRoot)).canonicalFile
+            val escaped = Regex.escape(symbol)
+            val symbolRegexes = listOf(
+                Regex("""^\s*#\s*define\s+$escaped\b"""),
+                Regex("""\b(struct|union|enum|class)\s+$escaped\b"""),
+                Regex("""\btypedef\s+.*\b$escaped\b\s*;"""),
+                Regex("""\b(?:[A-Za-z0-9_*]+\s+)+$escaped\s*\("""),
+                Regex("""\b(config|CONFIG_)\s*$escaped\b"""),
+                Regex("""\b$escaped\b""")
+            )
+
+            val sb = StringBuilder()
+            var matchCount = 0
+
+            rootFile.walkTopDown()
+                .filter { !it.isDirectory && !it.path.contains("/.") && !it.path.contains("/build/") && !it.path.contains("/node_modules/") }
+                .filter { pattern == null || it.name.contains(pattern, ignoreCase = true) }
+                .forEach { file ->
+                    if (matchCount >= 20) return@forEach
+                    val lines = try { file.readLines() } catch (_: Exception) { emptyList() }
+                    val relPath = file.relativeTo(rootFile).path
+
+                    lines.forEachIndexed { idx, line ->
+                        if (symbolRegexes.any { it.containsMatchIn(line) }) {
+                            matchCount++
+                            if (matchCount <= 20) {
+                                val start = (idx - 2).coerceAtLeast(0)
+                                val end = (idx + 8).coerceAtMost(lines.size - 1)
+                                sb.appendLine("=== Simbol '$symbol' di $relPath (baris ${idx + 1}) ===")
+                                for (cIdx in start..end) {
+                                    val marker = if (cIdx == idx) ">" else " "
+                                    sb.appendLine("$marker ${cIdx + 1} | ${lines[cIdx]}")
+                                }
+                                sb.appendLine()
+                            }
+                        }
+                    }
+                }
+
+            ToolExecutionResult(
+                toolCallId = toolCallId,
+                toolName = "search_code_symbols",
+                stdout = sb.toString().trim().ifEmpty { "Deklarasi atau penggunaan simbol '$symbol' tidak ditemukan di workspace." },
+                isSuccess = true
+            )
+        } catch (e: Exception) {
+            ToolExecutionResult(toolCallId, "search_code_symbols", stderr = e.message ?: "Error saat search_code_symbols", isSuccess = false)
+        }
+    }
+
+    fun applyUnifiedPatch(toolCallId: String, workspaceRoot: String, args: JsonObject): ToolExecutionResult {
+        return try {
+            val relPath = args["path"]?.jsonPrimitive?.content
+                ?: return ToolExecutionResult(toolCallId, "apply_unified_patch", stderr = "Parameter 'path' wajib diisi.", isSuccess = false)
+            val patchContent = args["patch_content"]?.jsonPrimitive?.content
+                ?: return ToolExecutionResult(toolCallId, "apply_unified_patch", stderr = "Parameter 'patch_content' wajib diisi.", isSuccess = false)
+
+            val targetFile = resolveSafeFile(workspaceRoot, relPath)
+            if (!targetFile.exists() || !targetFile.isFile) {
+                return ToolExecutionResult(toolCallId, "apply_unified_patch", stderr = "File '$relPath' tidak ditemukan.", isSuccess = false)
+            }
+
+            val fileLines = targetFile.readLines().toMutableList()
+            val patchLines = patchContent.lines()
+
+            var i = 0
+            var hunksApplied = 0
+            val hunkOffsets = mutableListOf<String>()
+
+            while (i < patchLines.size) {
+                val line = patchLines[i]
+                if (line.startsWith("@@")) {
+                    val headerMatch = Regex("""@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@(.*)""").find(line)
+                    val originalStart = headerMatch?.groupValues?.get(1)?.toIntOrNull() ?: 1
+                    i++
+
+                    val expectedLines = mutableListOf<String>()
+                    val replacementLines = mutableListOf<String>()
+
+                    while (i < patchLines.size && !patchLines[i].startsWith("@@") && !patchLines[i].startsWith("--- ") && !patchLines[i].startsWith("diff --git")) {
+                        val pl = patchLines[i]
+                        when {
+                            pl.startsWith(" ") -> {
+                                expectedLines.add(pl.substring(1))
+                                replacementLines.add(pl.substring(1))
+                            }
+                            pl.startsWith("-") -> {
+                                expectedLines.add(pl.substring(1))
+                            }
+                            pl.startsWith("+") -> {
+                                replacementLines.add(pl.substring(1))
+                            }
+                        }
+                        i++
+                    }
+
+                    if (expectedLines.isEmpty()) continue
+
+                    val targetMatch = findHunkPosition(fileLines, expectedLines, originalStart - 1)
+                    if (targetMatch == -1) {
+                        return ToolExecutionResult(
+                            toolCallId = toolCallId,
+                            toolName = "apply_unified_patch",
+                            stderr = "Gagal menerapkan hunk pada '$relPath'. Blok baris sebelum patch tidak cocok:\n" +
+                                expectedLines.take(5).joinToString("\n") { "  $it" },
+                            isSuccess = false
+                        )
+                    }
+
+                    for (del in 0 until expectedLines.size) {
+                        fileLines.removeAt(targetMatch)
+                    }
+                    fileLines.addAll(targetMatch, replacementLines)
+                    hunksApplied++
+                    val offset = (targetMatch + 1) - originalStart
+                    hunkOffsets.add("Hunk $hunksApplied @ baris ${targetMatch + 1} (offset $offset)")
+                    continue
+                }
+                i++
+            }
+
+            if (hunksApplied == 0) {
+                return ToolExecutionResult(
+                    toolCallId = toolCallId,
+                    toolName = "apply_unified_patch",
+                    stderr = "Tidak ada hunk valid (dimulai dengan @@ ... @@) yang ditemukan dalam patch_content.",
+                    isSuccess = false
+                )
+            }
+
+            targetFile.writeText(fileLines.joinToString("\n"))
+
+            ToolExecutionResult(
+                toolCallId = toolCallId,
+                toolName = "apply_unified_patch",
+                stdout = "Berhasil menerapkan $hunksApplied hunk ke '$relPath':\n${hunkOffsets.joinToString("\n")}",
+                isSuccess = true
+            )
+        } catch (e: Exception) {
+            ToolExecutionResult(toolCallId, "apply_unified_patch", stderr = e.message ?: "Error saat apply_unified_patch", isSuccess = false)
+        }
+    }
+
+    private fun findHunkPosition(fileLines: List<String>, expectedLines: List<String>, preferredIdx: Int): Int {
+        if (expectedLines.isEmpty() || expectedLines.size > fileLines.size) return -1
+
+        // 1. Coba exact match di preferredIdx
+        if (preferredIdx in 0..(fileLines.size - expectedLines.size)) {
+            var match = true
+            for (j in expectedLines.indices) {
+                if (fileLines[preferredIdx + j].trimEnd() != expectedLines[j].trimEnd()) {
+                    match = false
+                    break
+                }
+            }
+            if (match) return preferredIdx
+        }
+
+        // 2. Sliding window radius +/- 100 baris
+        val radius = 100
+        val minIdx = (preferredIdx - radius).coerceAtLeast(0)
+        val maxIdx = (preferredIdx + radius).coerceAtMost(fileLines.size - expectedLines.size)
+
+        for (candidate in minIdx..maxIdx) {
+            var match = true
+            for (j in expectedLines.indices) {
+                if (fileLines[candidate + j].trimEnd() != expectedLines[j].trimEnd()) {
+                    match = false
+                    break
+                }
+            }
+            if (match) return candidate
+        }
+
+        // 3. Scan seluruh file dengan normalisasi trim
+        for (candidate in 0..(fileLines.size - expectedLines.size)) {
+            var match = true
+            for (j in expectedLines.indices) {
+                if (fileLines[candidate + j].trim() != expectedLines[j].trim()) {
+                    match = false
+                    break
+                }
+            }
+            if (match) return candidate
+        }
+
+        return -1
     }
 }

@@ -513,7 +513,7 @@ class AgentOrchestrator(
                 }
 
                 // Cek approval jika YOLO mode mati
-                val requiresApproval = !yoloMode && (toolName == "write_file" || toolName == "apply_diff" || toolName == "execute_shell")
+                val requiresApproval = !yoloMode && (toolName == "write_file" || toolName == "apply_diff" || toolName == "apply_unified_patch" || toolName == "execute_shell")
                 if (requiresApproval) {
                     val deferred = CompletableDeferred<Boolean>()
                     pendingApprovalDeferred = deferred
@@ -521,6 +521,7 @@ class AgentOrchestrator(
                     val details = when (toolName) {
                         "write_file" -> parsedArgs["content"]?.jsonPrimitive?.content ?: ""
                         "apply_diff" -> "${parsedArgs["search_block"]?.jsonPrimitive?.content}\n\n---> GANTI DENGAN --->\n\n${parsedArgs["replace_block"]?.jsonPrimitive?.content}"
+                        "apply_unified_patch" -> parsedArgs["patch_content"]?.jsonPrimitive?.content ?: ""
                         "execute_shell" -> parsedArgs["command"]?.jsonPrimitive?.content ?: ""
                         else -> rawArgs
                     }
@@ -578,6 +579,15 @@ class AgentOrchestrator(
                     "search_files" -> {
                         val query = parsedArgs["query"]?.jsonPrimitive?.content ?: ""
                         "Mencari kode: '$query'"
+                    }
+                    "search_code_symbols" -> {
+                        val sym = parsedArgs["symbol"]?.jsonPrimitive?.content ?: ""
+                        "Mencari simbol/hook: '$sym'"
+                    }
+                    "apply_unified_patch" -> {
+                        val path = parsedArgs["path"]?.jsonPrimitive?.content ?: "file"
+                        val hunks = parsedArgs["patch_content"]?.jsonPrimitive?.content?.lines()?.count { it.startsWith("@@") } ?: 0
+                        "Patch file: $path ($hunks hunk)"
                     }
                     "web_search" -> {
                         val query = parsedArgs["query"]?.jsonPrimitive?.content ?: ""
@@ -641,7 +651,9 @@ class AgentOrchestrator(
             "read_file" -> fileSystemTool.readFile(toolCallId, root, args)
             "write_file" -> fileSystemTool.writeFile(toolCallId, root, args)
             "apply_diff" -> fileSystemTool.applyDiff(toolCallId, root, args)
+            "apply_unified_patch" -> fileSystemTool.applyUnifiedPatch(toolCallId, root, args)
             "search_files" -> fileSystemTool.searchFiles(toolCallId, root, args)
+            "search_code_symbols" -> fileSystemTool.searchCodeSymbols(toolCallId, root, args)
             "execute_shell" -> shellTool.execute(toolCallId, root, args, useTermuxEnv)
             "web_search" -> webTool.search(
                 toolCallId = toolCallId,
