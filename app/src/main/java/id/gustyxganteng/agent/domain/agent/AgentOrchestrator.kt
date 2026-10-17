@@ -63,6 +63,7 @@ class AgentOrchestrator(
     private var pendingApprovalDeferred: CompletableDeferred<Boolean>? = null
 
     var onCanvasArtifactCreated: ((CanvasArtifact) -> Unit)? = null
+    var onTurnFinished: (() -> Unit)? = null
 
     private val canvasTool = CanvasTool { artifact ->
         onCanvasArtifactCreated?.invoke(artifact)
@@ -76,10 +77,17 @@ class AgentOrchestrator(
         pendingApprovalDeferred?.complete(false)
     }
 
+    fun clearError() {
+        if (_agentState.value is AgentState.Error) {
+            _agentState.value = AgentState.Idle
+        }
+    }
+
     fun cancel() {
         activeJob?.cancel()
         pendingApprovalDeferred?.complete(false)
         _agentState.value = AgentState.Idle
+        onTurnFinished?.invoke()
     }
 
     fun runTurn(
@@ -114,6 +122,7 @@ class AgentOrchestrator(
                 if (_agentState.value !is AgentState.Error) {
                     _agentState.value = AgentState.Idle
                 }
+                onTurnFinished?.invoke()
             }
         }
     }

@@ -23,6 +23,12 @@ interface ChatSessionDao {
 
     @Query("DELETE FROM chat_sessions WHERE id = :sessionId")
     suspend fun deleteSession(sessionId: String)
+
+    @Query("UPDATE chat_sessions SET updatedAt = :timestamp WHERE id = :sessionId")
+    suspend fun touchSession(sessionId: String, timestamp: Long)
+
+    @Query("UPDATE chat_sessions SET title = :title, updatedAt = :timestamp WHERE id = :sessionId")
+    suspend fun updateSessionTitle(sessionId: String, title: String, timestamp: Long)
 }
 
 @Dao

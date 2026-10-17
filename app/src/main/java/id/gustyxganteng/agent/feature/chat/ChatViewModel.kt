@@ -22,6 +22,7 @@ import id.gustyxganteng.agent.core.database.dao.WorkspaceDao
 import id.gustyxganteng.agent.core.database.entity.WorkspaceEntity
 import id.gustyxganteng.agent.domain.tools.WorkspacePathResolver
 import java.io.File
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -57,6 +58,7 @@ class ChatViewModel(
     private val _messages = MutableStateFlow<List<Message>>(emptyList())
     private val _activeCanvas = MutableStateFlow<CanvasArtifact?>(null)
     private val _rateLimitStatus = MutableStateFlow<RateLimitStatus?>(null)
+    private var messageCollectorJob: Job? = null
 
     private data class SessionContext(
         val sessions: List<ChatSession>,
@@ -104,6 +106,10 @@ class ChatViewModel(
             _activeCanvas.value = artifact
         }
 
+        orchestrator.onTurnFinished = {
+            AgentForegroundService.stop(getApplication())
+        }
+
         viewModelScope.launch {
             retryInterceptor.rateLimitEvents.collect { status ->
                 _rateLimitStatus.value = if (status.isThrottled) status else null
@@ -111,10 +117,19 @@ class ChatViewModel(
         }
 
         viewModelScope.launch {
-            chatRepository.getAllSessions().collect { list ->
+            combine(
+                chatRepository.getAllSessions(),
+                settingsRepository.settings
+            ) { sessions, settings ->
+                Pair(sessions, settings)
+            }.collect { (sessions, settings) ->
                 if (_currentSessionId.value.isEmpty()) {
-                    if (list.isNotEmpty()) {
-                        selectSession(list.first().id)
+                    val savedId = settings.activeSessionId
+                    val matchedSession = sessions.find { it.id == savedId }
+                    if (matchedSession != null) {
+                        selectSession(matchedSession.id, persist = false)
+                    } else if (sessions.isNotEmpty()) {
+                        selectSession(sessions.first().id, persist = true)
                     } else {
                         createNewSession()
                     }
@@ -123,11 +138,18 @@ class ChatViewModel(
         }
     }
 
-    fun selectSession(sessionId: String) {
+    fun selectSession(sessionId: String, persist: Boolean = true) {
+        if (_currentSessionId.value == sessionId && messageCollectorJob?.isActive == true) return
         _currentSessionId.value = sessionId
-        viewModelScope.launch {
+        messageCollectorJob?.cancel()
+        messageCollectorJob = viewModelScope.launch {
             chatRepository.getMessagesForSession(sessionId).collect {
                 _messages.value = it
+            }
+        }
+        if (persist) {
+            viewModelScope.launch {
+                settingsRepository.updateActiveSessionId(sessionId)
             }
         }
     }
@@ -142,7 +164,7 @@ class ChatViewModel(
                 workspacePath = settings?.activeWorkspacePath
             )
             chatRepository.saveSession(newSession)
-            selectSession(newSession.id)
+            selectSession(newSession.id, persist = true)
         }
     }
 
@@ -151,13 +173,42 @@ class ChatViewModel(
             chatRepository.deleteSession(sessionId)
             if (_currentSessionId.value == sessionId) {
                 _currentSessionId.value = ""
+                settingsRepository.updateActiveSessionId(null)
             }
         }
+    }
+
+    fun retryLastTurn() {
+        val session = uiState.value.currentSession ?: return
+        val settings = uiState.value.appSettings ?: return
+        orchestrator.clearError()
+
+        viewModelScope.launch {
+            AgentForegroundService.start(getApplication(), getApplication<Application>().getString(R.string.service_notification_text))
+            orchestrator.runTurn(
+                scope = viewModelScope,
+                sessionId = session.id,
+                baseUrl = settings.baseUrl,
+                apiKey = settings.apiKey,
+                model = if (session.model == "agnes-3.0-pro") "agnes-3.0-flash" else session.model,
+                workspacePath = session.workspacePath ?: settings.activeWorkspacePath,
+                yoloMode = settings.yoloMode,
+                enableWebSearch = settings.webSearchEnabled,
+                useTermuxEnv = true,
+                claudeMaxMode = settings.claudeMaxMode
+            )
+        }
+    }
+
+    fun dismissError() {
+        orchestrator.clearError()
     }
 
     fun sendMessage(content: String, images: List<String> = emptyList()) {
         val session = uiState.value.currentSession ?: return
         val settings = uiState.value.appSettings ?: return
+
+        orchestrator.clearError()
 
         viewModelScope.launch {
             val userMsg = Message(

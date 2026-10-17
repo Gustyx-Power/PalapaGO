@@ -76,10 +76,37 @@ class ChatRepository(
 
     suspend fun saveMessage(message: Message) {
         messageDao.insertMessage(messageToEntity(message))
+        val now = System.currentTimeMillis()
+        val session = sessionDao.getSessionById(message.sessionId)
+        if (session != null) {
+            val isDefaultTitle = session.title.equals("New Chat", ignoreCase = true) ||
+                session.title.equals("Obrolan Baru", ignoreCase = true) ||
+                session.title.isBlank()
+            if (isDefaultTitle && message.role == MessageRole.USER && message.content.isNotBlank()) {
+                val titleCandidate = message.content.lines()
+                    .firstOrNull { it.isNotBlank() }
+                    ?.take(36)
+                    ?.trim()
+                if (!titleCandidate.isNullOrBlank()) {
+                    sessionDao.updateSessionTitle(message.sessionId, titleCandidate, now)
+                } else {
+                    sessionDao.touchSession(message.sessionId, now)
+                }
+            } else {
+                sessionDao.touchSession(message.sessionId, now)
+            }
+        }
+    }
+
+    suspend fun touchSession(sessionId: String) {
+        sessionDao.touchSession(sessionId, System.currentTimeMillis())
     }
 
     suspend fun saveMessages(messages: List<Message>) {
         messageDao.insertMessages(messages.map { messageToEntity(it) })
+        if (messages.isNotEmpty()) {
+            sessionDao.touchSession(messages.first().sessionId, System.currentTimeMillis())
+        }
     }
 
     suspend fun clearSessionMessages(sessionId: String) {

@@ -13,8 +13,10 @@ import id.gustyxganteng.agent.core.network.dto.ToolDto
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.putJsonArray
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -108,6 +110,11 @@ class AgnesApiServiceImpl(
             val paramsJson = buildJsonObject {
                 put("type", "object")
                 put("properties", propsJson)
+                if (tool.function.parameters.required.isNotEmpty()) {
+                    putJsonArray("required") {
+                        tool.function.parameters.required.forEach { add(it) }
+                    }
+                }
             }
 
             ToolDto(
@@ -133,10 +140,14 @@ class AgnesApiServiceImpl(
         val jsonBody = json.encodeToString(requestPayload)
         val requestBody = jsonBody.toRequestBody("application/json; charset=utf-8".toMediaType())
 
+        if (apiKey.isBlank()) {
+            throw IOException("API Key Agnes belum diisi. Masukkan API Key di menu Pengaturan & BYOK.")
+        }
+
         val request = Request.Builder()
             .url(endpoint)
-            .addHeader("Authorization", "Bearer $apiKey")
-            .addHeader("x-api-key", apiKey)
+            .addHeader("Authorization", "Bearer ${apiKey.trim()}")
+            .addHeader("x-api-key", apiKey.trim())
             .addHeader("anthropic-version", "2023-06-01")
             .addHeader("Accept", "text/event-stream")
             .addHeader("Cache-Control", "no-cache")
@@ -152,7 +163,14 @@ class AgnesApiServiceImpl(
         if (!response.isSuccessful) {
             val errBody = response.body?.string() ?: "HTTP ${response.code}"
             response.close()
-            throw IOException("Agnes API error (${response.code}): $errBody")
+            val friendlyMsg = when (response.code) {
+                401 -> "Autentikasi gagal (HTTP 401): API Key Agnes tidak valid. Periksa kembali di Pengaturan."
+                403 -> "Akses ditolak (HTTP 403): Tidak memiliki izin untuk model ini."
+                404 -> "Endpoint API tidak ditemukan (HTTP 404): $endpoint"
+                429 -> "Rate limit tercapai (HTTP 429): Terlalu banyak permintaan ke Agnes API. Mohon tunggu sesaat."
+                else -> "Gagal memproses permintaan (${response.code}): $errBody"
+            }
+            throw IOException(friendlyMsg)
         }
 
         val body = response.body ?: throw IOException("Empty response body from Agnes API")

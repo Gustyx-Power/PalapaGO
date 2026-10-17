@@ -22,7 +22,8 @@ data class AppSettings(
     val activeWorkspacePath: String?,
     val webSearchEnabled: Boolean,
     val canvasEnabled: Boolean,
-    val claudeMaxMode: Boolean = true
+    val claudeMaxMode: Boolean = true,
+    val activeSessionId: String? = null
 )
 
 class AppSettingsRepository(private val context: Context) {
@@ -37,6 +38,7 @@ class AppSettingsRepository(private val context: Context) {
         val WEB_SEARCH_ENABLED = booleanPreferencesKey("web_search_enabled")
         val CANVAS_ENABLED = booleanPreferencesKey("canvas_enabled")
         val CLAUDE_MAX_MODE = booleanPreferencesKey("claude_max_mode")
+        val ACTIVE_SESSION_ID = stringPreferencesKey("active_session_id")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { preferences ->
@@ -49,7 +51,8 @@ class AppSettingsRepository(private val context: Context) {
             activeWorkspacePath = preferences[PreferencesKeys.ACTIVE_WORKSPACE_PATH],
             webSearchEnabled = preferences[PreferencesKeys.WEB_SEARCH_ENABLED] ?: true,
             canvasEnabled = preferences[PreferencesKeys.CANVAS_ENABLED] ?: true,
-            claudeMaxMode = preferences[PreferencesKeys.CLAUDE_MAX_MODE] ?: true
+            claudeMaxMode = preferences[PreferencesKeys.CLAUDE_MAX_MODE] ?: true,
+            activeSessionId = preferences[PreferencesKeys.ACTIVE_SESSION_ID]
         )
     }
 
@@ -93,5 +96,15 @@ class AppSettingsRepository(private val context: Context) {
 
     suspend fun updateClaudeMaxMode(enabled: Boolean) {
         context.dataStore.edit { it[PreferencesKeys.CLAUDE_MAX_MODE] = enabled }
+    }
+
+    suspend fun updateActiveSessionId(sessionId: String?) {
+        context.dataStore.edit {
+            if (sessionId.isNullOrBlank()) {
+                it.remove(PreferencesKeys.ACTIVE_SESSION_ID)
+            } else {
+                it[PreferencesKeys.ACTIVE_SESSION_ID] = sessionId
+            }
+        }
     }
 }

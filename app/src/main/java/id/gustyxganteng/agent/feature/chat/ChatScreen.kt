@@ -57,6 +57,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -369,6 +370,60 @@ fun ChatScreen(
                                 isLoading = true,
                                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
                             )
+                        }
+                    }
+
+                    // Agent Error state card
+                    if (uiState.agentState is AgentState.Error) {
+                        val errorState = uiState.agentState as AgentState.Error
+                        item {
+                            Surface(
+                                color = GeminiErrorContainer,
+                                shape = RoundedCornerShape(14.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(14.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Icon(
+                                            imageVector = Icons.Default.Warning,
+                                            contentDescription = null,
+                                            tint = GeminiError,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(
+                                            text = stringResource(R.string.error_occurred),
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = GeminiError
+                                        )
+                                    }
+                                    Spacer(Modifier.height(6.dp))
+                                    Text(
+                                        text = errorState.message,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = GeminiTextPrimary
+                                    )
+                                    Spacer(Modifier.height(10.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.End
+                                    ) {
+                                        TextButton(onClick = { viewModel.dismissError() }) {
+                                            Text(stringResource(R.string.dismiss), color = GeminiTextSecondary)
+                                        }
+                                        Spacer(Modifier.width(8.dp))
+                                        Button(
+                                            onClick = { viewModel.retryLastTurn() },
+                                            colors = ButtonDefaults.buttonColors(containerColor = GeminiError)
+                                        ) {
+                                            Text(stringResource(R.string.retry), color = Color.White)
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }

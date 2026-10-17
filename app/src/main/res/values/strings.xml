@@ -47,9 +47,12 @@
     <string name="tool_execution_error">Execution error (%1$s)</string>
     <string name="tool_execution_result">Execution result: %1$s</string>
 
-    <!-- Rate Limit -->
+    <!-- Rate Limit & Error Handling -->
     <string name="rate_limit_warning">API Rate limit reached (%1$d). Retrying in %2$ds... (Attempt %3$d/%4$d)</string>
     <string name="cancel">Cancel</string>
+    <string name="error_occurred">An error occurred</string>
+    <string name="retry">Retry</string>
+    <string name="dismiss">Dismiss</string>
 
     <!-- Workspace & Folder Picker -->
     <string name="workspace_manager_title">Workspace Manager</string>
