@@ -42,7 +42,8 @@ sealed interface AgentState {
         val thinkingElapsedMs: Long?,
         val isThinking: Boolean = false,
         val thinkingTokens: Int = 0,
-        val currentActivity: String = "Menganalisis instruksi..."
+        val currentActivity: String = "Menganalisis instruksi...",
+        val typingElapsedMs: Long? = null
     ) : AgentState
     data class AwaitingApproval(
         val toolCall: ToolCall,
@@ -198,6 +199,7 @@ class AgentOrchestrator(
             val thinkingStart = System.currentTimeMillis()
             var thinkingDuration: Long? = null
             var isCurrentlyThinking = true
+            var typingStart: Long? = null
 
             val initialActivity = if (turnCount == 1) {
                 "Menganalisis instruksi pengguna..."
@@ -261,10 +263,13 @@ class AgentOrchestrator(
                             is StreamEvent.ContentDelta -> {
                                 if (isCurrentlyThinking) {
                                     isCurrentlyThinking = false
+                                    typingStart = System.currentTimeMillis()
                                     if (thinkingDuration == null && reasoningBuilder.isNotEmpty()) {
                                         thinkingDuration = System.currentTimeMillis() - thinkingStart
                                     }
                                 }
+                                val elapsedTypingMs = if (typingStart != null) System.currentTimeMillis() - typingStart!! else 0L
+                                val typingSec = String.format(java.util.Locale.US, "%.1fs", elapsedTypingMs / 1000.0)
                                 contentBuilder.append(event.text)
                                 val tokens = if (reasoningBuilder.isNotEmpty()) {
                                     (reasoningBuilder.length / 4).coerceAtLeast(1)
@@ -275,20 +280,33 @@ class AgentOrchestrator(
                                     thinkingElapsedMs = thinkingDuration,
                                     isThinking = false,
                                     thinkingTokens = tokens,
-                                    currentActivity = "Menulis respons..."
+                                    currentActivity = "Menulis respons ($typingSec)...",
+                                    typingElapsedMs = elapsedTypingMs
                                 )
                             }
                             is StreamEvent.ToolCallChunk -> {
                                 if (isCurrentlyThinking) {
                                     isCurrentlyThinking = false
+                                    typingStart = System.currentTimeMillis()
                                     if (thinkingDuration == null && reasoningBuilder.isNotEmpty()) {
                                         thinkingDuration = System.currentTimeMillis() - thinkingStart
                                     }
                                 }
+                                val elapsedTypingMs = if (typingStart != null) System.currentTimeMillis() - typingStart!! else 0L
+                                val typingSec = String.format(java.util.Locale.US, "%.1fs", elapsedTypingMs / 1000.0)
                                 val builder = toolCallMap.getOrPut(event.index) { MutableToolCallBuilder() }
                                 event.id?.let { builder.id = it }
                                 event.name?.let { builder.name = it }
                                 builder.arguments.append(event.argumentsDelta)
+                                _agentState.value = AgentState.Streaming(
+                                    content = contentBuilder.toString(),
+                                    reasoning = reasoningBuilder.toString().ifEmpty { null },
+                                    thinkingElapsedMs = thinkingDuration,
+                                    isThinking = false,
+                                    thinkingTokens = if (reasoningBuilder.isNotEmpty()) (reasoningBuilder.length / 4).coerceAtLeast(1) else 0,
+                                    currentActivity = "Mempersiapkan parameter tool ($typingSec)...",
+                                    typingElapsedMs = elapsedTypingMs
+                                )
                             }
                             is StreamEvent.UsageUpdate -> {
                                 usage = event.usage

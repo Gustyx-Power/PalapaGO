@@ -53,6 +53,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -98,6 +99,8 @@ import id.gustyxganteng.agent.feature.chat.ui.components.ToolExecutionCard
 import id.gustyxganteng.agent.feature.workspace.DiffApprovalDialog
 import id.gustyxganteng.agent.feature.workspace.ShellApprovalDialog
 import id.gustyxganteng.agent.feature.workspace.WorkspaceManagerBottomSheet
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -319,6 +322,17 @@ fun ChatScreen(
                     if (uiState.agentState is AgentState.Streaming) {
                         val streaming = uiState.agentState as AgentState.Streaming
                         item {
+                            var liveTypingSec by remember { mutableFloatStateOf(0.1f) }
+                            LaunchedEffect(streaming.isThinking) {
+                                if (!streaming.isThinking) {
+                                    val start = System.currentTimeMillis()
+                                    while (isActive) {
+                                        delay(100)
+                                        liveTypingSec = ((System.currentTimeMillis() - start) / 1000f).coerceAtLeast(0.1f)
+                                    }
+                                }
+                            }
+
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -351,8 +365,15 @@ fun ChatScreen(
                                                     .background(GeminiPrimary, CircleShape)
                                             )
                                             Spacer(Modifier.width(6.dp))
+                                            val activityText = if (streaming.isThinking) {
+                                                streaming.currentActivity
+                                            } else {
+                                                val durStr = String.format(java.util.Locale.US, "%.1fs", liveTypingSec)
+                                                val baseActivity = streaming.currentActivity.substringBefore(" (")
+                                                "$baseActivity ($durStr)"
+                                            }
                                             Text(
-                                                text = streaming.currentActivity,
+                                                text = activityText,
                                                 fontSize = 11.sp,
                                                 color = GeminiTextPrimary,
                                                 fontWeight = FontWeight.Medium
@@ -403,10 +424,13 @@ fun ChatScreen(
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     val outTokens = (streaming.content.length / 4).coerceAtLeast(1)
+                                    val typingSpeed = (outTokens / liveTypingSec).coerceAtLeast(0f)
                                     val statusText = if (streaming.isThinking) {
                                         stringResource(R.string.streaming_thinking_meta, streaming.thinkingTokens)
                                     } else {
-                                        stringResource(R.string.streaming_typing_meta, streaming.thinkingTokens, outTokens)
+                                        val durStr = String.format(java.util.Locale.US, "%.1fs", liveTypingSec)
+                                        val speedStr = String.format(java.util.Locale.US, "%.0f tok/s", typingSpeed)
+                                        "Nalar: ${streaming.thinkingTokens} tok • Mengetik: $durStr ($outTokens tok • $speedStr)"
                                     }
                                     Text(
                                         text = statusText,
