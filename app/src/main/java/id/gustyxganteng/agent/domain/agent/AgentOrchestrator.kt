@@ -202,6 +202,21 @@ class AgentOrchestrator(
             val filteredDbMessages = dbMessages.filter { it.role != MessageRole.SYSTEM }
             val messages = mutableListOf<Message>()
             messages.add(systemMessage)
+
+            if (turnCount == 1 && !workspacePath.isNullOrBlank()) {
+                val lastUserContent = filteredDbMessages.lastOrNull { it.role == MessageRole.USER }?.content ?: ""
+                val ragContext = id.gustyxganteng.agent.domain.context.LocalCodebaseRag.retrieve(workspacePath, lastUserContent)
+                if (!ragContext.isNullOrBlank()) {
+                    messages.add(
+                        Message(
+                            sessionId = sessionId,
+                            role = MessageRole.SYSTEM,
+                            content = ragContext
+                        )
+                    )
+                }
+            }
+
             filteredDbMessages.forEachIndexed { index, msg ->
                 if (index == filteredDbMessages.lastIndex && msg.role == MessageRole.USER) {
                     messages.add(msg.copy(content = msg.content + THINK_ENFORCEMENT))
