@@ -30,7 +30,11 @@
     <string name="cd_stop">Stop</string>
     <string name="cd_close">Close</string>
     <string name="cd_copy">Copy</string>
+    <string name="cd_edit">Edit</string>
+    <string name="cd_reload">Reload Response</string>
     <string name="cd_open_in_canvas">Open in Canvas</string>
+    <string name="prompt_loaded_for_edit">Prompt loaded into input field for editing</string>
+    <string name="reloading_response">Reloading response...</string>
 
     <!-- Thinking & Status -->
     <string name="thinking_in_progress">Thinking...</string>

@@ -113,6 +113,14 @@ class ChatRepository(
         messageDao.deleteMessagesForSession(sessionId)
     }
 
+    suspend fun deleteMessage(messageId: String) {
+        messageDao.deleteMessage(messageId)
+    }
+
+    suspend fun deleteMessagesSince(sessionId: String, timestamp: Long) {
+        messageDao.deleteMessagesSince(sessionId, timestamp)
+    }
+
     private fun messageToEntity(msg: Message): MessageEntity {
         val roleStr = when (msg.role) {
             MessageRole.SYSTEM -> "system"

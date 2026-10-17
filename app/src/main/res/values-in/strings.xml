@@ -30,7 +30,11 @@
     <string name="cd_stop">Berhenti</string>
     <string name="cd_close">Tutup</string>
     <string name="cd_copy">Salin</string>
+    <string name="cd_edit">Edit</string>
+    <string name="cd_reload">Muat Ulang Respon</string>
     <string name="cd_open_in_canvas">Buka di Canvas</string>
+    <string name="prompt_loaded_for_edit">Prompt dimuat ke kolom input untuk diedit</string>
+    <string name="reloading_response">Memuat ulang respon...</string>
 
     <!-- Thinking & Status -->
     <string name="thinking_in_progress">Sedang berpikir...</string>

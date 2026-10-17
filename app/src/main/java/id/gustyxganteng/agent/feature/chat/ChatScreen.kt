@@ -31,12 +31,15 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Palette
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -404,6 +407,14 @@ fun ChatScreen(
                             allMessages = uiState.messages,
                             onOpenCanvas = { title, lang, content ->
                                 viewModel.openCanvas(CanvasArtifact(title = title, language = lang, content = content))
+                            },
+                            onEditPrompt = { text ->
+                                inputText = text
+                                Toast.makeText(context, context.getString(R.string.prompt_loaded_for_edit), Toast.LENGTH_SHORT).show()
+                            },
+                            onReloadMessage = { msg ->
+                                viewModel.regenerateResponse(msg)
+                                Toast.makeText(context, context.getString(R.string.reloading_response), Toast.LENGTH_SHORT).show()
                             }
                         )
                     }
@@ -739,7 +750,9 @@ fun ChatMessageItem(
     message: Message,
     modelName: String,
     allMessages: List<Message> = emptyList(),
-    onOpenCanvas: (title: String, language: String, content: String) -> Unit
+    onOpenCanvas: (title: String, language: String, content: String) -> Unit,
+    onEditPrompt: (String) -> Unit = {},
+    onReloadMessage: (Message) -> Unit = {}
 ) {
     val clipboard = LocalClipboardManager.current
     val context = LocalContext.current
@@ -752,46 +765,84 @@ fun ChatMessageItem(
                 .padding(horizontal = 16.dp, vertical = 6.dp),
             contentAlignment = Alignment.CenterEnd
         ) {
-            Surface(
-                shape = RoundedCornerShape(topStart = 24.dp, topEnd = 4.dp, bottomEnd = 24.dp, bottomStart = 24.dp),
-                color = GeminiSurfaceVariant,
-                modifier = Modifier.widthIn(max = 300.dp)
-            ) {
-                Column(modifier = Modifier.padding(14.dp)) {
-                    if (message.imagesBase64.isNotEmpty()) {
-                        Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.padding(bottom = if (message.content.isNotBlank()) 8.dp else 0.dp)
-                        ) {
-                            message.imagesBase64.forEach { base64Str ->
-                                val bitmap = remember(base64Str) {
-                                    try {
-                                        val cleanBase64 = if (base64Str.contains(",")) base64Str.substringAfter(",") else base64Str
-                                        val bytes = android.util.Base64.decode(cleanBase64, android.util.Base64.DEFAULT)
-                                        android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
-                                    } catch (_: Exception) {
-                                        null
+            Column(horizontalAlignment = Alignment.End) {
+                Surface(
+                    shape = RoundedCornerShape(topStart = 24.dp, topEnd = 4.dp, bottomEnd = 24.dp, bottomStart = 24.dp),
+                    color = GeminiSurfaceVariant,
+                    modifier = Modifier.widthIn(max = 300.dp)
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        if (message.imagesBase64.isNotEmpty()) {
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.padding(bottom = if (message.content.isNotBlank()) 8.dp else 0.dp)
+                            ) {
+                                message.imagesBase64.forEach { base64Str ->
+                                    val bitmap = remember(base64Str) {
+                                        try {
+                                            val cleanBase64 = if (base64Str.contains(",")) base64Str.substringAfter(",") else base64Str
+                                            val bytes = android.util.Base64.decode(cleanBase64, android.util.Base64.DEFAULT)
+                                            android.graphics.BitmapFactory.decodeByteArray(bytes, 0, bytes.size)?.asImageBitmap()
+                                        } catch (_: Exception) {
+                                            null
+                                        }
                                     }
-                                }
-                                if (bitmap != null) {
-                                    Image(
-                                        bitmap = bitmap,
-                                        contentDescription = "Gambar terlampir",
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .heightIn(max = 240.dp)
-                                            .clip(RoundedCornerShape(12.dp)),
-                                        contentScale = ContentScale.Crop
-                                    )
+                                    if (bitmap != null) {
+                                        Image(
+                                            bitmap = bitmap,
+                                            contentDescription = "Gambar terlampir",
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .heightIn(max = 240.dp)
+                                                .clip(RoundedCornerShape(12.dp)),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    }
                                 }
                             }
                         }
+                        if (message.content.isNotBlank()) {
+                            SelectionContainer {
+                                Text(
+                                    text = message.content,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    color = GeminiTextPrimary
+                                )
+                            }
+                        }
                     }
-                    if (message.content.isNotBlank()) {
-                        Text(
-                            text = message.content,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = GeminiTextPrimary
+                }
+
+                // Action buttons below user message bubble: Copy & Edit
+                Row(
+                    modifier = Modifier.padding(top = 2.dp, end = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(
+                        onClick = {
+                            clipboard.setText(AnnotatedString(message.content))
+                            Toast.makeText(context, context.getString(R.string.text_copied), Toast.LENGTH_SHORT).show()
+                        },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ContentCopy,
+                            contentDescription = stringResource(R.string.cd_copy),
+                            tint = GeminiTextSecondary.copy(alpha = 0.8f),
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+
+                    IconButton(
+                        onClick = { onEditPrompt(message.content) },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = stringResource(R.string.cd_edit),
+                            tint = GeminiTextSecondary.copy(alpha = 0.8f),
+                            modifier = Modifier.size(14.dp)
                         )
                     }
                 }
@@ -799,163 +850,179 @@ fun ChatMessageItem(
         }
     } else if (message.role == MessageRole.ASSISTANT) {
         // AI response: Full-width without bubble background
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 10.dp)
-        ) {
-            // Header: Sparkle + Model Name
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 6.dp)
-            ) {
-                GeminiSparkleIcon(size = 15.dp)
-                Spacer(Modifier.width(6.dp))
-                Text(
-                    text = modelName,
-                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                    color = GeminiPrimary
-                )
-            }
-
-            // Thinking Accordion
-            if (!message.reasoningContent.isNullOrBlank()) {
-                val tokens = message.tokenUsage?.reasoningTokens
-                    ?: ((message.reasoningContent?.length ?: 0) / 4).coerceAtLeast(1)
-                ThinkingAccordion(
-                    reasoningContent = message.reasoningContent,
-                    thinkingDurationMs = message.thinkingDurationMs,
-                    isCurrentlyStreaming = false,
-                    thinkingTokens = tokens
-                )
-                Spacer(Modifier.height(8.dp))
-            }
-
-            // Tool Execution Cards
-            message.toolCalls.forEach { toolCall ->
-                ToolExecutionCard(
-                    toolName = toolCall.function.name,
-                    arguments = toolCall.function.arguments,
-                    outputContent = null,
-                    modifier = Modifier.padding(vertical = 3.dp)
-                )
-
-                if (toolCall.function.name == "open_canvas") {
-                    val canvasTitle = try {
-                        org.json.JSONObject(toolCall.function.arguments).optString("title", context.getString(R.string.canvas_title_default))
-                    } catch (e: Exception) {
-                        context.getString(R.string.canvas_title_default)
-                    }
-                    val canvasLang = try {
-                        org.json.JSONObject(toolCall.function.arguments).optString("language", "markdown")
-                    } catch (e: Exception) {
-                        "markdown"
-                    }
-                    val canvasContent = try {
-                        org.json.JSONObject(toolCall.function.arguments).optString("content", "")
-                    } catch (e: Exception) {
-                        ""
-                    }
-                    CanvasPreviewCard(
-                        title = canvasTitle,
-                        language = canvasLang,
-                        onOpenCanvas = {
-                            onOpenCanvas(canvasTitle, canvasLang, canvasContent)
-                        }
-                    )
-                }
-            }
-
-            // Markdown Body
-            if (message.content.isNotBlank()) {
-                MarkdownContent(
-                    markdown = message.content,
-                    onOpenInCanvas = onOpenCanvas
-                )
-            }
-
-            // Inline Canvas Preview Card trigger if full code document is found
-            val isCanvasEligible = message.content.contains("<!DOCTYPE html>", ignoreCase = true) ||
-                message.content.contains("<html", ignoreCase = true)
-            if (isCanvasEligible && message.toolCalls.none { it.function.name == "open_canvas" }) {
-                val cleanWebDoc = extractCanvasContent(message.content)
-                val webTitle = stringResource(R.string.canvas_web_preview_title)
-                CanvasPreviewCard(
-                    title = webTitle,
-                    language = "html",
-                    onOpenCanvas = {
-                        onOpenCanvas(webTitle, "html", cleanWebDoc)
-                    }
-                )
-            }
-
-            // Token Metadata & Actions Row
-            Row(
+        SelectionContainer {
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(horizontal = 16.dp, vertical = 10.dp)
             ) {
-                // Token details with dynamic reasoning calculation
-                val thinkTokens = message.tokenUsage?.reasoningTokens?.takeIf { it > 0 }
-                    ?: message.reasoningContent?.let { (it.length / 4).coerceAtLeast(1) }
-                    ?: 0
-
-                val effectiveUsage = message.tokenUsage?.let { u ->
-                    if (u.reasoningTokens == 0 && thinkTokens > 0) {
-                        u.copy(reasoningTokens = thinkTokens)
-                    } else u
-                } ?: if (message.content.isNotEmpty() || thinkTokens > 0) {
-                    val outTokens = (message.content.length / 4).coerceAtLeast(1)
-                    TokenUsage(
-                        promptTokens = 0,
-                        completionTokens = outTokens,
-                        totalTokens = outTokens + thinkTokens,
-                        reasoningTokens = thinkTokens
-                    )
-                } else null
-
-                if (effectiveUsage != null) {
+                // Header: Sparkle + Model Name
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 6.dp)
+                ) {
+                    GeminiSparkleIcon(size = 15.dp)
+                    Spacer(Modifier.width(6.dp))
                     Text(
-                        text = effectiveUsage.toCompactString(),
-                        fontSize = 11.sp,
-                        color = GeminiTextSecondary
+                        text = modelName,
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                        color = GeminiPrimary
                     )
-                } else {
-                    Spacer(Modifier.width(1.dp))
                 }
 
-                Row {
-                    IconButton(
-                        onClick = {
-                            clipboard.setText(AnnotatedString(message.content))
-                            Toast.makeText(context, context.getString(R.string.text_copied), Toast.LENGTH_SHORT).show()
+                // Thinking Accordion
+                if (!message.reasoningContent.isNullOrBlank()) {
+                    val tokens = message.tokenUsage?.reasoningTokens
+                        ?: ((message.reasoningContent?.length ?: 0) / 4).coerceAtLeast(1)
+                    ThinkingAccordion(
+                        reasoningContent = message.reasoningContent,
+                        thinkingDurationMs = message.thinkingDurationMs,
+                        isCurrentlyStreaming = false,
+                        thinkingTokens = tokens
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
+
+                // Tool Execution Cards
+                message.toolCalls.forEach { toolCall ->
+                    ToolExecutionCard(
+                        toolName = toolCall.function.name,
+                        arguments = toolCall.function.arguments,
+                        outputContent = null,
+                        modifier = Modifier.padding(vertical = 3.dp)
+                    )
+
+                    if (toolCall.function.name == "open_canvas") {
+                        val canvasTitle = try {
+                            org.json.JSONObject(toolCall.function.arguments).optString("title", context.getString(R.string.canvas_title_default))
+                        } catch (e: Exception) {
+                            context.getString(R.string.canvas_title_default)
                         }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.ContentCopy,
-                            contentDescription = stringResource(R.string.cd_copy),
-                            tint = GeminiTextSecondary,
-                            modifier = Modifier.size(18.dp)
+                        val canvasLang = try {
+                            org.json.JSONObject(toolCall.function.arguments).optString("language", "markdown")
+                        } catch (e: Exception) {
+                            "markdown"
+                        }
+                        val canvasContent = try {
+                            org.json.JSONObject(toolCall.function.arguments).optString("content", "")
+                        } catch (e: Exception) {
+                            ""
+                        }
+                        CanvasPreviewCard(
+                            title = canvasTitle,
+                            language = canvasLang,
+                            onOpenCanvas = {
+                                onOpenCanvas(canvasTitle, canvasLang, canvasContent)
+                            }
                         )
                     }
+                }
 
-                    IconButton(
-                        onClick = {
-                            onOpenCanvas(
-                                context.getString(R.string.canvas_ai_response),
-                                "markdown",
-                                message.content
+                // Markdown Body
+                if (message.content.isNotBlank()) {
+                    MarkdownContent(
+                        markdown = message.content,
+                        onOpenInCanvas = onOpenCanvas
+                    )
+                }
+
+                // Inline Canvas Preview Card trigger if full code document is found
+                val isCanvasEligible = message.content.contains("<!DOCTYPE html>", ignoreCase = true) ||
+                    message.content.contains("<html", ignoreCase = true)
+                if (isCanvasEligible && message.toolCalls.none { it.function.name == "open_canvas" }) {
+                    val cleanWebDoc = extractCanvasContent(message.content)
+                    val webTitle = stringResource(R.string.canvas_web_preview_title)
+                    CanvasPreviewCard(
+                        title = webTitle,
+                        language = "html",
+                        onOpenCanvas = {
+                            onOpenCanvas(webTitle, "html", cleanWebDoc)
+                        }
+                    )
+                }
+
+                // Token Metadata & Actions Row
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Token details with dynamic reasoning calculation
+                    val thinkTokens = message.tokenUsage?.reasoningTokens?.takeIf { it > 0 }
+                        ?: message.reasoningContent?.let { (it.length / 4).coerceAtLeast(1) }
+                        ?: 0
+
+                    val effectiveUsage = message.tokenUsage?.let { u ->
+                        if (u.reasoningTokens == 0 && thinkTokens > 0) {
+                            u.copy(reasoningTokens = thinkTokens)
+                        } else u
+                    } ?: if (message.content.isNotEmpty() || thinkTokens > 0) {
+                        val outTokens = (message.content.length / 4).coerceAtLeast(1)
+                        TokenUsage(
+                            promptTokens = 0,
+                            completionTokens = outTokens,
+                            totalTokens = outTokens + thinkTokens,
+                            reasoningTokens = thinkTokens
+                        )
+                    } else null
+
+                    if (effectiveUsage != null) {
+                        Text(
+                            text = effectiveUsage.toCompactString(),
+                            fontSize = 11.sp,
+                            color = GeminiTextSecondary
+                        )
+                    } else {
+                        Spacer(Modifier.width(1.dp))
+                    }
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(
+                            onClick = {
+                                clipboard.setText(AnnotatedString(message.content))
+                                Toast.makeText(context, context.getString(R.string.text_copied), Toast.LENGTH_SHORT).show()
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ContentCopy,
+                                contentDescription = stringResource(R.string.cd_copy),
+                                tint = GeminiTextSecondary,
+                                modifier = Modifier.size(18.dp)
                             )
                         }
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Palette,
-                            contentDescription = stringResource(R.string.cd_open_in_canvas),
-                            tint = GeminiTextSecondary,
-                            modifier = Modifier.size(18.dp)
-                        )
+
+                        IconButton(
+                            onClick = { onReloadMessage(message) }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Refresh,
+                                contentDescription = stringResource(R.string.cd_reload),
+                                tint = GeminiTextSecondary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+
+                        IconButton(
+                            onClick = {
+                                onOpenCanvas(
+                                    context.getString(R.string.canvas_ai_response),
+                                    "markdown",
+                                    message.content
+                                )
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Palette,
+                                contentDescription = stringResource(R.string.cd_open_in_canvas),
+                                tint = GeminiTextSecondary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
                 }
             }

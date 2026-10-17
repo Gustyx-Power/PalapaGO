@@ -212,6 +212,32 @@ class ChatViewModel(
         orchestrator.clearError()
     }
 
+    fun regenerateResponse(message: Message) {
+        val session = uiState.value.currentSession ?: return
+        val settings = uiState.value.appSettings ?: return
+        orchestrator.clearError()
+
+        viewModelScope.launch {
+            chatRepository.deleteMessagesSince(session.id, message.timestamp)
+            AgentForegroundService.start(getApplication(), getApplication<Application>().getString(R.string.service_notification_text))
+            orchestrator.runTurn(
+                scope = viewModelScope,
+                sessionId = session.id,
+                baseUrl = settings.baseUrl,
+                apiKey = settings.apiKey,
+                model = if (session.model == "agnes-3.0-pro") "agnes-3.0-flash" else session.model,
+                workspacePath = session.workspacePath ?: settings.activeWorkspacePath,
+                yoloMode = settings.yoloMode,
+                enableWebSearch = settings.webSearchEnabled,
+                useTermuxEnv = true,
+                claudeMaxMode = settings.claudeMaxMode,
+                antiAiSlopMode = settings.antiAiSlopMode,
+                tavilyDeepSearchEnabled = settings.tavilyDeepSearchEnabled,
+                academicMode = settings.academicMode
+            )
+        }
+    }
+
     fun sendMessage(content: String, images: List<String> = emptyList()) {
         val session = uiState.value.currentSession ?: return
         val settings = uiState.value.appSettings ?: return

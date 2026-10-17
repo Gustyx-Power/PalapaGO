@@ -50,6 +50,9 @@ interface MessageDao {
 
     @Query("DELETE FROM messages WHERE id = :messageId")
     suspend fun deleteMessage(messageId: String)
+
+    @Query("DELETE FROM messages WHERE sessionId = :sessionId AND timestamp >= :timestamp")
+    suspend fun deleteMessagesSince(sessionId: String, timestamp: Long)
 }
 
 @Dao
