@@ -46,7 +46,7 @@ class ShellTool {
         val command = args["command"]?.jsonPrimitive?.content
             ?: return@withContext ToolExecutionResult(toolCallId, "execute_shell", stderr = "Perintah kosong.", isSuccess = false)
         val subDir = args["working_dir"]?.jsonPrimitive?.content
-        val timeoutMs = args["timeout_ms"]?.jsonPrimitive?.longOrNull ?: 30000L
+        val timeoutMs = args["timeout_ms"]?.jsonPrimitive?.longOrNull ?: 120000L
 
         val normalizedRoot = WorkspacePathResolver.normalizePath(workspaceRoot)
         val workingDirFile = if (!subDir.isNullOrEmpty()) {

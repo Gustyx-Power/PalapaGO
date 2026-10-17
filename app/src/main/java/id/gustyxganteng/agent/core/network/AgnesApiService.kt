@@ -49,8 +49,10 @@ class AgnesApiServiceImpl(
     private val client: OkHttpClient = OkHttpClient.Builder()
         .addInterceptor(retryInterceptor)
         .connectTimeout(60, TimeUnit.SECONDS)
-        .readTimeout(180, TimeUnit.SECONDS)
+        .readTimeout(300, TimeUnit.SECONDS)
         .writeTimeout(60, TimeUnit.SECONDS)
+        .retryOnConnectionFailure(true)
+        .pingInterval(15, TimeUnit.SECONDS)
         .build()
 
     override fun streamChat(

@@ -263,7 +263,13 @@ class SseStreamParser(
             emit(StreamEvent.UsageUpdate(finalUsage))
             emit(StreamEvent.StreamCompleted)
         } catch (e: Throwable) {
-            emit(StreamEvent.StreamError(e, e.localizedMessage ?: "Unknown SSE stream error"))
+            val isTimeout = e is java.net.SocketTimeoutException || e.message?.contains("timeout", ignoreCase = true) == true
+            val errorMsg = if (isTimeout) {
+                "Koneksi terputus karena batas waktu (Timeout) saat menerima respons. Silakan tekan Coba Lagi."
+            } else {
+                e.localizedMessage ?: "Terjadi kesalahan saat memproses streaming data."
+            }
+            emit(StreamEvent.StreamError(e, errorMsg))
         } finally {
             try {
                 source.close()

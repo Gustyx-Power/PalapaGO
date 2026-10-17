@@ -307,7 +307,7 @@ class AgentOrchestrator(
                     val promptForSummary = Message(
                         sessionId = sessionId,
                         role = MessageRole.USER,
-                        content = "[System Directive: Semua aksi tool telah selesai dieksekusi. Berikan ringkasan akhir yang lengkap dan terstruktur mengenai tindakan yang telah dilakukan beserta hasilnya.]"
+                        content = "[System Directive: Semua aksi tool telah selesai dieksekusi. Berikan kesimpulan dan ringkasan akhir yang terstruktur: sebutkan file yang dibuat atau di-refactor, baris kode yang dibuang dan ditambahkan, serta hasil eksekusi.]"
                     )
                     chatRepository.saveMessage(promptForSummary)
                     continue
@@ -362,8 +362,53 @@ class AgentOrchestrator(
                     }
                 }
 
-                // Eksekusi tool
-                _agentState.value = AgentState.ExecutingTool(toolName, "Menjalankan $toolName...")
+                // Eksekusi tool dengan deskripsi aksi yang jelas
+                val executionDesc = when (toolName) {
+                    "write_file" -> {
+                        val path = parsedArgs["path"]?.jsonPrimitive?.content ?: "file"
+                        val lines = parsedArgs["content"]?.jsonPrimitive?.content?.lines()?.size ?: 0
+                        "Menulis file $path (+$lines baris)"
+                    }
+                    "apply_diff" -> {
+                        val path = parsedArgs["path"]?.jsonPrimitive?.content ?: "file"
+                        val searchLines = parsedArgs["search_block"]?.jsonPrimitive?.content?.lines()?.size ?: 0
+                        val replaceLines = parsedArgs["replace_block"]?.jsonPrimitive?.content?.lines()?.size ?: 0
+                        "Refactor $path (-$searchLines / +$replaceLines baris)"
+                    }
+                    "execute_shell" -> {
+                        val cmd = parsedArgs["command"]?.jsonPrimitive?.content ?: ""
+                        "Terminal: $cmd"
+                    }
+                    "read_file" -> {
+                        val path = parsedArgs["path"]?.jsonPrimitive?.content ?: "file"
+                        val start = parsedArgs["start_line"]?.jsonPrimitive?.content
+                        val end = parsedArgs["end_line"]?.jsonPrimitive?.content
+                        if (start != null && end != null) "Membaca $path (baris $start-$end)" else "Membaca $path"
+                    }
+                    "list_directory" -> {
+                        val path = parsedArgs["path"]?.jsonPrimitive?.content?.ifEmpty { "." } ?: "."
+                        "Inspeksi direktori: $path"
+                    }
+                    "search_files" -> {
+                        val query = parsedArgs["query"]?.jsonPrimitive?.content ?: ""
+                        "Mencari kode: '$query'"
+                    }
+                    "web_search" -> {
+                        val query = parsedArgs["query"]?.jsonPrimitive?.content ?: ""
+                        "Mencari web: '$query'"
+                    }
+                    "read_webpage" -> {
+                        val url = parsedArgs["url"]?.jsonPrimitive?.content ?: ""
+                        "Membaca dokumentasi web: $url"
+                    }
+                    "open_canvas" -> {
+                        val title = parsedArgs["title"]?.jsonPrimitive?.content ?: "dokumen"
+                        "Membuka Canvas: $title"
+                    }
+                    else -> "Menjalankan $toolName..."
+                }
+
+                _agentState.value = AgentState.ExecutingTool(toolName, executionDesc)
                 val result = executeToolInternal(toolCall.id, toolName, parsedArgs, workspacePath, useTermuxEnv)
                 saveToolResult(sessionId, toolCall.id, result)
             }
