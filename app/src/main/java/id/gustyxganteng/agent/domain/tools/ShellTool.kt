@@ -59,7 +59,8 @@ class ShellTool {
 
         // Tentukan shell binary
         val termuxBash = File("/data/data/com.termux/files/usr/bin/bash")
-        val shellExecutable = if (useTermuxEnv && termuxBash.exists() && termuxBash.canExecute()) {
+        val hasTermux = useTermuxEnv && termuxBash.exists() && termuxBash.canExecute()
+        val shellExecutable = if (hasTermux) {
             termuxBash.absolutePath
         } else {
             "/system/bin/sh"
@@ -70,11 +71,17 @@ class ShellTool {
 
         // Environment variables
         val env = processBuilder.environment()
-        if (useTermuxEnv) {
+        if (hasTermux) {
             env["PREFIX"] = "/data/data/com.termux/files/usr"
             val currentPath = System.getenv("PATH") ?: ""
             env["PATH"] = "/data/data/com.termux/files/usr/bin:/data/data/com.termux/files/usr/bin/applets:$currentPath"
             env["HOME"] = "/data/data/com.termux/files/home"
+        } else {
+            val currentPath = System.getenv("PATH") ?: ""
+            env["PATH"] = "/system/bin:/system/xbin:/vendor/bin:$currentPath"
+            env["HOME"] = workingDirFile.absolutePath
+            val tmpDir = File(workingDirFile, ".tmp").apply { mkdirs() }
+            env["TMPDIR"] = tmpDir.absolutePath
         }
 
         try {

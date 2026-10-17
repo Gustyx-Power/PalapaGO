@@ -109,16 +109,150 @@ fun CanvasModalSheet(
     val context = LocalContext.current
 
     val isWeb = remember(artifact.language, currentContent) {
-        artifact.language.lowercase() in listOf("html", "js", "css", "web", "htm", "svg") ||
+        val lang = artifact.language.lowercase().trim()
+        lang in listOf("html", "js", "javascript", "css", "web", "htm", "svg", "react", "jsx", "tsx", "ts", "typescript", "node") ||
             currentContent.contains("<!DOCTYPE html>", ignoreCase = true) ||
             currentContent.contains("<html", ignoreCase = true) ||
             currentContent.contains("<svg", ignoreCase = true) ||
+            currentContent.contains("import React", ignoreCase = true) ||
+            currentContent.contains("from 'react'", ignoreCase = true) ||
+            currentContent.contains("from \"react\"", ignoreCase = true) ||
+            currentContent.contains("function App(", ignoreCase = true) ||
+            currentContent.contains("const App =", ignoreCase = true) ||
             (currentContent.contains("</") && currentContent.contains(">"))
     }
 
-    val formattedHtml = remember(currentContent) {
+    val formattedHtml = remember(currentContent, artifact.language) {
         val trimmed = currentContent.trim()
-        if (!trimmed.startsWith("<!DOCTYPE", ignoreCase = true) && !trimmed.startsWith("<html", ignoreCase = true)) {
+        val lang = artifact.language.lowercase().trim()
+        val isReact = lang in listOf("react", "jsx", "tsx") ||
+            trimmed.contains("import React", ignoreCase = true) ||
+            trimmed.contains("from 'react'", ignoreCase = true) ||
+            trimmed.contains("from \"react\"", ignoreCase = true) ||
+            trimmed.contains("function App(", ignoreCase = true) ||
+            trimmed.contains("const App =", ignoreCase = true)
+
+        val isNodeConsole = (lang in listOf("node", "javascript", "js") || trimmed.contains("console.log(")) &&
+            !trimmed.startsWith("<!DOCTYPE", ignoreCase = true) &&
+            !trimmed.startsWith("<html", ignoreCase = true) &&
+            !trimmed.contains("<body", ignoreCase = true) &&
+            !isReact
+
+        if (isReact) {
+            val sanitizedJsx = trimmed
+                .replace(Regex("""import\s+.*?from\s+['"].*?['"];?"""), "")
+                .replace(Regex("""export\s+default\s+"""), "")
+                .replace(Regex("""export\s+"""), "")
+
+            """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>React Live Preview</title>
+                <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+                <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+                <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+                <script src="https://cdn.tailwindcss.com"></script>
+                <style>
+                    *, *::before, *::after { box-sizing: border-box; }
+                    body {
+                        margin: 0;
+                        padding: 16px;
+                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+                        background-color: #0b0c0e;
+                        color: #f4f4f5;
+                        min-height: 100vh;
+                    }
+                </style>
+            </head>
+            <body>
+                <div id="root"></div>
+                <script type="text/babel">
+                    const { useState, useEffect, useRef, useMemo, useCallback } = React;
+                    $sanitizedJsx
+                    try {
+                        const targetComponent = typeof App !== 'undefined' ? App : (typeof Main !== 'undefined' ? Main : null);
+                        if (targetComponent) {
+                            ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(targetComponent));
+                        }
+                    } catch (e) {
+                        console.error("React Render Error: " + e.message);
+                    }
+                </script>
+            </body>
+            </html>
+            """.trimIndent()
+        } else if (isNodeConsole) {
+            val escapedCode = trimmed
+                .replace("\\", "\\\\")
+                .replace("`", "\\`")
+                .replace("\$", "\\\$")
+
+            """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Node / JS Live Execution</title>
+                <style>
+                    *, *::before, *::after { box-sizing: border-box; }
+                    body {
+                        margin: 0;
+                        padding: 16px;
+                        font-family: monospace;
+                        background: #0e1014;
+                        color: #e6edf3;
+                        font-size: 13px;
+                        line-height: 1.6;
+                    }
+                    .header {
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        padding-bottom: 10px;
+                        margin-bottom: 14px;
+                        border-bottom: 1px solid #23252c;
+                        color: #7ee787;
+                        font-weight: bold;
+                    }
+                    .terminal {
+                        white-space: pre-wrap;
+                        word-break: break-all;
+                    }
+                    .line-log { color: #f0f6fc; margin: 2px 0; }
+                    .line-err { color: #ff7b72; margin: 2px 0; }
+                    .line-info { color: #79c0ff; margin: 2px 0; }
+                </style>
+            </head>
+            <body>
+                <div class="header">● Node.js / JS Live Runtime</div>
+                <div id="terminal" class="terminal"></div>
+                <script>
+                    const terminal = document.getElementById('terminal');
+                    function appendLog(msg, cls) {
+                        const div = document.createElement('div');
+                        div.className = cls;
+                        div.textContent = msg;
+                        terminal.appendChild(div);
+                    }
+                    console.log = (...args) => appendLog(args.map(a => typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a)).join(' '), 'line-log');
+                    console.error = (...args) => appendLog('Error: ' + args.map(a => String(a)).join(' '), 'line-err');
+                    console.warn = (...args) => appendLog('Warn: ' + args.map(a => String(a)).join(' '), 'line-info');
+                    console.info = (...args) => appendLog('Info: ' + args.map(a => String(a)).join(' '), 'line-info');
+
+                    try {
+                        eval(`$escapedCode`);
+                    } catch (err) {
+                        console.error(err.message);
+                    }
+                </script>
+            </body>
+            </html>
+            """.trimIndent()
+        } else if (!trimmed.startsWith("<!DOCTYPE", ignoreCase = true) && !trimmed.startsWith("<html", ignoreCase = true)) {
             """
             <!DOCTYPE html>
             <html lang="en">
