@@ -169,7 +169,7 @@ class AgnesApiServiceImpl(
         val requestBody = jsonBody.toRequestBody("application/json; charset=utf-8".toMediaType())
 
         if (apiKey.isBlank()) {
-            throw IOException("API Key Agnes belum diisi. Masukkan API Key di menu Pengaturan & BYOK.")
+            throw IOException("API Key Agnes belum terkonfigurasi. Pastikan AGNES_API_KEY sudah diisi pada local.properties.")
         }
 
         val request = Request.Builder()
@@ -192,7 +192,7 @@ class AgnesApiServiceImpl(
             val errBody = response.body?.string() ?: "HTTP ${response.code}"
             response.close()
             val friendlyMsg = when (response.code) {
-                401 -> "Autentikasi gagal (HTTP 401): API Key Agnes tidak valid. Periksa kembali di Pengaturan."
+                401 -> "Autentikasi gagal (HTTP 401): API Key Agnes tidak valid. Periksa konfigurasi AGNES_API_KEY di local.properties."
                 403 -> "Akses ditolak (HTTP 403): Tidak memiliki izin untuk model ini."
                 404 -> "Endpoint API tidak ditemukan (HTTP 404): $endpoint"
                 429 -> "Rate limit tercapai (HTTP 429): Terlalu banyak permintaan ke Agnes API. Mohon tunggu sesaat."

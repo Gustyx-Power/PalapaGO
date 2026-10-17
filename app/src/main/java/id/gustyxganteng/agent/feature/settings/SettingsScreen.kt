@@ -15,12 +15,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
+import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Speed
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -29,7 +29,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
@@ -49,8 +48,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import id.gustyxganteng.agent.R
 import id.gustyxganteng.agent.core.database.AppSettingsRepository
@@ -66,21 +63,20 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
-    var apiKey by remember { mutableStateOf("") }
-    var baseUrl by remember { mutableStateOf("") }
-    var selectedModel by remember { mutableStateOf("") }
+    var selectedModel by remember { mutableStateOf("agnes-3.0-flash") }
     var maxRetries by remember { mutableFloatStateOf(5f) }
     var yoloMode by remember { mutableStateOf(false) }
+    var antiAiSlopMode by remember { mutableStateOf(true) }
+    var tavilyDeepSearch by remember { mutableStateOf(false) }
     var claudeMaxMode by remember { mutableStateOf(true) }
-    var showApiKey by remember { mutableStateOf(false) }
 
     LaunchedEffect(settings) {
         settings?.let {
-            apiKey = it.apiKey
-            baseUrl = it.baseUrl
             selectedModel = if (it.selectedModel == "agnes-3.0-pro") "agnes-3.0-flash" else it.selectedModel
             maxRetries = it.maxRetries.toFloat()
             yoloMode = it.yoloMode
+            antiAiSlopMode = it.antiAiSlopMode
+            tavilyDeepSearch = it.tavilyDeepSearchEnabled
             claudeMaxMode = it.claudeMaxMode
         }
     }
@@ -105,166 +101,43 @@ fun SettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Card BYOK: API Key & Endpoint
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Key, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.width(8.dp))
-                        Text(stringResource(R.string.settings_byok_header), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
-                    }
+            ModelSelectionCard(
+                selectedModel = selectedModel,
+                onSelectModel = { selectedModel = it }
+            )
 
-                    OutlinedTextField(
-                        value = apiKey,
-                        onValueChange = { apiKey = it },
-                        label = { Text(stringResource(R.string.settings_api_key_label)) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        visualTransformation = if (showApiKey) VisualTransformation.None else PasswordVisualTransformation(),
-                        trailingIcon = {
-                            IconButton(onClick = { showApiKey = !showApiKey }) {
-                                Icon(if (showApiKey) Icons.Default.VisibilityOff else Icons.Default.Visibility, contentDescription = null)
-                            }
-                        }
-                    )
+            SecurityCard(
+                yoloMode = yoloMode,
+                onYoloModeChange = { yoloMode = it },
+                maxRetries = maxRetries,
+                onMaxRetriesChange = { maxRetries = it }
+            )
 
-                    OutlinedTextField(
-                        value = baseUrl,
-                        onValueChange = { baseUrl = it },
-                        label = { Text(stringResource(R.string.settings_base_url_label)) },
-                        placeholder = { Text("https://apihub.agnes-ai.com/v1") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
+            AntiAiSlopCard(
+                antiAiSlopMode = antiAiSlopMode,
+                onAntiAiSlopModeChange = { antiAiSlopMode = it }
+            )
 
-            // Card Model Selector
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Speed, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.width(8.dp))
-                        Text(stringResource(R.string.settings_model_header), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
-                    }
+            WebSearchCard(
+                tavilyDeepSearch = tavilyDeepSearch,
+                onTavilyDeepSearchChange = { tavilyDeepSearch = it }
+            )
 
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilterChip(
-                            selected = selectedModel == "agnes-3.0-flash",
-                            onClick = { selectedModel = "agnes-3.0-flash" },
-                            label = { Text(stringResource(R.string.model_fast_desc, "agnes-3.0-flash")) }
-                        )
-                    }
+            AgentModeCard(
+                claudeMaxMode = claudeMaxMode,
+                onClaudeMaxModeChange = { claudeMaxMode = it }
+            )
 
-                    OutlinedTextField(
-                        value = selectedModel,
-                        onValueChange = { selectedModel = it },
-                        label = { Text(stringResource(R.string.settings_custom_model_label)) },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            }
-
-            // Card Resilience & Safety
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Security, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.width(8.dp))
-                        Text(stringResource(R.string.settings_security_header), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
-                    }
-
-                    // Max Retries
-                    Text(
-                        stringResource(R.string.settings_max_retries, maxRetries.toInt()),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Slider(
-                        value = maxRetries,
-                        onValueChange = { maxRetries = it },
-                        valueRange = 1f..10f,
-                        steps = 8
-                    )
-
-                    // YOLO Mode
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(stringResource(R.string.settings_yolo_title), fontWeight = FontWeight.SemiBold)
-                            Text(
-                                stringResource(R.string.settings_yolo_desc),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Switch(
-                            checked = yoloMode,
-                            onCheckedChange = { yoloMode = it }
-                        )
-                    }
-                }
-            }
-
-            // Card Agent Execution Mode (Claude Code Max)
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Default.Speed, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        Spacer(Modifier.width(8.dp))
-                        Text(stringResource(R.string.settings_agent_mode_header), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(stringResource(R.string.settings_claude_max_title), fontWeight = FontWeight.SemiBold)
-                            Text(
-                                stringResource(R.string.settings_claude_max_desc),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Switch(
-                            checked = claudeMaxMode,
-                            onCheckedChange = { claudeMaxMode = it }
-                        )
-                    }
-                }
-            }
-
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(4.dp))
 
             Button(
                 onClick = {
                     scope.launch {
-                        settingsRepository.updateApiKey(apiKey)
-                        settingsRepository.updateBaseUrl(baseUrl)
                         settingsRepository.updateSelectedModel(selectedModel)
                         settingsRepository.updateMaxRetries(maxRetries.toInt())
                         settingsRepository.updateYoloMode(yoloMode)
+                        settingsRepository.updateAntiAiSlopMode(antiAiSlopMode)
+                        settingsRepository.updateTavilyDeepSearch(tavilyDeepSearch)
                         settingsRepository.updateClaudeMaxMode(claudeMaxMode)
                         Toast.makeText(context, context.getString(R.string.settings_saved_toast), Toast.LENGTH_SHORT).show()
                         onNavigateBack()
@@ -275,6 +148,209 @@ fun SettingsScreen(
                 Icon(Icons.Default.Save, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.settings_save_button))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ModelSelectionCard(
+    selectedModel: String,
+    onSelectModel: (String) -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Speed, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.settings_model_header), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FilterChip(
+                    selected = selectedModel == "agnes-3.0-flash",
+                    onClick = { onSelectModel("agnes-3.0-flash") },
+                    label = { Text("agnes-3.0-flash") }
+                )
+            }
+
+            Text(
+                stringResource(R.string.settings_model_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun SecurityCard(
+    yoloMode: Boolean,
+    onYoloModeChange: (Boolean) -> Unit,
+    maxRetries: Float,
+    onMaxRetriesChange: (Float) -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Security, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.settings_security_header), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.settings_yolo_title), fontWeight = FontWeight.SemiBold)
+                    Text(
+                        stringResource(R.string.settings_yolo_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = yoloMode,
+                    onCheckedChange = onYoloModeChange
+                )
+            }
+
+            Text(
+                stringResource(R.string.settings_max_retries, maxRetries.toInt()),
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Slider(
+                value = maxRetries,
+                onValueChange = onMaxRetriesChange,
+                valueRange = 1f..10f,
+                steps = 8
+            )
+        }
+    }
+}
+
+@Composable
+private fun AntiAiSlopCard(
+    antiAiSlopMode: Boolean,
+    onAntiAiSlopModeChange: (Boolean) -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Shield, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.settings_anti_slop_title), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.settings_anti_slop_title), fontWeight = FontWeight.SemiBold)
+                    Text(
+                        stringResource(R.string.settings_anti_slop_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = antiAiSlopMode,
+                    onCheckedChange = onAntiAiSlopModeChange
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WebSearchCard(
+    tavilyDeepSearch: Boolean,
+    onTavilyDeepSearchChange: (Boolean) -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.settings_search_header), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.settings_tavily_title), fontWeight = FontWeight.SemiBold)
+                    Text(
+                        stringResource(R.string.settings_tavily_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = tavilyDeepSearch,
+                    onCheckedChange = onTavilyDeepSearchChange
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun AgentModeCard(
+    claudeMaxMode: Boolean,
+    onClaudeMaxModeChange: (Boolean) -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Bolt, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.settings_agent_mode_header), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.settings_claude_max_title), fontWeight = FontWeight.SemiBold)
+                    Text(
+                        stringResource(R.string.settings_claude_max_desc),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Switch(
+                    checked = claudeMaxMode,
+                    onCheckedChange = onClaudeMaxModeChange
+                )
             }
         }
     }

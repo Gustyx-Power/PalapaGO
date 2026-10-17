@@ -110,16 +110,22 @@
     <string name="save">Simpan</string>
 
     <!-- Settings -->
-    <string name="settings_title">Pengaturan &amp; BYOK</string>
-    <string name="settings_byok_header">Konfigurasi API Agnes (BYOK)</string>
-    <string name="settings_api_key_label">API Key Agnes (Bearer)</string>
+    <string name="settings_title">Pengaturan</string>
+    <string name="settings_byok_header">Konfigurasi API Agnes</string>
+    <string name="settings_api_key_label">API Key Agnes</string>
     <string name="settings_base_url_label">Base URL</string>
     <string name="settings_model_header">Pilihan Model Default</string>
+    <string name="settings_model_desc">Model penalaran cepat yang dioptimalkan untuk eksekusi tugas coding di Android.</string>
     <string name="settings_custom_model_label">Nama Model Kustom</string>
     <string name="settings_security_header">Keamanan &amp; Resiliensi</string>
     <string name="settings_max_retries">Batas Maksimal Percobaan Ulang (Retry): %1$d kali</string>
     <string name="settings_yolo_title">Auto-Setujui (Mode YOLO)</string>
     <string name="settings_yolo_desc">Mengeksekusi penulisan file dan shell tanpa dialog konfirmasi.</string>
+    <string name="settings_anti_slop_title">Mode Anti AI-Slop</string>
+    <string name="settings_anti_slop_desc">Menghilangkan basa-basi, pola kode redundan, dan boilerplate tidak perlu.</string>
+    <string name="settings_search_header">Konfigurasi Mesin Pencari</string>
+    <string name="settings_tavily_title">Gunakan Tavily Deep Search</string>
+    <string name="settings_tavily_desc">Aktifkan hanya untuk riset mendalam. Mode standar menggunakan DuckDuckGo &amp; Wikipedia tanpa batas.</string>
     <string name="settings_agent_mode_header">Mode Eksekusi Agent</string>
     <string name="settings_claude_max_title">Mode Claude Code Max</string>
     <string name="settings_claude_max_desc">Penalaran mendalam (budget token 16k), loop otonom 25 putaran, dan eksekusi tugas menyeluruh layaknya Claude Code.</string>

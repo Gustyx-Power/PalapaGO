@@ -108,7 +108,9 @@ class AgentOrchestrator(
         yoloMode: Boolean,
         enableWebSearch: Boolean,
         useTermuxEnv: Boolean,
-        claudeMaxMode: Boolean = true
+        claudeMaxMode: Boolean = true,
+        antiAiSlopMode: Boolean = true,
+        tavilyDeepSearchEnabled: Boolean = false
     ) {
         val previousJob = activeJob
         activeJob?.cancel()
@@ -124,7 +126,9 @@ class AgentOrchestrator(
                     yoloMode = yoloMode,
                     enableWebSearch = enableWebSearch,
                     useTermuxEnv = useTermuxEnv,
-                    claudeMaxMode = claudeMaxMode
+                    claudeMaxMode = claudeMaxMode,
+                    antiAiSlopMode = antiAiSlopMode,
+                    tavilyDeepSearchEnabled = tavilyDeepSearchEnabled
                 )
             } catch (e: CancellationException) {
                 // Jangan ubah CancellationException menjadi AgentState.Error
@@ -149,7 +153,9 @@ class AgentOrchestrator(
         yoloMode: Boolean,
         enableWebSearch: Boolean,
         useTermuxEnv: Boolean,
-        claudeMaxMode: Boolean = true
+        claudeMaxMode: Boolean = true,
+        antiAiSlopMode: Boolean = true,
+        tavilyDeepSearchEnabled: Boolean = false
     ) {
         var continueLoop = true
         var turnCount = 0
@@ -174,7 +180,8 @@ class AgentOrchestrator(
                 workspacePath = workspacePath,
                 yoloMode = yoloMode,
                 hasWebTools = enableWebSearch,
-                claudeMaxMode = claudeMaxMode
+                claudeMaxMode = claudeMaxMode,
+                antiAiSlopMode = antiAiSlopMode
             )
             val systemMessage = Message(
                 sessionId = sessionId,
@@ -545,6 +552,11 @@ class AgentOrchestrator(
                         val query = parsedArgs["query"]?.jsonPrimitive?.content ?: ""
                         "Mencari web: '$query'"
                     }
+                    "wikipedia_search" -> {
+                        val query = parsedArgs["query"]?.jsonPrimitive?.content ?: ""
+                        val lang = parsedArgs["lang"]?.jsonPrimitive?.content ?: "id"
+                        "Mencari Wikipedia ($lang): '$query'"
+                    }
                     "read_webpage" -> {
                         val url = parsedArgs["url"]?.jsonPrimitive?.content ?: ""
                         "Membaca dokumentasi web: $url"
@@ -557,7 +569,14 @@ class AgentOrchestrator(
                 }
 
                 _agentState.value = AgentState.ExecutingTool(toolName, executionDesc)
-                val result = executeToolInternal(toolCall.id, toolName, parsedArgs, workspacePath, useTermuxEnv)
+                val result = executeToolInternal(
+                    toolCallId = toolCall.id,
+                    toolName = toolName,
+                    args = parsedArgs,
+                    workspacePath = workspacePath,
+                    useTermuxEnv = useTermuxEnv,
+                    tavilyDeepSearchEnabled = tavilyDeepSearchEnabled
+                )
                 saveToolResult(sessionId, toolCall.id, result)
             }
         }
@@ -568,7 +587,8 @@ class AgentOrchestrator(
         toolName: String,
         args: JsonObject,
         workspacePath: String?,
-        useTermuxEnv: Boolean
+        useTermuxEnv: Boolean,
+        tavilyDeepSearchEnabled: Boolean
     ): ToolExecutionResult {
         val root = workspacePath ?: "/storage/emulated/0"
         return when (toolName) {
@@ -578,7 +598,8 @@ class AgentOrchestrator(
             "apply_diff" -> fileSystemTool.applyDiff(toolCallId, root, args)
             "search_files" -> fileSystemTool.searchFiles(toolCallId, root, args)
             "execute_shell" -> shellTool.execute(toolCallId, root, args, useTermuxEnv)
-            "web_search" -> webTool.search(toolCallId, args)
+            "web_search" -> webTool.search(toolCallId, args, useTavilyDeepSearch = tavilyDeepSearchEnabled)
+            "wikipedia_search" -> webTool.wikipediaSearch(toolCallId, args)
             "read_webpage" -> webTool.readWebpage(toolCallId, args)
             "open_canvas" -> canvasTool.execute(toolCallId, args)
             else -> ToolExecutionResult(toolCallId, toolName, stderr = "Tool tidak dikenal: $toolName", isSuccess = false)

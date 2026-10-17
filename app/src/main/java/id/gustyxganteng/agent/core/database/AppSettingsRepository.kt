@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import id.gustyxganteng.agent.core.network.KeyVault
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -19,6 +20,8 @@ data class AppSettings(
     val selectedModel: String,
     val maxRetries: Int,
     val yoloMode: Boolean,
+    val antiAiSlopMode: Boolean = true,
+    val tavilyDeepSearchEnabled: Boolean = false,
     val activeWorkspacePath: String?,
     val webSearchEnabled: Boolean,
     val canvasEnabled: Boolean,
@@ -34,6 +37,8 @@ class AppSettingsRepository(private val context: Context) {
         val SELECTED_MODEL = stringPreferencesKey("selected_model")
         val MAX_RETRIES = intPreferencesKey("max_retries")
         val YOLO_MODE = booleanPreferencesKey("yolo_mode")
+        val ANTI_AI_SLOP_MODE = booleanPreferencesKey("anti_ai_slop_mode")
+        val TAVILY_DEEP_SEARCH = booleanPreferencesKey("tavily_deep_search")
         val ACTIVE_WORKSPACE_PATH = stringPreferencesKey("active_workspace_path")
         val WEB_SEARCH_ENABLED = booleanPreferencesKey("web_search_enabled")
         val CANVAS_ENABLED = booleanPreferencesKey("canvas_enabled")
@@ -42,12 +47,22 @@ class AppSettingsRepository(private val context: Context) {
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { preferences ->
+        val embeddedKey = KeyVault.getAgnesApiKey()
+        val storedKey = preferences[PreferencesKeys.API_KEY] ?: ""
+        val effectiveKey = embeddedKey.ifBlank { storedKey }
+
+        val embeddedBaseUrl = KeyVault.getAgnesBaseUrl()
+        val storedBaseUrl = preferences[PreferencesKeys.BASE_URL] ?: ""
+        val effectiveBaseUrl = embeddedBaseUrl.ifBlank { storedBaseUrl.ifBlank { "https://apihub.agnes-ai.com/v1" } }
+
         AppSettings(
-            apiKey = preferences[PreferencesKeys.API_KEY] ?: "",
-            baseUrl = preferences[PreferencesKeys.BASE_URL] ?: "https://apihub.agnes-ai.com/v1",
+            apiKey = effectiveKey,
+            baseUrl = effectiveBaseUrl,
             selectedModel = preferences[PreferencesKeys.SELECTED_MODEL] ?: "agnes-3.0-flash",
             maxRetries = preferences[PreferencesKeys.MAX_RETRIES] ?: 5,
             yoloMode = preferences[PreferencesKeys.YOLO_MODE] ?: false,
+            antiAiSlopMode = preferences[PreferencesKeys.ANTI_AI_SLOP_MODE] ?: true,
+            tavilyDeepSearchEnabled = preferences[PreferencesKeys.TAVILY_DEEP_SEARCH] ?: false,
             activeWorkspacePath = preferences[PreferencesKeys.ACTIVE_WORKSPACE_PATH],
             webSearchEnabled = preferences[PreferencesKeys.WEB_SEARCH_ENABLED] ?: true,
             canvasEnabled = preferences[PreferencesKeys.CANVAS_ENABLED] ?: true,
@@ -74,6 +89,14 @@ class AppSettingsRepository(private val context: Context) {
 
     suspend fun updateYoloMode(enabled: Boolean) {
         context.dataStore.edit { it[PreferencesKeys.YOLO_MODE] = enabled }
+    }
+
+    suspend fun updateAntiAiSlopMode(enabled: Boolean) {
+        context.dataStore.edit { it[PreferencesKeys.ANTI_AI_SLOP_MODE] = enabled }
+    }
+
+    suspend fun updateTavilyDeepSearch(enabled: Boolean) {
+        context.dataStore.edit { it[PreferencesKeys.TAVILY_DEEP_SEARCH] = enabled }
     }
 
     suspend fun updateActiveWorkspace(path: String?) {

@@ -110,16 +110,22 @@
     <string name="save">Save</string>
 
     <!-- Settings -->
-    <string name="settings_title">Settings &amp; BYOK</string>
-    <string name="settings_byok_header">Agnes API Configuration (BYOK)</string>
-    <string name="settings_api_key_label">Agnes API Key (Bearer)</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_byok_header">Agnes API Configuration</string>
+    <string name="settings_api_key_label">Agnes API Key</string>
     <string name="settings_base_url_label">Base URL</string>
     <string name="settings_model_header">Default Model Selection</string>
+    <string name="settings_model_desc">Fast reasoning model tailored for Android agentic tasks.</string>
     <string name="settings_custom_model_label">Custom Model Name</string>
     <string name="settings_security_header">Security &amp; Resilience</string>
     <string name="settings_max_retries">Max Retry Attempts: %1$d times</string>
     <string name="settings_yolo_title">Auto-Approve (YOLO Mode)</string>
     <string name="settings_yolo_desc">Execute file writing and shell commands without confirmation dialogs.</string>
+    <string name="settings_anti_slop_title">Anti AI-Slop Mode</string>
+    <string name="settings_anti_slop_desc">Eliminate AI tropes, conversational fluff, and redundant code boilerplate.</string>
+    <string name="settings_search_header">Web Search Configuration</string>
+    <string name="settings_tavily_title">Use Tavily Deep Search</string>
+    <string name="settings_tavily_desc">Enable only for deep research. Standard mode uses unlimited DuckDuckGo &amp; Wikipedia.</string>
     <string name="settings_agent_mode_header">Agent Execution Mode</string>
     <string name="settings_claude_max_title">Claude Code Max Mode</string>
     <string name="settings_claude_max_desc">Deep reasoning (16k token budget), extended 25-turn autonomous loop, and end-to-end task execution matching Claude Code.</string>

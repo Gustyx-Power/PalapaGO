@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.util.Base64
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -5,6 +8,24 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
 }
+
+val localProperties = Properties().apply {
+    val localFile = rootProject.file("local.properties")
+    if (localFile.exists()) {
+        localFile.inputStream().use { load(it) }
+    }
+}
+
+fun obfuscateKey(raw: String): String {
+    if (raw.isEmpty()) return ""
+    val bytes = raw.toByteArray(Charsets.UTF_8)
+    val masked = ByteArray(bytes.size) { i -> (bytes[i].toInt() xor 0x5A).toByte() }
+    return Base64.getEncoder().encodeToString(masked)
+}
+
+val agnesApiKey = localProperties.getProperty("AGNES_API_KEY") ?: ""
+val agnesBaseUrl = localProperties.getProperty("AGNES_BASE_URL") ?: "https://apihub.agnes-ai.com/v1"
+val tavilyApiKey = localProperties.getProperty("TAVILY_API_KEY") ?: ""
 
 android {
     namespace = "id.gustyxganteng.agent"
@@ -16,6 +37,10 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
+
+        buildConfigField("String", "AGNES_API_KEY", "\"${obfuscateKey(agnesApiKey)}\"")
+        buildConfigField("String", "AGNES_BASE_URL", "\"$agnesBaseUrl\"")
+        buildConfigField("String", "TAVILY_API_KEY", "\"${obfuscateKey(tavilyApiKey)}\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
@@ -48,6 +73,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 
     packaging {

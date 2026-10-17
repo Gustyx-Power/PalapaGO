@@ -195,7 +195,9 @@ class ChatViewModel(
                 yoloMode = settings.yoloMode,
                 enableWebSearch = settings.webSearchEnabled,
                 useTermuxEnv = true,
-                claudeMaxMode = settings.claudeMaxMode
+                claudeMaxMode = settings.claudeMaxMode,
+                antiAiSlopMode = settings.antiAiSlopMode,
+                tavilyDeepSearchEnabled = settings.tavilyDeepSearchEnabled
             )
         }
     }
@@ -232,7 +234,9 @@ class ChatViewModel(
                 yoloMode = settings.yoloMode,
                 enableWebSearch = settings.webSearchEnabled,
                 useTermuxEnv = true,
-                claudeMaxMode = settings.claudeMaxMode
+                claudeMaxMode = settings.claudeMaxMode,
+                antiAiSlopMode = settings.antiAiSlopMode,
+                tavilyDeepSearchEnabled = settings.tavilyDeepSearchEnabled
             )
         }
     }
