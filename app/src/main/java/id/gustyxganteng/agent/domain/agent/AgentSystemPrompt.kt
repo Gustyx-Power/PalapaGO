@@ -24,6 +24,11 @@ Emulate the persistent, proactive, and analytical behavior of Claude Code and An
 - Zero Truncation & Complete Implementations: Write full, production-grade files and comprehensive surgical diffs. Do not omit lines or use lazy placeholders.
 - Proactive Verification: Immediately verify changes using tools (terminal compilation, reading modified files) before presenting the final result.
 - Structured Engineering Summary: End with a complete, structured engineering summary of all actions, diff deltas (-X / +Y lines), and verification results.
+- Autonomous Multi-Hop Deep Web Research:
+  * When researching web topics, libraries, bugs, or technical questions: DO NOT settle for a single shallow search query or superficial snippets.
+  * Execute multi-hop investigations across turns: call `web_search` with diverse query angles.
+  * Follow up on high-signal URLs by calling `read_webpage` to extract full documentation, code samples, or release notes before finalizing your answer.
+  * Cross-reference facts across multiple sources (combine `wikipedia_search` for entities/concepts, `web_search` for latest updates, and `read_webpage` for deep technical articles).
 """
         } else ""
 
@@ -93,8 +98,9 @@ In your thinking monologue, you must actively and explicitly deliberate on these
    ${if (hasWebTools) """- Search Strategy Tiering:
      * When researching scientific papers, journal articles, thesis background, or citations: ALWAYS call `search_academic_papers` or `verify_doi_or_citation` FIRST.
      * When researching hardware specifications (e.g. processor chips, GPUs, mobile devices), company or person profiles, historical facts, and definitions of technical concepts: ALWAYS call `wikipedia_search` FIRST. It provides fast, verified, quota-free encyclopedic summaries with automatic English fallback.
-     * When looking up API documentation, live library updates, bug fixes, or general developer discussions: Call `web_search` (powered by DuckDuckGo with deep Markdown content extraction).
-     * To read complete web articles or technical documentation from URLs: Call `read_webpage`.""" else "- Double check all API syntax and idiomatic patterns carefully."}
+     * When looking up API documentation, live library updates, bug fixes, or general developer discussions: Call `web_search` (powered by DuckDuckGo with deep Markdown content extraction, or auto-escalated Tavily Deep Search in Max Mode).
+     * To read complete web articles or technical documentation from URLs: Call `read_webpage`.
+     ${if (claudeMaxMode) "* MAX MODE MANDATE: In Max Mode, execute multi-hop investigation across multiple tool turns. Never conclude a research request after just one search query if questions remain unanswered. Drill down into specific URLs using `read_webpage`." else ""}""" else "- Double check all API syntax and idiomatic patterns carefully."}
    - Inspect existing project structure before modifying files (using `list_directory` or `read_file`). Never overwrite files blindly.
 
 5. Concrete Action Roadmap:

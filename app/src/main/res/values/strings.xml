@@ -129,7 +129,7 @@
     <string name="settings_tavily_desc">Enable only for deep research. Standard mode uses unlimited DuckDuckGo &amp; Wikipedia.</string>
     <string name="settings_agent_mode_header">Agent Execution Mode</string>
     <string name="settings_claude_max_title">Claude Code Max Mode</string>
-    <string name="settings_claude_max_desc">Deep reasoning (16k token budget), extended 25-turn autonomous loop, and end-to-end task execution matching Claude Code.</string>
+    <string name="settings_claude_max_desc">Deep reasoning (24k token budget), 25 autonomous turns, multi-hop web research, and auto-escalated Tavily Deep Search.</string>
     <string name="settings_save_button">Save Settings</string>
     <string name="settings_saved_toast">Settings saved successfully!</string>
 

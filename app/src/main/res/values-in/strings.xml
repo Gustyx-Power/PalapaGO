@@ -129,7 +129,7 @@
     <string name="settings_tavily_desc">Aktifkan hanya untuk riset mendalam. Mode standar menggunakan DuckDuckGo &amp; Wikipedia tanpa batas.</string>
     <string name="settings_agent_mode_header">Mode Eksekusi Agent</string>
     <string name="settings_claude_max_title">Mode Claude Code Max</string>
-    <string name="settings_claude_max_desc">Penalaran mendalam (budget token 16k), loop otonom 25 putaran, dan eksekusi tugas menyeluruh layaknya Claude Code.</string>
+    <string name="settings_claude_max_desc">Penalaran mendalam (budget 24k token), 25 loop otonom, riset web multi-hop, dan eskalasi otomatis Tavily Deep Search.</string>
     <string name="settings_save_button">Simpan Pengaturan</string>
     <string name="settings_saved_toast">Pengaturan berhasil disimpan!</string>
 

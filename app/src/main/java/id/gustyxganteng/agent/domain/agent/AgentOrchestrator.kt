@@ -592,7 +592,8 @@ class AgentOrchestrator(
                     args = parsedArgs,
                     workspacePath = workspacePath,
                     useTermuxEnv = useTermuxEnv,
-                    tavilyDeepSearchEnabled = tavilyDeepSearchEnabled
+                    tavilyDeepSearchEnabled = tavilyDeepSearchEnabled,
+                    claudeMaxMode = claudeMaxMode
                 )
                 saveToolResult(sessionId, toolCall.id, result)
             }
@@ -605,7 +606,8 @@ class AgentOrchestrator(
         args: JsonObject,
         workspacePath: String?,
         useTermuxEnv: Boolean,
-        tavilyDeepSearchEnabled: Boolean
+        tavilyDeepSearchEnabled: Boolean,
+        claudeMaxMode: Boolean = false
     ): ToolExecutionResult {
         val root = workspacePath ?: "/storage/emulated/0"
         return when (toolName) {
@@ -615,7 +617,12 @@ class AgentOrchestrator(
             "apply_diff" -> fileSystemTool.applyDiff(toolCallId, root, args)
             "search_files" -> fileSystemTool.searchFiles(toolCallId, root, args)
             "execute_shell" -> shellTool.execute(toolCallId, root, args, useTermuxEnv)
-            "web_search" -> webTool.search(toolCallId, args, useTavilyDeepSearch = tavilyDeepSearchEnabled)
+            "web_search" -> webTool.search(
+                toolCallId = toolCallId,
+                args = args,
+                useTavilyDeepSearch = tavilyDeepSearchEnabled || claudeMaxMode,
+                isMaxMode = claudeMaxMode
+            )
             "wikipedia_search" -> webTool.wikipediaSearch(toolCallId, args)
             "read_webpage" -> webTool.readWebpage(toolCallId, args)
             "search_academic_papers" -> academicTool.searchAcademicPapers(toolCallId, args)

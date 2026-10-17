@@ -86,16 +86,18 @@ class WebTool(
     suspend fun search(
         toolCallId: String,
         args: JsonObject,
-        useTavilyDeepSearch: Boolean = false
+        useTavilyDeepSearch: Boolean = false,
+        isMaxMode: Boolean = false
     ): ToolExecutionResult = withContext(Dispatchers.IO) {
         val query = args["query"]?.jsonPrimitive?.content?.trim()
             ?: return@withContext ToolExecutionResult(toolCallId, "web_search", stderr = "Query pencarian kosong.", isSuccess = false)
-        val maxResults = args["max_results"]?.jsonPrimitive?.intOrNull ?: 5
+        val defaultLimit = if (isMaxMode) 8 else 5
+        val maxResults = args["max_results"]?.jsonPrimitive?.intOrNull ?: defaultLimit
 
         val tavilyApiKey = KeyVault.getTavilyApiKey().trim()
 
         if (useTavilyDeepSearch && tavilyApiKey.isNotBlank()) {
-            val tavilyResult = searchTavily(toolCallId, query, isFallback = false)
+            val tavilyResult = searchTavily(toolCallId, query, isFallback = false, isMaxMode = isMaxMode)
             if (tavilyResult.isSuccess) {
                 return@withContext tavilyResult
             }
@@ -112,18 +114,23 @@ class WebTool(
 
         if (ddgItems.isNotEmpty()) {
             val sb = StringBuilder()
+            if (isMaxMode) {
+                sb.appendLine("> *[Mode: Multi-Source DuckDuckGo Research]*\n")
+            }
             ddgItems.forEachIndexed { index, item ->
                 sb.appendLine("### [${index + 1}] ${item.title}")
                 sb.appendLine("URL: ${item.url}")
                 sb.appendLine("${item.snippet}\n")
             }
 
-            val topUrl = ddgItems.first().url
-            val cleanContent = fetchCleanPageContent(topUrl)
-            if (!cleanContent.isNullOrBlank()) {
-                sb.appendLine("---")
-                sb.appendLine("### Ekstraksi Konten Halaman Teratas (${ddgItems.first().title}):")
-                sb.appendLine(cleanContent)
+            val extractLimit = if (isMaxMode) 2 else 1
+            ddgItems.take(extractLimit).forEachIndexed { idx, item ->
+                val cleanContent = fetchCleanPageContent(item.url)
+                if (!cleanContent.isNullOrBlank()) {
+                    sb.appendLine("---")
+                    sb.appendLine("### Ekstraksi Konten Halaman [${idx + 1}] (${item.title}):")
+                    sb.appendLine(cleanContent)
+                }
             }
 
             return@withContext ToolExecutionResult(
@@ -135,7 +142,7 @@ class WebTool(
         }
 
         if (tavilyApiKey.isNotBlank()) {
-            val fallbackResult = searchTavily(toolCallId, query, isFallback = true)
+            val fallbackResult = searchTavily(toolCallId, query, isFallback = true, isMaxMode = isMaxMode)
             if (fallbackResult.isSuccess) {
                 return@withContext fallbackResult
             }
@@ -212,14 +219,14 @@ class WebTool(
         }
     }
 
-    private fun fetchCleanPageContent(targetUrl: String): String? {
+    private fun fetchCleanPageContent(targetUrl: String, maxLength: Int = 2500): String? {
         if (!targetUrl.startsWith("http://") && !targetUrl.startsWith("https://")) return null
 
         try {
             val jinaUrl = "https://r.jina.ai/$targetUrl"
             val request = Request.Builder()
                 .url(jinaUrl)
-                .header("User-Agent", "GGAgent/1.0 (Android)")
+                .header("User-Agent", "GGAgent/1.0 (Android; id.gustyxganteng.agent)")
                 .header("X-No-Cache", "true")
                 .header("Accept", "text/plain")
                 .build()
@@ -228,7 +235,7 @@ class WebTool(
             if (response.isSuccessful) {
                 val body = response.body?.string()?.trim()
                 if (!body.isNullOrBlank() && body.length > 80) {
-                    return if (body.length > 2500) body.take(2500) + "\n\n... [Sisa konten dipotong agar hemat token] ..." else body
+                    return if (body.length > maxLength) body.take(maxLength) + "\n\n... [Sisa konten dipotong agar hemat token] ..." else body
                 }
             }
         } catch (_: Exception) {
@@ -243,7 +250,7 @@ class WebTool(
             doc.select("script, style, nav, footer, header, aside, .advertisement, #cookie-banner").remove()
             val text = doc.body()?.text()?.trim()
             if (!text.isNullOrBlank() && text.length > 80) {
-                return if (text.length > 2500) text.take(2500) + "\n\n... [Sisa konten dipotong agar hemat token] ..." else text
+                return if (text.length > maxLength) text.take(maxLength) + "\n\n... [Sisa konten dipotong agar hemat token] ..." else text
             }
         } catch (_: Exception) {
         }
@@ -254,7 +261,8 @@ class WebTool(
     private fun searchTavily(
         toolCallId: String,
         query: String,
-        isFallback: Boolean
+        isFallback: Boolean,
+        isMaxMode: Boolean = false
     ): ToolExecutionResult {
         val apiKey = KeyVault.getTavilyApiKey().trim()
         if (apiKey.isBlank()) {
@@ -267,12 +275,13 @@ class WebTool(
         }
 
         return try {
+            val maxResults = if (isMaxMode) 6 else 4
             val payload = buildJsonObject {
                 put("api_key", apiKey)
                 put("query", query)
                 put("search_depth", "basic")
                 put("include_answer", true)
-                put("max_results", 4)
+                put("max_results", maxResults)
             }
 
             val requestBody = payload.toString().toRequestBody("application/json; charset=utf-8".toMediaType())
@@ -302,6 +311,8 @@ class WebTool(
             val sb = StringBuilder()
             if (isFallback) {
                 sb.appendLine("> *[Pencarian dialihkan ke Tavily Search (1 kredit basic) karena DuckDuckGo tidak mengembalikan data]*\n")
+            } else if (isMaxMode) {
+                sb.appendLine("> *[Mode: Claude Code Max — Auto-Escalated Tavily Deep Search (1 kredit basic, $maxResults hasil)]*\n")
             } else {
                 sb.appendLine("> *[Mode: Tavily Deep Search (1 kredit basic)]*\n")
             }
@@ -469,8 +480,8 @@ class WebTool(
         val url = args["url"]?.jsonPrimitive?.content?.trim()
             ?: return@withContext ToolExecutionResult(toolCallId, "read_webpage", stderr = "URL kosong.", isSuccess = false)
 
-        val cleanFromJina = fetchCleanPageContent(url)
-        if (!cleanFromJina.isNullOrBlank() && cleanFromJina.length > 200) {
+        val cleanFromJina = fetchCleanPageContent(url, maxLength = 10000)
+        if (!cleanFromJina.isNullOrBlank() && cleanFromJina.length > 150) {
             return@withContext ToolExecutionResult(
                 toolCallId = toolCallId,
                 toolName = "read_webpage",
