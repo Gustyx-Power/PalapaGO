@@ -110,7 +110,7 @@ fun CanvasModalSheet(
 
     val isWeb = remember(artifact.language, currentContent) {
         val lang = artifact.language.lowercase().trim()
-        lang in listOf("html", "js", "javascript", "css", "web", "htm", "svg", "react", "jsx", "tsx", "ts", "typescript", "node") ||
+        lang in listOf("html", "js", "javascript", "css", "web", "htm", "svg", "react", "jsx", "tsx", "ts", "typescript", "node", "android", "kotlin", "compose") ||
             currentContent.contains("<!DOCTYPE html>", ignoreCase = true) ||
             currentContent.contains("<html", ignoreCase = true) ||
             currentContent.contains("<svg", ignoreCase = true) ||
@@ -119,6 +119,9 @@ fun CanvasModalSheet(
             currentContent.contains("from \"react\"", ignoreCase = true) ||
             currentContent.contains("function App(", ignoreCase = true) ||
             currentContent.contains("const App =", ignoreCase = true) ||
+            currentContent.contains("@Composable", ignoreCase = true) ||
+            currentContent.contains("androidx.compose", ignoreCase = true) ||
+            currentContent.contains("class MainActivity", ignoreCase = true) ||
             (currentContent.contains("</") && currentContent.contains(">"))
     }
 
@@ -136,6 +139,15 @@ fun CanvasModalSheet(
             !trimmed.startsWith("<!DOCTYPE", ignoreCase = true) &&
             !trimmed.startsWith("<html", ignoreCase = true) &&
             !trimmed.contains("<body", ignoreCase = true) &&
+            !isReact
+
+        val isAndroid = (lang in listOf("android", "kotlin", "compose") ||
+            trimmed.contains("@Composable", ignoreCase = true) ||
+            trimmed.contains("androidx.compose", ignoreCase = true) ||
+            trimmed.contains("class MainActivity", ignoreCase = true) ||
+            (trimmed.contains("fun ") && trimmed.contains("Screen(") && trimmed.contains("Modifier"))) &&
+            !trimmed.startsWith("<!DOCTYPE", ignoreCase = true) &&
+            !trimmed.startsWith("<html", ignoreCase = true) &&
             !isReact
 
         if (isReact) {
@@ -252,6 +264,8 @@ fun CanvasModalSheet(
             </body>
             </html>
             """.trimIndent()
+        } else if (isAndroid) {
+            AndroidSimulatorRenderer.render(artifact.title, trimmed)
         } else if (!trimmed.startsWith("<!DOCTYPE", ignoreCase = true) && !trimmed.startsWith("<html", ignoreCase = true)) {
             """
             <!DOCTYPE html>
