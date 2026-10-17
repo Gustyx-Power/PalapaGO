@@ -3,6 +3,7 @@ package id.gustyxganteng.agent.core.network
 import id.gustyxganteng.agent.core.model.StreamEvent
 import id.gustyxganteng.agent.core.model.TokenUsage
 import id.gustyxganteng.agent.core.network.dto.ChatCompletionChunk
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -262,6 +263,8 @@ class SseStreamParser(
             }
             emit(StreamEvent.UsageUpdate(finalUsage))
             emit(StreamEvent.StreamCompleted)
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Throwable) {
             val isTimeout = e is java.net.SocketTimeoutException || e.message?.contains("timeout", ignoreCase = true) == true
             val errorMsg = if (isTimeout) {

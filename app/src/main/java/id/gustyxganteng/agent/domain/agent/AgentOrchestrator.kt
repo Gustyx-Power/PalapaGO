@@ -17,6 +17,7 @@ import id.gustyxganteng.agent.domain.tools.ShellTool
 import id.gustyxganteng.agent.domain.tools.WebTool
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,7 +36,8 @@ sealed interface AgentState {
         val reasoning: String?,
         val thinkingElapsedMs: Long?,
         val isThinking: Boolean = false,
-        val thinkingTokens: Int = 0
+        val thinkingTokens: Int = 0,
+        val currentActivity: String = "Menganalisis instruksi..."
     ) : AgentState
     data class AwaitingApproval(
         val toolCall: ToolCall,
@@ -102,9 +104,11 @@ class AgentOrchestrator(
         useTermuxEnv: Boolean,
         claudeMaxMode: Boolean = true
     ) {
+        val previousJob = activeJob
         activeJob?.cancel()
         activeJob = scope.launch(Dispatchers.IO) {
             try {
+                previousJob?.join()
                 executeTurnLoop(
                     sessionId = sessionId,
                     baseUrl = baseUrl,
@@ -116,8 +120,11 @@ class AgentOrchestrator(
                     useTermuxEnv = useTermuxEnv,
                     claudeMaxMode = claudeMaxMode
                 )
+            } catch (e: CancellationException) {
+                // Jangan ubah CancellationException menjadi AgentState.Error
+                throw e
             } catch (e: Exception) {
-                _agentState.value = AgentState.Error(e.localizedMessage ?: "Unknown Agent error")
+                _agentState.value = AgentState.Error(e.localizedMessage ?: "Terjadi kesalahan pada Agent")
             } finally {
                 if (_agentState.value !is AgentState.Error) {
                     _agentState.value = AgentState.Idle
@@ -188,12 +195,19 @@ class AgentOrchestrator(
             var thinkingDuration: Long? = null
             var isCurrentlyThinking = true
 
+            val initialActivity = if (turnCount == 1) {
+                "Menganalisis instruksi pengguna..."
+            } else {
+                "Mengevaluasi hasil tool & merencanakan langkah..."
+            }
+
             _agentState.value = AgentState.Streaming(
                 content = "",
                 reasoning = null,
                 thinkingElapsedMs = 0,
                 isThinking = true,
-                thinkingTokens = 0
+                thinkingTokens = 0,
+                currentActivity = initialActivity
             )
 
             agnesApiService.streamChat(
@@ -212,12 +226,24 @@ class AgentOrchestrator(
                         val elapsed = System.currentTimeMillis() - thinkingStart
                         thinkingDuration = elapsed
                         val tokens = (reasoningBuilder.length / 4).coerceAtLeast(1)
+
+                        val lower = reasoningBuilder.toString().lowercase()
+                        val thinkingActivity = when {
+                            lower.contains("read_file") || lower.contains("membaca") || lower.contains("baca berkas") -> "Menganalisis & membaca berkas..."
+                            lower.contains("apply_diff") || lower.contains("write_file") || lower.contains("refactor") || lower.contains("modifikasi") -> "Merencanakan perubahan & refactoring..."
+                            lower.contains("execute_shell") || lower.contains("terminal") || lower.contains("perintah") -> "Mempersiapkan eksekusi terminal..."
+                            lower.contains("web_search") || lower.contains("mencari") || lower.contains("search") -> "Mempersiapkan pencarian referensi..."
+                            lower.contains("list_directory") || lower.contains("direktori") || lower.contains("struktur") -> "Memeriksa struktur proyek..."
+                            else -> "Sedang menalar & memikirkan solusi..."
+                        }
+
                         _agentState.value = AgentState.Streaming(
                             content = contentBuilder.toString(),
                             reasoning = reasoningBuilder.toString(),
                             thinkingElapsedMs = elapsed,
                             isThinking = true,
-                            thinkingTokens = tokens
+                            thinkingTokens = tokens,
+                            currentActivity = thinkingActivity
                         )
                     }
                     is StreamEvent.ContentDelta -> {
@@ -236,7 +262,8 @@ class AgentOrchestrator(
                             reasoning = reasoningBuilder.toString().ifEmpty { null },
                             thinkingElapsedMs = thinkingDuration,
                             isThinking = false,
-                            thinkingTokens = tokens
+                            thinkingTokens = tokens,
+                            currentActivity = "Menulis respons..."
                         )
                     }
                     is StreamEvent.ToolCallChunk -> {

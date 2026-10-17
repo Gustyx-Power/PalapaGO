@@ -4,6 +4,7 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
@@ -333,6 +335,51 @@ fun ChatScreen(
                                         style = MaterialTheme.typography.labelSmall,
                                         color = GeminiPrimary
                                     )
+                                    Spacer(Modifier.width(8.dp))
+                                    Surface(
+                                        shape = RoundedCornerShape(6.dp),
+                                        color = GeminiSurfaceVariant,
+                                        border = BorderStroke(1.dp, GeminiPrimary.copy(alpha = 0.35f))
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .size(6.dp)
+                                                    .background(GeminiPrimary, CircleShape)
+                                            )
+                                            Spacer(Modifier.width(6.dp))
+                                            Text(
+                                                text = streaming.currentActivity,
+                                                fontSize = 11.sp,
+                                                color = GeminiTextPrimary,
+                                                fontWeight = FontWeight.Medium
+                                            )
+                                        }
+                                    }
+                                }
+
+                                if (streaming.content.isBlank() && streaming.reasoning.isNullOrBlank()) {
+                                    Surface(
+                                        color = GeminiSurfaceVariant.copy(alpha = 0.5f),
+                                        shape = RoundedCornerShape(10.dp),
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 4.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Text(
+                                                text = streaming.currentActivity,
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = GeminiTextSecondary
+                                            )
+                                        }
+                                    }
                                 }
 
                                 if (streaming.isThinking || !streaming.reasoning.isNullOrBlank()) {
