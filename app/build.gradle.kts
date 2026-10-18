@@ -48,9 +48,24 @@ android {
         }
     }
 
+    signingConfigs {
+        create("release") {
+            val keystoreFile = file("keystore/release.jks")
+            if (keystoreFile.exists()) {
+                storeFile = keystoreFile
+                storePassword = localProperties.getProperty("RELEASE_STORE_PASSWORD") ?: "ggagent123"
+                keyAlias = localProperties.getProperty("RELEASE_KEY_ALIAS") ?: "ggagent"
+                keyPassword = localProperties.getProperty("RELEASE_KEY_PASSWORD") ?: "ggagent123"
+            } else {
+                initWith(getByName("debug"))
+            }
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
+            signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
