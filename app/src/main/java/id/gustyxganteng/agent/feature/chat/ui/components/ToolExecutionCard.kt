@@ -1,11 +1,10 @@
 package id.gustyxganteng.agent.feature.chat.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -19,11 +18,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.NoteAdd
-import androidx.compose.material.icons.rounded.CheckCircleOutline
+import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.Code
 import androidx.compose.material.icons.rounded.Difference
 import androidx.compose.material.icons.rounded.EditNote
-import androidx.compose.material.icons.rounded.ErrorOutline
+import androidx.compose.material.icons.rounded.Error
 import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Terminal
@@ -39,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -47,13 +47,15 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.gustyxganteng.agent.R
-import id.gustyxganteng.agent.core.designsystem.GeminiError
-import id.gustyxganteng.agent.core.designsystem.GeminiOutline
-import id.gustyxganteng.agent.core.designsystem.GeminiPrimary
-import id.gustyxganteng.agent.core.designsystem.GeminiSurface
-import id.gustyxganteng.agent.core.designsystem.GeminiSurfaceVariant
-import id.gustyxganteng.agent.core.designsystem.GeminiTextPrimary
-import id.gustyxganteng.agent.core.designsystem.GeminiTextSecondary
+import id.gustyxganteng.agent.core.designsystem.M3Error
+import id.gustyxganteng.agent.core.designsystem.M3OutlineVariant
+import id.gustyxganteng.agent.core.designsystem.M3Primary
+import id.gustyxganteng.agent.core.designsystem.M3PrimaryContainer
+import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainer
+import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHigh
+import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerLowest
+import id.gustyxganteng.agent.core.designsystem.M3TextPrimary
+import id.gustyxganteng.agent.core.designsystem.M3TextSecondary
 import org.json.JSONObject
 
 private data class ToolCardDetails(
@@ -189,11 +191,12 @@ fun ToolExecutionCard(
     val canExpand = outputContent != null || details.isDiff || !details.replaceBlock.isNullOrEmpty()
 
     Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = GeminiSurface,
-        border = androidx.compose.foundation.BorderStroke(1.dp, GeminiOutline.copy(alpha = 0.35f)),
+        shape = RoundedCornerShape(16.dp),
+        color = M3SurfaceContainer,
+        border = BorderStroke(1.dp, M3OutlineVariant),
         modifier = modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
             .clickable(enabled = canExpand) { expanded = !expanded }
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
@@ -201,7 +204,7 @@ fun ToolExecutionCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Tool Category Icon
+                // Tool Category Icon container (M3 Expressive Squircle)
                 val toolIcon = when (toolName) {
                     "execute_shell" -> Icons.Rounded.Terminal
                     "apply_diff" -> Icons.Rounded.Difference
@@ -212,19 +215,29 @@ fun ToolExecutionCard(
                     else -> Icons.Rounded.Code
                 }
 
-                Icon(
-                    imageVector = toolIcon,
-                    contentDescription = null,
-                    tint = GeminiPrimary,
-                    modifier = Modifier.size(18.dp)
-                )
+                Surface(
+                    shape = RoundedCornerShape(10.dp),
+                    color = M3PrimaryContainer.copy(alpha = 0.5f),
+                    border = BorderStroke(1.dp, M3Primary.copy(alpha = 0.3f)),
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            imageVector = toolIcon,
+                            contentDescription = null,
+                            tint = M3Primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
 
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(10.dp))
 
                 // Action Badge
                 Surface(
-                    shape = RoundedCornerShape(4.dp),
-                    color = GeminiSurfaceVariant,
+                    shape = RoundedCornerShape(6.dp),
+                    color = M3SurfaceContainerHigh,
+                    border = BorderStroke(1.dp, M3OutlineVariant),
                     modifier = Modifier.padding(end = 8.dp)
                 ) {
                     Text(
@@ -232,7 +245,7 @@ fun ToolExecutionCard(
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
                         fontSize = 9.sp,
-                        color = GeminiPrimary,
+                        color = M3Primary,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
@@ -243,17 +256,17 @@ fun ToolExecutionCard(
                         text = details.title,
                         style = MaterialTheme.typography.labelSmall,
                         fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.Medium,
+                        fontWeight = FontWeight.SemiBold,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        color = GeminiTextPrimary
+                        color = M3TextPrimary
                     )
                     details.subtitle?.let { sub ->
                         Text(
                             text = sub,
                             fontSize = 10.sp,
                             fontFamily = FontFamily.Monospace,
-                            color = if (sub.contains("-")) GeminiError else GeminiTextSecondary
+                            color = if (sub.contains("-")) M3Error else M3TextSecondary
                         )
                     }
                 }
@@ -266,22 +279,22 @@ fun ToolExecutionCard(
                         CircularProgressIndicator(
                             strokeWidth = 2.dp,
                             modifier = Modifier.size(16.dp),
-                            color = GeminiPrimary
+                            color = M3Primary
                         )
                     }
                     isError -> {
                         Icon(
-                            imageVector = Icons.Rounded.ErrorOutline,
+                            imageVector = Icons.Rounded.Error,
                             contentDescription = stringResource(R.string.tool_execution_error, toolName),
-                            tint = GeminiError,
+                            tint = M3Error,
                             modifier = Modifier.size(16.dp)
                         )
                     }
                     outputContent != null -> {
                         Icon(
-                            imageVector = Icons.Rounded.CheckCircleOutline,
+                            imageVector = Icons.Rounded.CheckCircle,
                             contentDescription = stringResource(R.string.tool_execution_success),
-                            tint = GeminiPrimary,
+                            tint = M3Primary,
                             modifier = Modifier.size(16.dp)
                         )
                     }
@@ -291,22 +304,21 @@ fun ToolExecutionCard(
             // Expanded Visual Diff or Output Log
             AnimatedVisibility(visible = expanded && canExpand) {
                 Column(modifier = Modifier.padding(top = 10.dp)) {
-                    // Visual Diff viewer for apply_diff
                     if (details.isDiff && details.searchBlock != null && details.replaceBlock != null) {
                         Text(
                             text = "Perubahan Kode (Diff):",
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
-                            color = GeminiTextSecondary,
-                            modifier = Modifier.padding(bottom = 4.dp)
+                            color = M3TextSecondary,
+                            modifier = Modifier.padding(bottom = 6.dp)
                         )
 
                         // Removed Block
                         if (details.searchBlock.isNotEmpty()) {
                             Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = Color(0xFF2B1416),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF5C1D1F)),
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFF261012),
+                                border = BorderStroke(1.dp, Color(0xFF4A181A)),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 3.dp)
@@ -314,15 +326,16 @@ fun ToolExecutionCard(
                                 val scrollState = rememberScrollState()
                                 Column(
                                     modifier = Modifier
-                                        .padding(8.dp)
+                                        .padding(10.dp)
                                         .horizontalScroll(scrollState)
                                 ) {
                                     details.searchBlock.lines().forEach { line ->
                                         Text(
                                             text = "- $line",
                                             fontFamily = FontFamily.Monospace,
-                                            fontSize = 11.sp,
-                                            color = GeminiError
+                                            fontSize = 11.5.sp,
+                                            lineHeight = 16.sp,
+                                            color = Color(0xFFFFB4AB)
                                         )
                                     }
                                 }
@@ -332,9 +345,9 @@ fun ToolExecutionCard(
                         // Added Block
                         if (details.replaceBlock.isNotEmpty()) {
                             Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = Color(0xFF142918),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFF1E4624)),
+                                shape = RoundedCornerShape(8.dp),
+                                color = Color(0xFF102615),
+                                border = BorderStroke(1.dp, Color(0xFF184221)),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 3.dp)
@@ -342,15 +355,16 @@ fun ToolExecutionCard(
                                 val scrollState = rememberScrollState()
                                 Column(
                                     modifier = Modifier
-                                        .padding(8.dp)
+                                        .padding(10.dp)
                                         .horizontalScroll(scrollState)
                                 ) {
                                     details.replaceBlock.lines().forEach { line ->
                                         Text(
                                             text = "+ $line",
                                             fontFamily = FontFamily.Monospace,
-                                            fontSize = 11.sp,
-                                            color = Color(0xFF81C784)
+                                            fontSize = 11.5.sp,
+                                            lineHeight = 16.sp,
+                                            color = Color(0xFF81C995)
                                         )
                                     }
                                 }
@@ -363,8 +377,9 @@ fun ToolExecutionCard(
                     // Raw output log
                     outputContent?.let { output ->
                         Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = GeminiSurfaceVariant.copy(alpha = 0.5f),
+                            shape = RoundedCornerShape(10.dp),
+                            color = M3SurfaceContainerLowest,
+                            border = BorderStroke(1.dp, M3OutlineVariant),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             val logScrollState = rememberScrollState()
@@ -372,10 +387,11 @@ fun ToolExecutionCard(
                                 text = output,
                                 style = MaterialTheme.typography.bodySmall,
                                 fontFamily = FontFamily.Monospace,
-                                fontSize = 11.sp,
-                                color = if (isError) GeminiError else GeminiTextSecondary,
+                                fontSize = 11.5.sp,
+                                lineHeight = 16.sp,
+                                color = if (isError) M3Error else M3TextSecondary,
                                 modifier = Modifier
-                                    .padding(8.dp)
+                                    .padding(10.dp)
                                     .horizontalScroll(logScrollState)
                             )
                         }

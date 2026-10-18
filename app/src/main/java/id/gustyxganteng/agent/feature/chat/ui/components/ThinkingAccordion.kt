@@ -4,14 +4,18 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,8 +28,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -39,6 +42,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontStyle
@@ -46,11 +50,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.gustyxganteng.agent.R
-import id.gustyxganteng.agent.core.designsystem.GeminiPrimary
 import id.gustyxganteng.agent.core.designsystem.GeminiSparkleIcon
-import id.gustyxganteng.agent.core.designsystem.GeminiSurfaceVariant
-import id.gustyxganteng.agent.core.designsystem.GeminiTextPrimary
-import id.gustyxganteng.agent.core.designsystem.GeminiTextSecondary
+import id.gustyxganteng.agent.core.designsystem.M3OutlineVariant
+import id.gustyxganteng.agent.core.designsystem.M3Primary
+import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHigh
+import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHighest
+import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerLow
+import id.gustyxganteng.agent.core.designsystem.M3TextPrimary
+import id.gustyxganteng.agent.core.designsystem.M3TextSecondary
 import id.gustyxganteng.agent.core.markdown.MarkdownContent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -66,8 +73,6 @@ fun ThinkingAccordion(
     if (reasoningContent.isNullOrBlank() && !isCurrentlyStreaming) return
 
     var expanded by remember { mutableStateOf(false) }
-
-    // Live ticking timer for real-time streaming feedback
     var liveElapsedSec by remember { mutableFloatStateOf(0.1f) }
 
     LaunchedEffect(isCurrentlyStreaming) {
@@ -80,7 +85,6 @@ fun ThinkingAccordion(
         }
     }
 
-    // Spinning animation while actively thinking
     val infiniteTransition = rememberInfiniteTransition(label = "sparkle_rotation")
     val rotation by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -90,6 +94,12 @@ fun ThinkingAccordion(
             repeatMode = RepeatMode.Restart
         ),
         label = "rotation"
+    )
+
+    val arrowRotation by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+        label = "arrowRotation"
     )
 
     val durationSec = if (isCurrentlyStreaming) {
@@ -116,70 +126,91 @@ fun ThinkingAccordion(
     }
 
     Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = GeminiSurfaceVariant.copy(alpha = 0.5f),
+        shape = RoundedCornerShape(20.dp),
+        color = M3SurfaceContainerHigh,
+        border = BorderStroke(1.dp, M3OutlineVariant),
         modifier = modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
             .clickable { expanded = !expanded }
-            .animateContentSize()
+            .animateContentSize(spring(dampingRatio = Spring.DampingRatioLowBouncy))
     ) {
-        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) {
+        Column(modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Sparkle Icon (spinning if actively streaming thinking)
                 GeminiSparkleIcon(
                     size = 16.dp,
-                    tint = GeminiPrimary,
+                    tint = M3Primary,
                     modifier = if (isCurrentlyStreaming) Modifier.rotate(rotation) else Modifier
                 )
                 Spacer(Modifier.width(8.dp))
 
                 val headerText = if (isCurrentlyStreaming) {
-                    if (effectiveTokens > 0) {
-                        stringResource(R.string.thinking_in_progress_with_tokens, durationSec, formatTokens(effectiveTokens))
-                    } else {
-                        "${stringResource(R.string.thinking_in_progress)} (${durationSec}s)"
-                    }
+                    stringResource(R.string.thinking_in_progress)
                 } else {
-                    if (effectiveTokens > 0) {
-                        stringResource(R.string.thinking_done_with_tokens, durationSec, formatTokens(effectiveTokens))
-                    } else {
-                        stringResource(R.string.thinking_done, durationSec)
-                    }
+                    stringResource(R.string.thinking_done_no_detail)
                 }
 
                 Text(
                     text = headerText,
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = GeminiPrimary
+                    style = MaterialTheme.typography.labelMedium.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 12.5.sp
+                    ),
+                    color = M3Primary
                 )
+
+                Spacer(Modifier.width(8.dp))
+
+                // Expressive duration / token capsule pill
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = M3SurfaceContainerHighest,
+                    border = BorderStroke(1.dp, M3OutlineVariant)
+                ) {
+                    val badgeText = if (effectiveTokens > 0) {
+                        "${durationSec}s • ${formatTokens(effectiveTokens)} tok"
+                    } else {
+                        "${durationSec}s"
+                    }
+                    Text(
+                        text = badgeText,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = M3TextSecondary,
+                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                    )
+                }
 
                 Spacer(Modifier.weight(1f))
 
                 Icon(
-                    imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    imageVector = Icons.Rounded.KeyboardArrowDown,
                     contentDescription = null,
-                    tint = GeminiTextSecondary,
-                    modifier = Modifier.size(16.dp)
+                    tint = M3TextSecondary,
+                    modifier = Modifier
+                        .size(18.dp)
+                        .rotate(arrowRotation)
                 )
             }
 
             AnimatedVisibility(
                 visible = expanded,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut()
+                enter = expandVertically(spring(stiffness = Spring.StiffnessMediumLow)) + fadeIn(),
+                exit = shrinkVertically(spring(stiffness = Spring.StiffnessMediumLow)) + fadeOut()
             ) {
                 Column {
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(10.dp))
                     if (!reasoningContent.isNullOrBlank()) {
                         Surface(
-                            color = GeminiSurfaceVariant.copy(alpha = 0.4f),
-                            shape = RoundedCornerShape(12.dp),
+                            color = M3SurfaceContainerLow,
+                            shape = RoundedCornerShape(14.dp),
+                            border = BorderStroke(1.dp, M3OutlineVariant),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Box(modifier = Modifier.padding(12.dp)) {
+                            Box(modifier = Modifier.padding(14.dp)) {
                                 MarkdownContent(
                                     markdown = reasoningContent,
                                     modifier = Modifier.fillMaxWidth()
@@ -190,17 +221,9 @@ fun ThinkingAccordion(
                         Text(
                             text = stringResource(R.string.thinking_analyzing_placeholder),
                             style = MaterialTheme.typography.bodySmall.copy(fontStyle = FontStyle.Italic),
-                            color = GeminiTextSecondary,
+                            color = M3TextSecondary,
                             lineHeight = 18.sp,
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                        )
-                    } else {
-                        Text(
-                            text = stringResource(R.string.thinking_done_no_detail),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = GeminiTextSecondary,
-                            lineHeight = 18.sp,
-                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)
                         )
                     }
                 }

@@ -6,11 +6,14 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
-import androidx.core.content.FileProvider
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -38,11 +41,18 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Code
+import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.School
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.Terminal
+import androidx.compose.material.icons.rounded.Web
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -73,6 +83,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -81,19 +92,30 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import id.gustyxganteng.agent.R
-import id.gustyxganteng.agent.core.designsystem.GeminiBackground
-import id.gustyxganteng.agent.core.designsystem.GeminiError
-import id.gustyxganteng.agent.core.designsystem.GeminiErrorContainer
-import id.gustyxganteng.agent.core.designsystem.GeminiPrimary
 import id.gustyxganteng.agent.core.designsystem.GeminiSparkleIcon
-import id.gustyxganteng.agent.core.designsystem.GeminiSurface
-import id.gustyxganteng.agent.core.designsystem.GeminiSurfaceVariant
-import id.gustyxganteng.agent.core.designsystem.GeminiTextPrimary
-import id.gustyxganteng.agent.core.designsystem.GeminiTextSecondary
+import id.gustyxganteng.agent.core.designsystem.M3Error
+import id.gustyxganteng.agent.core.designsystem.M3ErrorContainer
+import id.gustyxganteng.agent.core.designsystem.M3ExpressiveUserBubbleShape
+import id.gustyxganteng.agent.core.designsystem.M3OnError
+import id.gustyxganteng.agent.core.designsystem.M3OnPrimary
+import id.gustyxganteng.agent.core.designsystem.M3OnPrimaryContainer
+import id.gustyxganteng.agent.core.designsystem.M3OutlineVariant
+import id.gustyxganteng.agent.core.designsystem.M3Primary
+import id.gustyxganteng.agent.core.designsystem.M3PrimaryContainer
+import id.gustyxganteng.agent.core.designsystem.M3Surface
+import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainer
+import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHigh
+import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHighest
+import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerLow
+import id.gustyxganteng.agent.core.designsystem.M3TextPrimary
+import id.gustyxganteng.agent.core.designsystem.M3TextSecondary
 import id.gustyxganteng.agent.core.markdown.MarkdownContent
 import id.gustyxganteng.agent.core.model.CanvasArtifact
 import id.gustyxganteng.agent.core.model.Message
@@ -129,13 +151,12 @@ fun ChatScreen(
     val listState = rememberLazyListState()
     val context = LocalContext.current
     val density = LocalDensity.current
-    var bottomBarHeightDp by remember { mutableStateOf(84.dp) }
+    var bottomBarHeightDp by remember { mutableStateOf(88.dp) }
 
     var inputText by remember { mutableStateOf("") }
     val attachedImages = remember { mutableStateListOf<String>() }
     var showWorkspaceManager by remember { mutableStateOf(false) }
 
-    // Image Picker Launcher
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
     ) { uris: List<Uri> ->
@@ -250,56 +271,75 @@ fun ChatScreen(
         drawerState = drawerState,
         drawerContent = {
             ModalDrawerSheet(
-                modifier = Modifier.width(300.dp),
-                drawerContainerColor = GeminiSurface
+                modifier = Modifier.width(310.dp),
+                drawerShape = RoundedCornerShape(topEnd = 32.dp, bottomEnd = 32.dp),
+                drawerContainerColor = M3SurfaceContainer
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(16.dp)
                 ) {
-                    // Header
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        GeminiSparkleIcon(size = 24.dp)
+                    // Header Brand Row
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(top = 8.dp)
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = M3PrimaryContainer.copy(alpha = 0.5f),
+                            border = BorderStroke(1.dp, M3Primary.copy(alpha = 0.35f)),
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                GeminiSparkleIcon(size = 20.dp, tint = M3Primary)
+                            }
+                        }
                         Spacer(Modifier.width(10.dp))
-                        Text(
-                            text = stringResource(R.string.app_name),
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                            color = GeminiTextPrimary
-                        )
+                        Column {
+                            Text(
+                                text = stringResource(R.string.app_name),
+                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
+                                color = M3TextPrimary
+                            )
+                            Text(
+                                text = stringResource(R.string.app_subtitle),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = M3TextSecondary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
                     }
-                    Text(
-                        text = stringResource(R.string.app_subtitle),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = GeminiTextSecondary
-                    )
 
                     Spacer(Modifier.height(18.dp))
 
+                    // New Chat Button (M3 Expressive Filled Tonal)
                     Button(
                         onClick = {
                             viewModel.createNewSession()
                             scope.launch { drawerState.close() }
                         },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = GeminiSurfaceVariant,
-                            contentColor = GeminiPrimary
+                            containerColor = M3PrimaryContainer,
+                            contentColor = M3OnPrimaryContainer
                         ),
-                        shape = RoundedCornerShape(16.dp),
+                        shape = RoundedCornerShape(20.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(Icons.Rounded.Add, contentDescription = null, tint = GeminiPrimary)
+                        Icon(Icons.Rounded.Add, contentDescription = null, tint = M3OnPrimaryContainer)
                         Spacer(Modifier.width(8.dp))
-                        Text(stringResource(R.string.new_chat))
+                        Text(stringResource(R.string.new_chat), fontWeight = FontWeight.Bold)
                     }
 
                     Spacer(Modifier.height(16.dp))
                     Text(
                         text = stringResource(R.string.chat_history),
-                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                        color = GeminiPrimary
+                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+                        color = M3Primary
                     )
 
+                    // Sessions List
                     LazyColumn(
                         modifier = Modifier
                             .weight(1f)
@@ -307,45 +347,49 @@ fun ChatScreen(
                             .padding(vertical = 8.dp)
                     ) {
                         items(uiState.sessions) { session ->
+                            val isSelected = session.id == uiState.currentSession?.id
                             NavigationDrawerItem(
                                 label = {
                                     Text(
                                         text = session.title,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
-                                        color = GeminiTextPrimary
+                                        color = if (isSelected) M3Primary else M3TextPrimary,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                     )
                                 },
-                                selected = session.id == uiState.currentSession?.id,
+                                selected = isSelected,
                                 onClick = {
                                     viewModel.selectSession(session.id)
                                     scope.launch { drawerState.close() }
                                 },
                                 badge = {
                                     IconButton(
-                                        onClick = { viewModel.deleteSession(session.id) }
+                                        onClick = { viewModel.deleteSession(session.id) },
+                                        modifier = Modifier.size(28.dp)
                                     ) {
                                         Icon(
                                             Icons.Default.Delete,
                                             contentDescription = stringResource(R.string.delete),
-                                            tint = GeminiTextSecondary,
-                                            modifier = Modifier.size(18.dp)
+                                            tint = M3TextSecondary,
+                                            modifier = Modifier.size(16.dp)
                                         )
                                     }
                                 },
                                 colors = NavigationDrawerItemDefaults.colors(
-                                    selectedContainerColor = GeminiSurfaceVariant,
-                                    unselectedContainerColor = GeminiSurface
+                                    selectedContainerColor = M3SurfaceContainerHighest,
+                                    unselectedContainerColor = Color.Transparent
                                 ),
-                                shape = RoundedCornerShape(12.dp),
+                                shape = RoundedCornerShape(16.dp),
                                 modifier = Modifier.padding(vertical = 2.dp)
                             )
                         }
                     }
 
-                    HorizontalDivider(color = GeminiSurfaceVariant)
-                    Spacer(Modifier.height(8.dp))
+                    HorizontalDivider(color = M3OutlineVariant)
+                    Spacer(Modifier.height(10.dp))
 
+                    // Permanent Telemetry Card
                     NeuralSpiderStatsCard(
                         stats = uiState.globalUsageStats,
                         isDrawerOpen = drawerState.isOpen,
@@ -354,22 +398,24 @@ fun ChatScreen(
                             .padding(bottom = 8.dp)
                     )
 
+                    // Settings Navigation Item
                     NavigationDrawerItem(
-                        icon = { Icon(Icons.Rounded.Settings, contentDescription = null, tint = GeminiPrimary) },
-                        label = { Text(stringResource(R.string.settings_title), color = GeminiTextPrimary) },
+                        icon = { Icon(Icons.Rounded.Settings, contentDescription = null, tint = M3Primary) },
+                        label = { Text(stringResource(R.string.settings_title), color = M3TextPrimary, fontWeight = FontWeight.SemiBold) },
                         selected = false,
                         onClick = {
                             scope.launch { drawerState.close() }
                             onNavigateToSettings()
                         },
-                        shape = RoundedCornerShape(12.dp)
+                        colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = M3SurfaceContainerHigh),
+                        shape = RoundedCornerShape(16.dp)
                     )
                 }
             }
         }
     ) {
         Scaffold(
-            containerColor = GeminiBackground,
+            containerColor = M3Surface,
             topBar = {
                 GeminiTopBar(
                     selectedModel = uiState.currentSession?.model ?: uiState.appSettings?.selectedModel ?: "agnes-3.0-flash",
@@ -391,15 +437,27 @@ fun ChatScreen(
                     .padding(innerPadding)
                     .imePadding()
             ) {
-                // Messages List
+                // Messages / Content List
                 LazyColumn(
                     state = listState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(
-                        top = 8.dp,
-                        bottom = bottomBarHeightDp + 16.dp
+                        top = 12.dp,
+                        bottom = bottomBarHeightDp + 20.dp
                     )
                 ) {
+                    // Expressive Welcome Hero when chat is fresh/empty
+                    if (uiState.messages.isEmpty() && uiState.agentState is AgentState.Idle) {
+                        item {
+                            WelcomeHeroSection(
+                                onSelectSuggestion = { suggestionPrompt ->
+                                    inputText = suggestionPrompt
+                                }
+                            )
+                        }
+                    }
+
+                    // Existing Chat Messages
                     items(uiState.messages) { message ->
                         ChatMessageItem(
                             message = message,
@@ -443,27 +501,27 @@ fun ChatScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.padding(bottom = 6.dp)
                                 ) {
-                                    GeminiSparkleIcon(size = 14.dp)
-                                    Spacer(Modifier.width(6.dp))
+                                    GeminiSparkleIcon(size = 15.dp, tint = M3Primary)
+                                    Spacer(Modifier.width(7.dp))
                                     Text(
                                         text = uiState.currentSession?.model ?: "agnes-3.0-flash",
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = GeminiPrimary
+                                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                                        color = M3Primary
                                     )
                                     Spacer(Modifier.width(8.dp))
                                     Surface(
-                                        shape = RoundedCornerShape(6.dp),
-                                        color = GeminiSurfaceVariant,
-                                        border = BorderStroke(1.dp, GeminiPrimary.copy(alpha = 0.35f))
+                                        shape = RoundedCornerShape(8.dp),
+                                        color = M3SurfaceContainerHigh,
+                                        border = BorderStroke(1.dp, M3Primary.copy(alpha = 0.35f))
                                     ) {
                                         Row(
-                                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp),
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Box(
                                                 modifier = Modifier
                                                     .size(6.dp)
-                                                    .background(GeminiPrimary, CircleShape)
+                                                    .background(Color(0xFF81C995), CircleShape)
                                             )
                                             Spacer(Modifier.width(6.dp))
                                             val activityText = if (streaming.isThinking) {
@@ -476,7 +534,7 @@ fun ChatScreen(
                                             Text(
                                                 text = activityText,
                                                 fontSize = 11.sp,
-                                                color = GeminiTextPrimary,
+                                                color = M3TextPrimary,
                                                 fontWeight = FontWeight.Medium
                                             )
                                         }
@@ -485,20 +543,21 @@ fun ChatScreen(
 
                                 if (streaming.content.isBlank() && streaming.reasoning.isNullOrBlank()) {
                                     Surface(
-                                        color = GeminiSurfaceVariant.copy(alpha = 0.5f),
-                                        shape = RoundedCornerShape(10.dp),
+                                        color = M3SurfaceContainerLow,
+                                        shape = RoundedCornerShape(12.dp),
+                                        border = BorderStroke(1.dp, M3OutlineVariant),
                                         modifier = Modifier
                                             .fillMaxWidth()
                                             .padding(vertical = 4.dp)
                                     ) {
                                         Row(
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
                                             verticalAlignment = Alignment.CenterVertically
                                         ) {
                                             Text(
                                                 text = streaming.currentActivity,
                                                 style = MaterialTheme.typography.bodySmall,
-                                                color = GeminiTextSecondary
+                                                color = M3TextSecondary
                                             )
                                         }
                                     }
@@ -517,11 +576,10 @@ fun ChatScreen(
                                     MarkdownContent(markdown = streaming.content)
                                 }
 
-                                // Live token metadata & streaming status footer
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(top = 6.dp),
+                                        .padding(top = 8.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     val outTokens = (streaming.content.length / 4).coerceAtLeast(1)
@@ -536,7 +594,7 @@ fun ChatScreen(
                                     Text(
                                         text = statusText,
                                         fontSize = 11.sp,
-                                        color = GeminiTextSecondary
+                                        color = M3TextSecondary
                                     )
                                 }
                             }
@@ -561,48 +619,50 @@ fun ChatScreen(
                         val errorState = uiState.agentState as AgentState.Error
                         item {
                             Surface(
-                                color = GeminiErrorContainer,
-                                shape = RoundedCornerShape(14.dp),
+                                color = M3ErrorContainer,
+                                shape = RoundedCornerShape(18.dp),
+                                border = BorderStroke(1.dp, M3Error.copy(alpha = 0.5f)),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp, vertical = 8.dp)
                             ) {
-                                Column(modifier = Modifier.padding(14.dp)) {
+                                Column(modifier = Modifier.padding(16.dp)) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         Icon(
                                             imageVector = Icons.Default.Warning,
                                             contentDescription = null,
-                                            tint = GeminiError,
-                                            modifier = Modifier.size(18.dp)
+                                            tint = M3Error,
+                                            modifier = Modifier.size(20.dp)
                                         )
-                                        Spacer(Modifier.width(8.dp))
+                                        Spacer(Modifier.width(10.dp))
                                         Text(
                                             text = stringResource(R.string.error_occurred),
                                             style = MaterialTheme.typography.titleSmall,
-                                            fontWeight = FontWeight.SemiBold,
-                                            color = GeminiError
+                                            fontWeight = FontWeight.Bold,
+                                            color = M3Error
                                         )
                                     }
-                                    Spacer(Modifier.height(6.dp))
+                                    Spacer(Modifier.height(8.dp))
                                     Text(
                                         text = errorState.message,
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = GeminiTextPrimary
+                                        color = M3TextPrimary
                                     )
-                                    Spacer(Modifier.height(10.dp))
+                                    Spacer(Modifier.height(12.dp))
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
                                         horizontalArrangement = Arrangement.End
                                     ) {
                                         TextButton(onClick = { viewModel.dismissError() }) {
-                                            Text(stringResource(R.string.dismiss), color = GeminiTextSecondary)
+                                            Text(stringResource(R.string.dismiss), color = M3TextSecondary)
                                         }
                                         Spacer(Modifier.width(8.dp))
                                         Button(
                                             onClick = { viewModel.retryLastTurn() },
-                                            colors = ButtonDefaults.buttonColors(containerColor = GeminiError)
+                                            shape = RoundedCornerShape(14.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = M3Error, contentColor = M3OnError)
                                         ) {
-                                            Text(stringResource(R.string.retry), color = Color.White)
+                                            Text(stringResource(R.string.retry), fontWeight = FontWeight.Bold)
                                         }
                                     }
                                 }
@@ -614,35 +674,36 @@ fun ChatScreen(
                 // Sticky Rate Limit Banner
                 uiState.rateLimitStatus?.let { rateLimit ->
                     Surface(
-                        color = GeminiErrorContainer,
-                        shape = RoundedCornerShape(14.dp),
+                        color = M3ErrorContainer,
+                        shape = RoundedCornerShape(18.dp),
+                        border = BorderStroke(1.dp, M3Error.copy(alpha = 0.5f)),
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
-                            .padding(bottom = bottomBarHeightDp + 8.dp, start = 16.dp, end = 16.dp)
+                            .padding(bottom = bottomBarHeightDp + 10.dp, start = 16.dp, end = 16.dp)
                             .fillMaxWidth()
                     ) {
                         Row(
-                            modifier = Modifier.padding(12.dp),
+                            modifier = Modifier.padding(14.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                                Icon(Icons.Default.Warning, contentDescription = null, tint = GeminiError)
-                                Spacer(Modifier.width(8.dp))
+                                Icon(Icons.Default.Warning, contentDescription = null, tint = M3Error)
+                                Spacer(Modifier.width(10.dp))
                                 Text(
                                     text = rateLimit.message,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = GeminiError
+                                    color = M3Error
                                 )
                             }
                             TextButton(onClick = { viewModel.stopStreaming() }) {
-                                Text(stringResource(R.string.cancel), color = GeminiError)
+                                Text(stringResource(R.string.cancel), color = M3Error, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
                 }
 
-                // Floating Input Capsule (Bottom)
+                // Floating Input Capsule (Bottom - Android 16 Command Bar)
                 val isStreamingActive = uiState.agentState is AgentState.Streaming || uiState.agentState is AgentState.ExecutingTool
                 GeminiBottomCapsule(
                     inputText = inputText,
@@ -746,6 +807,149 @@ fun ChatScreen(
 }
 
 @Composable
+private fun WelcomeHeroSection(
+    onSelectSuggestion: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Surface(
+            shape = RoundedCornerShape(22.dp),
+            color = M3PrimaryContainer.copy(alpha = 0.5f),
+            border = BorderStroke(1.dp, M3Primary.copy(alpha = 0.4f)),
+            modifier = Modifier.size(60.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                GeminiSparkleIcon(size = 32.dp, tint = M3Primary)
+            }
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        Text(
+            text = stringResource(R.string.welcome_hero_title),
+            style = MaterialTheme.typography.titleLarge.copy(
+                fontWeight = FontWeight.Bold,
+                fontSize = 21.sp
+            ),
+            color = M3TextPrimary,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(Modifier.height(6.dp))
+
+        Text(
+            text = stringResource(R.string.welcome_hero_subtitle),
+            style = MaterialTheme.typography.bodyMedium,
+            color = M3TextSecondary,
+            textAlign = TextAlign.Center
+        )
+
+        Spacer(Modifier.height(24.dp))
+
+        // Bento Grid Suggestions
+        Column(
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                HeroSuggestionCard(
+                    icon = Icons.Rounded.Web,
+                    title = stringResource(R.string.suggestion_web_title),
+                    prompt = stringResource(R.string.suggestion_web_prompt),
+                    onSelect = onSelectSuggestion,
+                    modifier = Modifier.weight(1f)
+                )
+                HeroSuggestionCard(
+                    icon = Icons.Rounded.FolderOpen,
+                    title = stringResource(R.string.suggestion_inspect_title),
+                    prompt = stringResource(R.string.suggestion_inspect_prompt),
+                    onSelect = onSelectSuggestion,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                HeroSuggestionCard(
+                    icon = Icons.Rounded.Terminal,
+                    title = stringResource(R.string.suggestion_shell_title),
+                    prompt = stringResource(R.string.suggestion_shell_prompt),
+                    onSelect = onSelectSuggestion,
+                    modifier = Modifier.weight(1f)
+                )
+                HeroSuggestionCard(
+                    icon = Icons.Rounded.School,
+                    title = stringResource(R.string.suggestion_research_title),
+                    prompt = stringResource(R.string.suggestion_research_prompt),
+                    onSelect = onSelectSuggestion,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HeroSuggestionCard(
+    icon: ImageVector,
+    title: String,
+    prompt: String,
+    onSelect: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Surface(
+        shape = RoundedCornerShape(18.dp),
+        color = M3SurfaceContainer,
+        border = BorderStroke(1.dp, M3OutlineVariant),
+        modifier = modifier
+            .clip(RoundedCornerShape(18.dp))
+            .clickable { onSelect(prompt) }
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Surface(
+                shape = RoundedCornerShape(10.dp),
+                color = M3PrimaryContainer.copy(alpha = 0.5f),
+                modifier = Modifier.size(32.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = M3Primary,
+                        modifier = Modifier.size(17.dp)
+                    )
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, fontSize = 13.5.sp),
+                color = M3TextPrimary,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(Modifier.height(2.dp))
+            Text(
+                text = prompt,
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, lineHeight = 15.sp),
+                color = M3TextSecondary,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    }
+}
+
+@Composable
 fun ChatMessageItem(
     message: Message,
     modelName: String,
@@ -758,7 +962,7 @@ fun ChatMessageItem(
     val context = LocalContext.current
 
     if (message.role == MessageRole.USER) {
-        // User message: right-aligned capsule with GeminiSurfaceVariant
+        // User message: right-aligned asymmetric M3 Expressive bubble
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -767,9 +971,10 @@ fun ChatMessageItem(
         ) {
             Column(horizontalAlignment = Alignment.End) {
                 Surface(
-                    shape = RoundedCornerShape(topStart = 24.dp, topEnd = 4.dp, bottomEnd = 24.dp, bottomStart = 24.dp),
-                    color = GeminiSurfaceVariant,
-                    modifier = Modifier.widthIn(max = 300.dp)
+                    shape = M3ExpressiveUserBubbleShape,
+                    color = M3SurfaceContainerHighest,
+                    border = BorderStroke(1.dp, M3OutlineVariant),
+                    modifier = Modifier.widthIn(max = 310.dp)
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
                         if (message.imagesBase64.isNotEmpty()) {
@@ -794,7 +999,8 @@ fun ChatMessageItem(
                                             modifier = Modifier
                                                 .fillMaxWidth()
                                                 .heightIn(max = 240.dp)
-                                                .clip(RoundedCornerShape(12.dp)),
+                                                .clip(RoundedCornerShape(14.dp))
+                                                .border(1.dp, M3OutlineVariant, RoundedCornerShape(14.dp)),
                                             contentScale = ContentScale.Crop
                                         )
                                     }
@@ -805,68 +1011,85 @@ fun ChatMessageItem(
                             SelectionContainer {
                                 Text(
                                     text = message.content,
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = GeminiTextPrimary
+                                    style = MaterialTheme.typography.bodyLarge.copy(
+                                        color = M3TextPrimary,
+                                        fontSize = 15.sp,
+                                        lineHeight = 22.sp
+                                    )
                                 )
                             }
                         }
                     }
                 }
 
-                // Action buttons below user message bubble: Copy & Edit
+                // Micro actions below user message bubble: Copy & Edit
                 Row(
-                    modifier = Modifier.padding(top = 2.dp, end = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                    modifier = Modifier.padding(top = 4.dp, end = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(
-                        onClick = {
-                            clipboard.setText(AnnotatedString(message.content))
-                            Toast.makeText(context, context.getString(R.string.text_copied), Toast.LENGTH_SHORT).show()
-                        },
+                    Surface(
+                        shape = CircleShape,
+                        color = M3SurfaceContainerHigh,
+                        border = BorderStroke(1.dp, M3OutlineVariant),
                         modifier = Modifier.size(28.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.ContentCopy,
-                            contentDescription = stringResource(R.string.cd_copy),
-                            tint = GeminiTextSecondary.copy(alpha = 0.8f),
-                            modifier = Modifier.size(14.dp)
-                        )
+                        IconButton(
+                            onClick = {
+                                clipboard.setText(AnnotatedString(message.content))
+                                Toast.makeText(context, context.getString(R.string.text_copied), Toast.LENGTH_SHORT).show()
+                            },
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ContentCopy,
+                                contentDescription = stringResource(R.string.cd_copy),
+                                tint = M3TextSecondary,
+                                modifier = Modifier.size(13.dp)
+                            )
+                        }
                     }
 
-                    IconButton(
-                        onClick = { onEditPrompt(message.content) },
+                    Surface(
+                        shape = CircleShape,
+                        color = M3SurfaceContainerHigh,
+                        border = BorderStroke(1.dp, M3OutlineVariant),
                         modifier = Modifier.size(28.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = stringResource(R.string.cd_edit),
-                            tint = GeminiTextSecondary.copy(alpha = 0.8f),
-                            modifier = Modifier.size(14.dp)
-                        )
+                        IconButton(
+                            onClick = { onEditPrompt(message.content) },
+                            modifier = Modifier.fillMaxSize()
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = stringResource(R.string.cd_edit),
+                                tint = M3TextSecondary,
+                                modifier = Modifier.size(13.dp)
+                            )
+                        }
                     }
                 }
             }
         }
     } else if (message.role == MessageRole.ASSISTANT) {
-        // AI response: Full-width without bubble background
+        // AI response: Full-width elevated layout
         SelectionContainer {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 10.dp)
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
             ) {
-                // Header: Sparkle + Model Name
+                // Header: Sparkle + Model Name Pill
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(bottom = 6.dp)
                 ) {
-                    GeminiSparkleIcon(size = 15.dp)
+                    GeminiSparkleIcon(size = 15.dp, tint = M3Primary)
                     Spacer(Modifier.width(6.dp))
                     Text(
                         text = modelName,
-                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                        color = GeminiPrimary
+                        style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                        color = M3Primary
                     )
                 }
 
@@ -949,7 +1172,6 @@ fun ChatMessageItem(
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Token details with dynamic reasoning calculation
                     val thinkTokens = message.tokenUsage?.reasoningTokens?.takeIf { it > 0 }
                         ?: message.reasoningContent?.let { (it.length / 4).coerceAtLeast(1) }
                         ?: 0
@@ -969,11 +1191,19 @@ fun ChatMessageItem(
                     } else null
 
                     if (effectiveUsage != null) {
-                        Text(
-                            text = effectiveUsage.toCompactString(),
-                            fontSize = 11.sp,
-                            color = GeminiTextSecondary
-                        )
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = M3SurfaceContainerLow,
+                            border = BorderStroke(1.dp, M3OutlineVariant)
+                        ) {
+                            Text(
+                                text = effectiveUsage.toCompactString(),
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = M3TextSecondary,
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
+                            )
+                        }
                     } else {
                         Spacer(Modifier.width(1.dp))
                     }
@@ -982,46 +1212,70 @@ fun ChatMessageItem(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(
-                            onClick = {
-                                clipboard.setText(AnnotatedString(message.content))
-                                Toast.makeText(context, context.getString(R.string.text_copied), Toast.LENGTH_SHORT).show()
-                            }
+                        Surface(
+                            shape = CircleShape,
+                            color = M3SurfaceContainerHigh,
+                            border = BorderStroke(1.dp, M3OutlineVariant),
+                            modifier = Modifier.size(32.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.ContentCopy,
-                                contentDescription = stringResource(R.string.cd_copy),
-                                tint = GeminiTextSecondary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-
-                        IconButton(
-                            onClick = { onReloadMessage(message) }
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Refresh,
-                                contentDescription = stringResource(R.string.cd_reload),
-                                tint = GeminiTextSecondary,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-
-                        IconButton(
-                            onClick = {
-                                onOpenCanvas(
-                                    context.getString(R.string.canvas_ai_response),
-                                    "markdown",
-                                    message.content
+                            IconButton(
+                                onClick = {
+                                    clipboard.setText(AnnotatedString(message.content))
+                                    Toast.makeText(context, context.getString(R.string.text_copied), Toast.LENGTH_SHORT).show()
+                                },
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ContentCopy,
+                                    contentDescription = stringResource(R.string.cd_copy),
+                                    tint = M3TextSecondary,
+                                    modifier = Modifier.size(15.dp)
                                 )
                             }
+                        }
+
+                        Surface(
+                            shape = CircleShape,
+                            color = M3SurfaceContainerHigh,
+                            border = BorderStroke(1.dp, M3OutlineVariant),
+                            modifier = Modifier.size(32.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Palette,
-                                contentDescription = stringResource(R.string.cd_open_in_canvas),
-                                tint = GeminiTextSecondary,
-                                modifier = Modifier.size(18.dp)
-                            )
+                            IconButton(
+                                onClick = { onReloadMessage(message) },
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Refresh,
+                                    contentDescription = stringResource(R.string.cd_reload),
+                                    tint = M3TextSecondary,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                            }
+                        }
+
+                        Surface(
+                            shape = CircleShape,
+                            color = M3SurfaceContainerHigh,
+                            border = BorderStroke(1.dp, M3OutlineVariant),
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            IconButton(
+                                onClick = {
+                                    onOpenCanvas(
+                                        context.getString(R.string.canvas_ai_response),
+                                        "markdown",
+                                        message.content
+                                    )
+                                },
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Palette,
+                                    contentDescription = stringResource(R.string.cd_open_in_canvas),
+                                    tint = M3TextSecondary,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -1034,7 +1288,6 @@ fun ChatMessageItem(
         val toolName = matchingToolCall?.function?.name ?: "Tool Result"
         val toolArgs = matchingToolCall?.function?.arguments ?: ""
 
-        // Tool Result display
         ToolExecutionCard(
             toolName = toolName,
             arguments = toolArgs,
@@ -1058,4 +1311,3 @@ private fun extractCanvasContent(rawContent: String): String {
     }
     return rawContent
 }
-
