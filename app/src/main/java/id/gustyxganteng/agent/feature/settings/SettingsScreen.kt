@@ -1,7 +1,9 @@
 package id.gustyxganteng.agent.feature.settings
 
 import android.widget.Toast
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,8 +11,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -22,18 +27,23 @@ import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -45,12 +55,24 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import id.gustyxganteng.agent.R
 import id.gustyxganteng.agent.core.database.AppSettingsRepository
+import id.gustyxganteng.agent.core.designsystem.M3OnPrimary
+import id.gustyxganteng.agent.core.designsystem.M3OnPrimaryContainer
+import id.gustyxganteng.agent.core.designsystem.M3OutlineVariant
+import id.gustyxganteng.agent.core.designsystem.M3Primary
+import id.gustyxganteng.agent.core.designsystem.M3PrimaryContainer
+import id.gustyxganteng.agent.core.designsystem.M3Surface
+import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainer
+import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHigh
+import id.gustyxganteng.agent.core.designsystem.M3TextPrimary
+import id.gustyxganteng.agent.core.designsystem.M3TextSecondary
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -82,15 +104,48 @@ fun SettingsScreen(
     }
 
     Scaffold(
+        containerColor = M3Surface,
         topBar = {
-            TopAppBar(
-                title = { Text(stringResource(R.string.settings_title), style = MaterialTheme.typography.titleMedium) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.cd_close))
+            Surface(
+                color = M3Surface,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .statusBarsPadding()
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = M3SurfaceContainerHigh,
+                            border = BorderStroke(1.dp, M3OutlineVariant),
+                            modifier = Modifier.size(40.dp)
+                        ) {
+                            IconButton(onClick = onNavigateBack) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = stringResource(R.string.cd_close),
+                                    tint = M3TextPrimary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                        Spacer(Modifier.width(14.dp))
+                        Text(
+                            text = stringResource(R.string.settings_title),
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp
+                            ),
+                            color = M3TextPrimary
+                        )
                     }
+                    HorizontalDivider(color = M3OutlineVariant)
                 }
-            )
+            }
         }
     ) { padding ->
         Column(
@@ -128,7 +183,7 @@ fun SettingsScreen(
                 onClaudeMaxModeChange = { claudeMaxMode = it }
             )
 
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(8.dp))
 
             Button(
                 onClick = {
@@ -143,13 +198,46 @@ fun SettingsScreen(
                         onNavigateBack()
                     }
                 },
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = M3Primary,
+                    contentColor = M3OnPrimary
+                ),
+                contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 14.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Icon(Icons.Default.Save, contentDescription = null)
+                Icon(Icons.Default.Save, contentDescription = null, modifier = Modifier.size(20.dp))
                 Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.settings_save_button))
+                Text(stringResource(R.string.settings_save_button), fontWeight = FontWeight.Bold, fontSize = 15.sp)
+            }
+            Spacer(Modifier.height(16.dp))
+        }
+    }
+}
+
+@Composable
+private fun SettingsCardHeader(
+    icon: ImageVector,
+    title: String
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Surface(
+            shape = RoundedCornerShape(10.dp),
+            color = M3PrimaryContainer.copy(alpha = 0.5f),
+            border = BorderStroke(1.dp, M3Primary.copy(alpha = 0.35f)),
+            modifier = Modifier.size(32.dp)
+        ) {
+            Box(contentAlignment = Alignment.Center) {
+                Icon(icon, contentDescription = null, tint = M3Primary, modifier = Modifier.size(17.dp))
             }
         }
+        Spacer(Modifier.width(10.dp))
+        Text(
+            text = title,
+            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp),
+            color = M3TextPrimary
+        )
     }
 }
 
@@ -159,29 +247,32 @@ private fun ModelSelectionCard(
     onSelectModel: (String) -> Unit
 ) {
     Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = M3SurfaceContainer),
+        border = BorderStroke(1.dp, M3OutlineVariant),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Speed, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.settings_model_header), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
-            }
+            SettingsCardHeader(Icons.Default.Speed, stringResource(R.string.settings_model_header))
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(
                     selected = selectedModel == "agnes-3.0-flash",
                     onClick = { onSelectModel("agnes-3.0-flash") },
-                    label = { Text("agnes-3.0-flash") }
+                    shape = RoundedCornerShape(14.dp),
+                    label = { Text("agnes-3.0-flash", fontWeight = FontWeight.SemiBold) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = M3PrimaryContainer,
+                        selectedLabelColor = M3OnPrimaryContainer
+                    ),
+                    border = BorderStroke(1.dp, M3Primary.copy(alpha = 0.5f))
                 )
             }
 
             Text(
                 stringResource(R.string.settings_model_desc),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = M3TextSecondary
             )
         }
     }
@@ -195,16 +286,13 @@ private fun SecurityCard(
     onMaxRetriesChange: (Float) -> Unit
 ) {
     Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = M3SurfaceContainer),
+        border = BorderStroke(1.dp, M3OutlineVariant),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Security, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.settings_security_header), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
-            }
+            SettingsCardHeader(Icons.Default.Security, stringResource(R.string.settings_security_header))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -212,28 +300,40 @@ private fun SecurityCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.settings_yolo_title), fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.settings_yolo_title), fontWeight = FontWeight.SemiBold, color = M3TextPrimary)
                     Text(
                         stringResource(R.string.settings_yolo_desc),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = M3TextSecondary
                     )
                 }
+                Spacer(Modifier.width(8.dp))
                 Switch(
                     checked = yoloMode,
-                    onCheckedChange = onYoloModeChange
+                    onCheckedChange = onYoloModeChange,
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = M3Primary,
+                        checkedTrackColor = M3PrimaryContainer
+                    )
                 )
             }
 
+            HorizontalDivider(color = M3OutlineVariant)
+
             Text(
                 stringResource(R.string.settings_max_retries, maxRetries.toInt()),
-                style = MaterialTheme.typography.bodyMedium
+                style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
+                color = M3TextPrimary
             )
             Slider(
                 value = maxRetries,
                 onValueChange = onMaxRetriesChange,
                 valueRange = 1f..10f,
-                steps = 8
+                steps = 8,
+                colors = SliderDefaults.colors(
+                    thumbColor = M3Primary,
+                    activeTrackColor = M3Primary
+                )
             )
         }
     }
@@ -245,16 +345,13 @@ private fun AntiAiSlopCard(
     onAntiAiSlopModeChange: (Boolean) -> Unit
 ) {
     Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = M3SurfaceContainer),
+        border = BorderStroke(1.dp, M3OutlineVariant),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Shield, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.settings_anti_slop_title), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
-            }
+            SettingsCardHeader(Icons.Default.Shield, stringResource(R.string.settings_anti_slop_title))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -262,16 +359,21 @@ private fun AntiAiSlopCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.settings_anti_slop_title), fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.settings_anti_slop_title), fontWeight = FontWeight.SemiBold, color = M3TextPrimary)
                     Text(
                         stringResource(R.string.settings_anti_slop_desc),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = M3TextSecondary
                     )
                 }
+                Spacer(Modifier.width(8.dp))
                 Switch(
                     checked = antiAiSlopMode,
-                    onCheckedChange = onAntiAiSlopModeChange
+                    onCheckedChange = onAntiAiSlopModeChange,
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = M3Primary,
+                        checkedTrackColor = M3PrimaryContainer
+                    )
                 )
             }
         }
@@ -284,16 +386,13 @@ private fun WebSearchCard(
     onTavilyDeepSearchChange: (Boolean) -> Unit
 ) {
     Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = M3SurfaceContainer),
+        border = BorderStroke(1.dp, M3OutlineVariant),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.settings_search_header), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
-            }
+            SettingsCardHeader(Icons.Default.Search, stringResource(R.string.settings_search_header))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -301,16 +400,21 @@ private fun WebSearchCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.settings_tavily_title), fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.settings_tavily_title), fontWeight = FontWeight.SemiBold, color = M3TextPrimary)
                     Text(
                         stringResource(R.string.settings_tavily_desc),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = M3TextSecondary
                     )
                 }
+                Spacer(Modifier.width(8.dp))
                 Switch(
                     checked = tavilyDeepSearch,
-                    onCheckedChange = onTavilyDeepSearchChange
+                    onCheckedChange = onTavilyDeepSearchChange,
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = M3Primary,
+                        checkedTrackColor = M3PrimaryContainer
+                    )
                 )
             }
         }
@@ -323,16 +427,13 @@ private fun AgentModeCard(
     onClaudeMaxModeChange: (Boolean) -> Unit
 ) {
     Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = M3SurfaceContainer),
+        border = BorderStroke(1.dp, M3OutlineVariant),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Bolt, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                Spacer(Modifier.width(8.dp))
-                Text(stringResource(R.string.settings_agent_mode_header), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
-            }
+            SettingsCardHeader(Icons.Default.Bolt, stringResource(R.string.settings_agent_mode_header))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -340,16 +441,21 @@ private fun AgentModeCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.settings_claude_max_title), fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.settings_claude_max_title), fontWeight = FontWeight.SemiBold, color = M3TextPrimary)
                     Text(
                         stringResource(R.string.settings_claude_max_desc),
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = M3TextSecondary
                     )
                 }
+                Spacer(Modifier.width(8.dp))
                 Switch(
                     checked = claudeMaxMode,
-                    onCheckedChange = onClaudeMaxModeChange
+                    onCheckedChange = onClaudeMaxModeChange,
+                    colors = SwitchDefaults.colors(
+                        checkedThumbColor = M3Primary,
+                        checkedTrackColor = M3PrimaryContainer
+                    )
                 )
             }
         }

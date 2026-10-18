@@ -11,6 +11,7 @@ import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.core.content.FileProvider
 import java.io.File
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -310,7 +311,8 @@ fun CanvasModalSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         dragHandle = null,
-        containerColor = GeminiBackground,
+        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        containerColor = id.gustyxganteng.agent.core.designsystem.M3Surface,
         modifier = modifier.fillMaxSize()
     ) {
         Column(
@@ -320,7 +322,7 @@ fun CanvasModalSheet(
         ) {
             // TopBar Header
             Surface(
-                color = GeminiSurface,
+                color = id.gustyxganteng.agent.core.designsystem.M3Surface,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -331,38 +333,47 @@ fun CanvasModalSheet(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Close button
-                    IconButton(onClick = onDismiss) {
-                        Icon(
-                            imageVector = Icons.Rounded.Close,
-                            contentDescription = stringResource(R.string.cd_close),
-                            tint = GeminiTextPrimary
-                        )
+                    Surface(
+                        shape = CircleShape,
+                        color = id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHigh,
+                        border = BorderStroke(1.dp, id.gustyxganteng.agent.core.designsystem.M3OutlineVariant),
+                        modifier = Modifier.size(38.dp)
+                    ) {
+                        IconButton(onClick = onDismiss) {
+                            Icon(
+                                imageVector = Icons.Rounded.Close,
+                                contentDescription = stringResource(R.string.cd_close),
+                                tint = id.gustyxganteng.agent.core.designsystem.M3TextPrimary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
                     }
 
                     // Title & Language
                     Column(
                         modifier = Modifier
                             .weight(1f)
-                            .padding(horizontal = 8.dp)
+                            .padding(horizontal = 10.dp)
                     ) {
                         Text(
                             text = artifact.title,
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                            color = GeminiTextPrimary,
+                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontSize = 15.sp),
+                            color = id.gustyxganteng.agent.core.designsystem.M3TextPrimary,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
                         Text(
                             text = stringResource(R.string.canvas_language, artifact.language.uppercase()),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = GeminiPrimary
+                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                            color = id.gustyxganteng.agent.core.designsystem.M3Primary
                         )
                     }
 
                     // Segmented Button [ Preview | Code ]
                     Surface(
                         shape = RoundedCornerShape(20.dp),
-                        color = GeminiSurfaceVariant,
+                        color = id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHigh,
+                        border = BorderStroke(1.dp, id.gustyxganteng.agent.core.designsystem.M3OutlineVariant),
                         modifier = Modifier.padding(end = 4.dp)
                     ) {
                         Row(
@@ -371,11 +382,11 @@ fun CanvasModalSheet(
                         ) {
                             // Preview Option
                             val previewBg by animateColorAsState(
-                                targetValue = if (selectedTab == CanvasTab.PREVIEW) GeminiActiveChipContainer else Color.Transparent,
+                                targetValue = if (selectedTab == CanvasTab.PREVIEW) id.gustyxganteng.agent.core.designsystem.M3PrimaryContainer else Color.Transparent,
                                 label = "previewBg"
                             )
                             val previewContentColor by animateColorAsState(
-                                targetValue = if (selectedTab == CanvasTab.PREVIEW) GeminiActiveChipContent else GeminiTextSecondary,
+                                targetValue = if (selectedTab == CanvasTab.PREVIEW) id.gustyxganteng.agent.core.designsystem.M3OnPrimaryContainer else id.gustyxganteng.agent.core.designsystem.M3TextSecondary,
                                 label = "previewColor"
                             )
                             Surface(
@@ -404,11 +415,11 @@ fun CanvasModalSheet(
 
                             // Code Option
                             val codeBg by animateColorAsState(
-                                targetValue = if (selectedTab == CanvasTab.CODE) GeminiActiveChipContainer else Color.Transparent,
+                                targetValue = if (selectedTab == CanvasTab.CODE) id.gustyxganteng.agent.core.designsystem.M3PrimaryContainer else Color.Transparent,
                                 label = "codeBg"
                             )
                             val codeContentColor by animateColorAsState(
-                                targetValue = if (selectedTab == CanvasTab.CODE) GeminiActiveChipContent else GeminiTextSecondary,
+                                targetValue = if (selectedTab == CanvasTab.CODE) id.gustyxganteng.agent.core.designsystem.M3OnPrimaryContainer else id.gustyxganteng.agent.core.designsystem.M3TextSecondary,
                                 label = "codeColor"
                             )
                             Surface(
@@ -630,8 +641,10 @@ fun CanvasModalSheet(
 
             // Quick-Edit Prompt Bar (Bottom)
             Surface(
-                shape = RoundedCornerShape(24.dp),
-                color = GeminiSurface,
+                shape = RoundedCornerShape(28.dp),
+                color = id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHigh,
+                border = BorderStroke(1.dp, id.gustyxganteng.agent.core.designsystem.M3OutlineVariant),
+                shadowElevation = 4.dp,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 12.dp, vertical = 8.dp)
@@ -641,7 +654,7 @@ fun CanvasModalSheet(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                        .padding(horizontal = 14.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     TextField(
@@ -650,19 +663,19 @@ fun CanvasModalSheet(
                         placeholder = {
                             Text(
                                 text = stringResource(R.string.canvas_prompt_placeholder),
-                                color = GeminiTextSecondary,
+                                color = id.gustyxganteng.agent.core.designsystem.M3TextSecondary,
                                 fontSize = 13.sp
                             )
                         },
                         singleLine = true,
                         modifier = Modifier.weight(1f),
-                        textStyle = TextStyle(color = GeminiTextPrimary, fontSize = 14.sp),
+                        textStyle = TextStyle(color = id.gustyxganteng.agent.core.designsystem.M3TextPrimary, fontSize = 14.sp),
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
                             unfocusedContainerColor = Color.Transparent,
                             focusedIndicatorColor = Color.Transparent,
                             unfocusedIndicatorColor = Color.Transparent,
-                            cursorColor = GeminiPrimary
+                            cursorColor = id.gustyxganteng.agent.core.designsystem.M3Primary
                         )
                     )
 
@@ -678,15 +691,15 @@ fun CanvasModalSheet(
                     ) {
                         Surface(
                             shape = CircleShape,
-                            color = if (instructionText.isNotBlank()) GeminiPrimary else GeminiSurfaceVariant,
+                            color = if (instructionText.isNotBlank()) id.gustyxganteng.agent.core.designsystem.M3Primary else id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHighest,
                             modifier = Modifier.size(36.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
                                     imageVector = Icons.AutoMirrored.Filled.Send,
                                     contentDescription = stringResource(R.string.cd_send),
-                                    tint = if (instructionText.isNotBlank()) GeminiBackground else GeminiTextSecondary,
-                                    modifier = Modifier.size(18.dp)
+                                    tint = if (instructionText.isNotBlank()) id.gustyxganteng.agent.core.designsystem.M3OnPrimary else id.gustyxganteng.agent.core.designsystem.M3TextSecondary,
+                                    modifier = Modifier.size(17.dp)
                                 )
                             }
                         }
@@ -720,13 +733,14 @@ fun CanvasModalSheet(
 
         AlertDialog(
             onDismissRequest = { showSaveDialog = false },
-            containerColor = GeminiSurface,
-            titleContentColor = GeminiTextPrimary,
-            textContentColor = GeminiTextSecondary,
+            shape = RoundedCornerShape(28.dp),
+            containerColor = id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHigh,
+            titleContentColor = id.gustyxganteng.agent.core.designsystem.M3TextPrimary,
+            textContentColor = id.gustyxganteng.agent.core.designsystem.M3TextSecondary,
             title = {
                 Text(
                     text = stringResource(R.string.canvas_save_to_workspace),
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                 )
             },
             text = {
@@ -737,7 +751,7 @@ fun CanvasModalSheet(
                             workspacePath ?: stringResource(R.string.canvas_no_workspace)
                         ),
                         style = MaterialTheme.typography.bodySmall,
-                        color = GeminiTextSecondary
+                        color = id.gustyxganteng.agent.core.designsystem.M3TextSecondary
                     )
 
                     OutlinedTextField(
@@ -745,14 +759,15 @@ fun CanvasModalSheet(
                         onValueChange = { relativePath = it },
                         label = { Text(stringResource(R.string.canvas_file_path_label)) },
                         singleLine = true,
+                        shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = GeminiPrimary,
-                            unfocusedBorderColor = GeminiSurfaceVariant,
-                            focusedLabelColor = GeminiPrimary,
-                            unfocusedLabelColor = GeminiTextSecondary,
-                            focusedTextColor = GeminiTextPrimary,
-                            unfocusedTextColor = GeminiTextPrimary
+                            focusedBorderColor = id.gustyxganteng.agent.core.designsystem.M3Primary,
+                            unfocusedBorderColor = id.gustyxganteng.agent.core.designsystem.M3OutlineVariant,
+                            focusedLabelColor = id.gustyxganteng.agent.core.designsystem.M3Primary,
+                            unfocusedLabelColor = id.gustyxganteng.agent.core.designsystem.M3TextSecondary,
+                            focusedTextColor = id.gustyxganteng.agent.core.designsystem.M3TextPrimary,
+                            unfocusedTextColor = id.gustyxganteng.agent.core.designsystem.M3TextPrimary
                         )
                     )
                 }
@@ -771,19 +786,20 @@ fun CanvasModalSheet(
                         }
                     },
                     enabled = workspacePath != null && relativePath.isNotBlank(),
+                    shape = RoundedCornerShape(14.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = GeminiPrimary,
-                        contentColor = GeminiBackground,
-                        disabledContainerColor = GeminiSurfaceVariant,
-                        disabledContentColor = GeminiTextSecondary
+                        containerColor = id.gustyxganteng.agent.core.designsystem.M3Primary,
+                        contentColor = id.gustyxganteng.agent.core.designsystem.M3OnPrimary,
+                        disabledContainerColor = id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHighest,
+                        disabledContentColor = id.gustyxganteng.agent.core.designsystem.M3TextSecondary
                     )
                 ) {
-                    Text(stringResource(R.string.save), fontWeight = FontWeight.SemiBold)
+                    Text(stringResource(R.string.save), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showSaveDialog = false }) {
-                    Text(stringResource(R.string.cancel), color = GeminiTextSecondary)
+                    Text(stringResource(R.string.cancel), color = id.gustyxganteng.agent.core.designsystem.M3TextSecondary)
                 }
             }
         )
