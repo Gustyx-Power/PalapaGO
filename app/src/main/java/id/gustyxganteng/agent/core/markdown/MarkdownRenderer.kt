@@ -5,9 +5,12 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Environment
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +19,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -24,10 +28,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import id.gustyxganteng.agent.R
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.rounded.Article
 import androidx.compose.material.icons.rounded.FileDownload
+import androidx.compose.material.icons.rounded.Functions
 import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -36,7 +42,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -54,6 +63,10 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import id.gustyxganteng.agent.core.designsystem.M3OutlineVariant
+import id.gustyxganteng.agent.core.designsystem.M3Primary
+import id.gustyxganteng.agent.core.designsystem.M3TextSecondary
 import java.io.File
 
 sealed interface MarkdownNode {
@@ -64,6 +77,7 @@ sealed interface MarkdownNode {
     data class BulletItem(val text: String) : MarkdownNode
     data class NumberedItem(val number: String, val text: String) : MarkdownNode
     data class Table(val headers: List<String>, val rows: List<List<String>>) : MarkdownNode
+    data class MathBlock(val formula: String) : MarkdownNode
 }
 
 object MarkdownParser {
@@ -75,7 +89,61 @@ object MarkdownParser {
         while (i < lines.size) {
             val line = lines[i]
 
-            // 1. Code blocks ```lang
+            // 1. LaTeX block math ($$ ... $$)
+            if (line.trim().startsWith("$$")) {
+                val trimmed = line.trim()
+                if (trimmed.length > 2 && trimmed.endsWith("$$")) {
+                    val formula = trimmed.removeSurrounding("$$").trim()
+                    nodes.add(MarkdownNode.MathBlock(formula))
+                    i++
+                    continue
+                } else {
+                    val formulaBuilder = StringBuilder()
+                    val rest = trimmed.removePrefix("$$").trim()
+                    if (rest.isNotEmpty()) formulaBuilder.appendLine(rest)
+                    i++
+                    while (i < lines.size && !lines[i].trim().endsWith("$$")) {
+                        formulaBuilder.appendLine(lines[i])
+                        i++
+                    }
+                    if (i < lines.size) {
+                        val last = lines[i].trim().removeSuffix("$$").trim()
+                        if (last.isNotEmpty()) formulaBuilder.appendLine(last)
+                        i++
+                    }
+                    nodes.add(MarkdownNode.MathBlock(formulaBuilder.toString().trim()))
+                    continue
+                }
+            }
+
+            // 2. LaTeX block math (\[ ... \])
+            if (line.trim().startsWith("\\[")) {
+                val trimmed = line.trim()
+                if (trimmed.endsWith("\\]")) {
+                    val formula = trimmed.removePrefix("\\[").removeSuffix("\\]").trim()
+                    nodes.add(MarkdownNode.MathBlock(formula))
+                    i++
+                    continue
+                } else {
+                    val formulaBuilder = StringBuilder()
+                    val rest = trimmed.removePrefix("\\[").trim()
+                    if (rest.isNotEmpty()) formulaBuilder.appendLine(rest)
+                    i++
+                    while (i < lines.size && !lines[i].trim().contains("\\]")) {
+                        formulaBuilder.appendLine(lines[i])
+                        i++
+                    }
+                    if (i < lines.size) {
+                        val last = lines[i].trim().removeSuffix("\\]").trim()
+                        if (last.isNotEmpty()) formulaBuilder.appendLine(last)
+                        i++
+                    }
+                    nodes.add(MarkdownNode.MathBlock(formulaBuilder.toString().trim()))
+                    continue
+                }
+            }
+
+            // 3. Code blocks ```lang (including math/latex/tex)
             if (line.trim().startsWith("```")) {
                 val lang = line.trim().removePrefix("```").trim()
                 val codeBuilder = StringBuilder()
@@ -84,12 +152,24 @@ object MarkdownParser {
                     codeBuilder.appendLine(lines[i])
                     i++
                 }
-                nodes.add(MarkdownNode.CodeBlock(lang, codeBuilder.toString().trimEnd()))
+                if (lang.lowercase() in listOf("math", "latex", "tex")) {
+                    nodes.add(MarkdownNode.MathBlock(codeBuilder.toString().trimEnd()))
+                } else {
+                    nodes.add(MarkdownNode.CodeBlock(lang, codeBuilder.toString().trimEnd()))
+                }
                 i++
                 continue
             }
 
-            // 2. Table (| header | or col1 | col2)
+            // 4. Standalone un-delimited pure LaTeX math formulas (no prose words)
+            val rawTrimmed = line.trim()
+            if (isPureMathEquation(rawTrimmed)) {
+                nodes.add(MarkdownNode.MathBlock(rawTrimmed))
+                i++
+                continue
+            }
+
+            // 5. Table (| header | or col1 | col2)
             if (isTableRow(line) && i + 1 < lines.size && isTableSeparator(lines[i + 1])) {
                 val headers = parseRowCells(line)
                 i += 2 // skip header and separator
@@ -154,6 +234,25 @@ object MarkdownParser {
         }
 
         return nodes
+    }
+
+    private fun isPureMathEquation(line: String): Boolean {
+        val t = line.trim()
+        if (t.isEmpty()) return false
+        if (t.contains("$") && !t.startsWith("$$")) return false
+        if (t.startsWith("#") || t.startsWith("- ") || t.startsWith("* ") || t.startsWith(">")) return false
+
+        val rawWords = t.split(Regex("[^a-zA-Z\\\\]+")).filter { it.isNotEmpty() }
+        val allowedMathTerms = setOf("sin", "cos", "tan", "exp", "log", "ln", "det", "min", "max", "sup", "inf", "lim", "dim", "ker", "deg", "gcd", "mod")
+        val proseWords = rawWords.filter { w ->
+            !w.startsWith("\\") && w.length >= 3 && w.lowercase() !in allowedMathTerms
+        }
+        if (proseWords.size >= 2) return false
+
+        return t.startsWith("\\frac") || t.startsWith("\\sum") || t.startsWith("\\int") ||
+               t.startsWith("\\prod") || t.startsWith("\\begin{") || t.startsWith("\\lim") ||
+               (t.startsWith("\\") && t.contains("=") && proseWords.isEmpty()) ||
+               (t.contains("\\frac{") && t.contains("}") && proseWords.isEmpty())
     }
 
     private fun isTableRow(line: String): Boolean {
@@ -235,7 +334,7 @@ fun MarkdownContent(
                             )
                         }
                         Text(
-                            text = node.text,
+                            text = formatInlineMarkdown(node.text),
                             style = style,
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.padding(top = topPad, bottom = botPad)
@@ -357,8 +456,129 @@ fun MarkdownContent(
                     is MarkdownNode.Table -> {
                         TableCard(node.headers, node.rows)
                     }
+                    is MarkdownNode.MathBlock -> {
+                        MathBlockCard(formula = node.formula)
+                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun MathBlockCard(formula: String) {
+    val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
+    var isCopied by remember { mutableStateOf(false) }
+
+    Surface(
+        shape = RoundedCornerShape(18.dp),
+        color = Color(0xFF171A1F), // M3SurfaceContainerLow
+        border = BorderStroke(1.dp, M3OutlineVariant),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp)
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Rounded.Functions,
+                        contentDescription = null,
+                        tint = M3Primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        text = "Formula (LaTeX)",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 11.sp,
+                            letterSpacing = 0.3.sp
+                        ),
+                        color = M3Primary
+                    )
+                }
+
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = Color.Transparent,
+                    modifier = Modifier.clickable {
+                        clipboardManager.setText(AnnotatedString(formula))
+                        isCopied = true
+                        Toast.makeText(context, "Rumus LaTeX disalin", Toast.LENGTH_SHORT).show()
+                    }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = if (isCopied) Icons.Default.Check else Icons.Default.ContentCopy,
+                            contentDescription = "Copy formula",
+                            tint = if (isCopied) Color(0xFF7BE598) else M3TextSecondary,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            text = if (isCopied) "Tersalin" else "Salin LaTeX",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium
+                            ),
+                            color = if (isCopied) Color(0xFF7BE598) else M3TextSecondary
+                        )
+                    }
+                }
+            }
+
+            HorizontalDivider(color = M3OutlineVariant, thickness = 1.dp)
+
+            AndroidView(
+                factory = { ctx ->
+                    WebView(ctx).apply {
+                        settings.javaScriptEnabled = true
+                        settings.loadWithOverviewMode = true
+                        settings.useWideViewPort = true
+                        settings.domStorageEnabled = true
+                        settings.allowFileAccess = true
+                        settings.allowContentAccess = true
+                        isVerticalScrollBarEnabled = false
+                        isHorizontalScrollBarEnabled = true
+                        setBackgroundColor(0)
+                        webViewClient = object : WebViewClient() {
+                            override fun onPageFinished(view: WebView?, url: String?) {
+                                super.onPageFinished(view, url)
+                                val escaped = formula
+                                    .replace("\\", "\\\\")
+                                    .replace("'", "\\'")
+                                    .replace("\n", "\\n")
+                                    .replace("\r", "")
+                                evaluateJavascript("renderLatex('$escaped');", null)
+                            }
+                        }
+                        loadUrl("file:///android_asset/katex/katex_template.html")
+                    }
+                },
+                update = { webView ->
+                    val escaped = formula
+                        .replace("\\", "\\\\")
+                        .replace("'", "\\'")
+                        .replace("\n", "\\n")
+                        .replace("\r", "")
+                    webView.evaluateJavascript("renderLatex('$escaped');", null)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 52.dp, max = 240.dp)
+                    .padding(horizontal = 6.dp, vertical = 4.dp)
+            )
         }
     }
 }
@@ -375,16 +595,17 @@ fun CodeBlockCard(
     val displayLang = language.ifEmpty { "text" }
 
     Surface(
-        shape = RoundedCornerShape(12.dp),
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f)),
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = modifier.fillMaxWidth()
     ) {
         Column {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                    .padding(horizontal = 14.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -394,18 +615,19 @@ fun CodeBlockCard(
                     color = MaterialTheme.colorScheme.primary
                 )
 
-                Row {
+                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                     IconButton(
                         onClick = {
                             clipboard.setText(AnnotatedString(code))
                             Toast.makeText(context, context.getString(R.string.text_copied), Toast.LENGTH_SHORT).show()
-                        }
+                        },
+                        modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
                             imageVector = Icons.Default.ContentCopy,
                             contentDescription = "Salin Kode",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(16.dp)
                         )
                     }
 
@@ -413,20 +635,21 @@ fun CodeBlockCard(
                         IconButton(
                             onClick = {
                                 onOpenInCanvas("Snippet ($displayLang)", displayLang, code)
-                            }
+                            },
+                            modifier = Modifier.size(32.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Edit,
                                 contentDescription = "Buka di Canvas",
                                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(18.dp)
+                                modifier = Modifier.size(16.dp)
                             )
                         }
                     }
                 }
             }
 
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
             Box(
                 modifier = Modifier
@@ -437,8 +660,8 @@ fun CodeBlockCard(
                 Text(
                     text = code,
                     fontFamily = FontFamily.Monospace,
-                    fontSize = 13.sp,
-                    lineHeight = 19.sp,
+                    fontSize = 12.5.sp,
+                    lineHeight = 18.sp,
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
@@ -471,9 +694,9 @@ fun TableCard(
     }
 
     Surface(
-        shape = RoundedCornerShape(10.dp),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)),
-        color = MaterialTheme.colorScheme.surface,
+        shape = RoundedCornerShape(14.dp),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        color = MaterialTheme.colorScheme.surfaceContainer,
         modifier = modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState())
@@ -482,8 +705,8 @@ fun TableCard(
             // Header Row
             Row(
                 modifier = Modifier
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f))
-                    .padding(vertical = 8.dp, horizontal = 4.dp),
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .padding(vertical = 10.dp, horizontal = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 headers.forEachIndexed { idx, header ->
@@ -495,7 +718,7 @@ fun TableCard(
                         contentAlignment = Alignment.CenterStart
                     ) {
                         Text(
-                            text = header,
+                            text = formatInlineMarkdown(header),
                             style = MaterialTheme.typography.labelMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 12.sp
@@ -506,15 +729,15 @@ fun TableCard(
                 }
             }
 
-            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
             // Body Rows
             rows.forEachIndexed { rowIndex, row ->
-                val bg = if (rowIndex % 2 == 0) Color.Transparent else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f)
+                val bg = if (rowIndex % 2 == 0) Color.Transparent else MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f)
                 Row(
                     modifier = Modifier
                         .background(bg)
-                        .padding(vertical = 7.dp, horizontal = 4.dp),
+                        .padding(vertical = 8.dp, horizontal = 6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     row.forEachIndexed { colIdx, cell ->
@@ -554,19 +777,19 @@ fun MarkdownDownloadButton(
     val context = LocalContext.current
     Surface(
         onClick = { downloadOrOpenUrl(context, url, suggestedTitle = label) },
-        shape = RoundedCornerShape(8.dp),
-        color = Color(0xFF004A77),
-        border = BorderStroke(1.dp, Color(0xFFC2E7FF).copy(alpha = 0.5f)),
+        shape = RoundedCornerShape(12.dp),
+        color = MaterialTheme.colorScheme.primaryContainer,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
         modifier = modifier.padding(vertical = 4.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp)
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp)
         ) {
             Icon(
                 imageVector = Icons.Rounded.FileDownload,
                 contentDescription = null,
-                tint = Color(0xFFC2E7FF),
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 modifier = Modifier.size(16.dp)
             )
             Spacer(Modifier.width(8.dp))
@@ -574,7 +797,7 @@ fun MarkdownDownloadButton(
                 text = label,
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFFC2E7FF)
+                color = MaterialTheme.colorScheme.onPrimaryContainer
             )
         }
     }
@@ -593,13 +816,13 @@ fun MarkdownActionChip(
                      url.endsWith(".pdf", ignoreCase = true)
     val isDoi = label.contains("DOI", ignoreCase = true) || url.contains("doi.org", ignoreCase = true)
 
-    val containerColor = if (isDownload) Color(0xFF004A77) else if (isDoi) MaterialTheme.colorScheme.surfaceVariant else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
-    val contentColor = if (isDownload) Color(0xFFC2E7FF) else if (isDoi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+    val containerColor = if (isDownload) MaterialTheme.colorScheme.primaryContainer else if (isDoi) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainer
+    val contentColor = if (isDownload) MaterialTheme.colorScheme.onPrimaryContainer else if (isDoi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
     val icon = if (isDownload) Icons.Rounded.FileDownload else if (isDoi) Icons.Rounded.OpenInNew else Icons.Rounded.Article
 
     Surface(
         onClick = { downloadOrOpenUrl(context, url, suggestedTitle = label) },
-        shape = RoundedCornerShape(6.dp),
+        shape = RoundedCornerShape(10.dp),
         color = containerColor,
         border = BorderStroke(1.dp, contentColor.copy(alpha = 0.35f)),
         modifier = modifier.padding(vertical = 2.dp)
@@ -690,16 +913,146 @@ fun downloadOrOpenUrl(context: Context, url: String, suggestedTitle: String? = n
     }
 }
 
+fun formatInlineLatexToPrettyMath(latex: String): String {
+    var s = latex.trim()
+
+    val greek = mapOf(
+        "\\alpha" to "α", "\\beta" to "β", "\\gamma" to "γ", "\\delta" to "δ",
+        "\\epsilon" to "ε", "\\zeta" to "ζ", "\\eta" to "η", "\\theta" to "θ",
+        "\\iota" to "ι", "\\kappa" to "κ", "\\lambda" to "λ", "\\mu" to "μ",
+        "\\nu" to "ν", "\\xi" to "ξ", "\\pi" to "π", "\\rho" to "ρ",
+        "\\sigma" to "σ", "\\tau" to "τ", "\\upsilon" to "υ", "\\phi" to "φ",
+        "\\chi" to "χ", "\\psi" to "ψ", "\\omega" to "ω",
+        "\\Gamma" to "Γ", "\\Delta" to "Δ", "\\Theta" to "Θ", "\\Lambda" to "Λ",
+        "\\Xi" to "Ξ", "\\Pi" to "Π", "\\Sigma" to "Σ", "\\Phi" to "Φ",
+        "\\Psi" to "Ψ", "\\Omega" to "Ω"
+    )
+    for ((cmd, char) in greek) {
+        s = s.replace(cmd, char)
+    }
+
+    val mathFuncs = mapOf(
+        "\\sum" to "∑", "\\prod" to "∏", "\\int" to "∫",
+        "\\ln" to "ln", "\\exp" to "exp", "\\log" to "log",
+        "\\sin" to "sin", "\\cos" to "cos", "\\tan" to "tan",
+        "\\lim" to "lim", "\\min" to "min", "\\max" to "max",
+        "\\det" to "det", "\\sup" to "sup", "\\inf" to "inf"
+    )
+    for ((cmd, char) in mathFuncs) {
+        s = s.replace(cmd, char)
+    }
+
+    val symbols = mapOf(
+        "\\times" to "×", "\\div" to "÷", "\\pm" to "±", "\\mp" to "∓",
+        "\\cdot" to "·", "\\neq" to "≠", "\\approx" to "≈", "\\equiv" to "≡",
+        "\\leq" to "≤", "\\le" to "≤", "\\geq" to "≥", "\\ge" to "≥",
+        "\\infty" to "∞", "\\in" to "∈", "\\notin" to "∉", "\\subset" to "⊂",
+        "\\subseteq" to "⊆", "\\cup" to "∪", "\\cap" to "∩", "\\emptyset" to "∅",
+        "\\forall" to "∀", "\\exists" to "∃", "\\nabla" to "∇", "\\partial" to "∂",
+        "\\to" to "→", "\\rightarrow" to "→", "\\leftarrow" to "←",
+        "\\Rightarrow" to "⇒", "\\Leftarrow" to "⇐", "\\Leftrightarrow" to "⇔"
+    )
+    for ((cmd, char) in symbols) {
+        s = s.replace(cmd, char)
+    }
+
+    s = s.replace(Regex("\\\\overline\\{([^}]+)\\}")) { "${it.groupValues[1]}̄" }
+    s = s.replace(Regex("\\\\bar\\{([^}]+)\\}")) { "${it.groupValues[1]}̄" }
+    s = s.replace(Regex("\\\\vec\\{([^}]+)\\}")) { "${it.groupValues[1]}⃗" }
+    s = s.replace(Regex("\\\\hat\\{([^}]+)\\}")) { "${it.groupValues[1]}̂" }
+    s = s.replace(Regex("\\\\mathbb\\{([^}]+)\\}")) { it.groupValues[1] }
+    s = s.replace(Regex("\\\\mathbf\\{([^}]+)\\}")) { it.groupValues[1] }
+    s = s.replace(Regex("\\\\text\\{([^}]+)\\}")) { it.groupValues[1] }
+    s = s.replace(Regex("\\\\mathcal\\{([^}]+)\\}")) { it.groupValues[1] }
+
+    val superscripts = mapOf(
+        '0' to '⁰', '1' to '¹', '2' to '²', '3' to '³', '4' to '⁴',
+        '5' to '⁵', '6' to '⁶', '7' to '⁷', '8' to '⁸', '9' to '⁹',
+        '+' to '⁺', '-' to '⁻', '=' to '⁼', '(' to '⁽', ')' to '⁾',
+        'n' to 'ⁿ', 'i' to 'ⁱ'
+    )
+    s = s.replace(Regex("\\^\\{([0-9+\\-()ni]+)\\}")) { match ->
+        match.groupValues[1].map { superscripts[it] ?: it }.joinToString("")
+    }
+    s = s.replace(Regex("\\^([0-9+\\-()ni])")) { match ->
+        val c = match.groupValues[1][0]
+        superscripts[c]?.toString() ?: "^$c"
+    }
+
+    val subscripts = mapOf(
+        '0' to '₀', '1' to '₁', '2' to '₂', '3' to '₃', '4' to '₄',
+        '5' to '₅', '6' to '₆', '7' to '₇', '8' to '₈', '9' to '₉',
+        '+' to '₊', '-' to '₋', '=' to '₌', '(' to '₍', ')' to '₎',
+        'a' to 'ₐ', 'e' to 'ₑ', 'o' to 'ₒ', 'x' to 'ₓ', 'h' to 'ₕ',
+        'k' to 'ₖ', 'l' to 'ₗ', 'm' to 'ₘ', 'n' to 'ₙ', 'p' to 'ₚ',
+        's' to 'ₛ', 't' to 'ₜ', 'i' to 'ᵢ', 'j' to 'ⱼ'
+    )
+    s = s.replace(Regex("_\\{([0-9+\\-()aeoxhklmnpstij]+)\\}")) { match ->
+        match.groupValues[1].map { subscripts[it] ?: it }.joinToString("")
+    }
+    s = s.replace(Regex("_([0-9+\\-()aeoxhklmnpstij])")) { match ->
+        val c = match.groupValues[1][0]
+        subscripts[c]?.toString() ?: "_$c"
+    }
+
+    s = s.replace(Regex("\\\\frac\\{([^}]+)\\}\\{([^}]+)\\}")) { match ->
+        "(${match.groupValues[1]}/${match.groupValues[2]})"
+    }
+    s = s.replace(Regex("\\\\sqrt\\{([^}]+)\\}")) { match ->
+        "√(${match.groupValues[1]})"
+    }
+    s = s.replace("{", "").replace("}", "")
+
+    return s
+}
+
+fun prettyFormatPlainText(plain: String): String {
+    var s = plain
+    s = s.replace("\\to", "→")
+        .replace("\\rightarrow", "→")
+        .replace("\\leftarrow", "←")
+        .replace("\\Rightarrow", "⇒")
+        .replace("\\Leftarrow", "⇐")
+        .replace("\\infty", "∞")
+        .replace("\\approx", "≈")
+        .replace("\\neq", "≠")
+        .replace("\\leq", "≤")
+        .replace("\\le", "≤")
+        .replace("\\geq", "≥")
+        .replace("\\ge", "≥")
+        .replace("\\pm", "±")
+        .replace("\\times", "×")
+        .replace("\\cdot", "·")
+        .replace("\\alpha", "α")
+        .replace("\\beta", "β")
+        .replace("\\gamma", "γ")
+        .replace("\\theta", "θ")
+        .replace("\\pi", "π")
+        .replace("\\sigma", "σ")
+        .replace("\\sum", "∑")
+        .replace("\\int", "∫")
+        .replace("\\prod", "∏")
+
+    s = s.replace("^2", "²")
+        .replace("^3", "³")
+        .replace("^0", "⁰")
+        .replace("^1", "¹")
+        .replace("^n", "ⁿ")
+        .replace("^-1", "⁻¹")
+
+    return s
+}
+
 fun formatInlineMarkdown(text: String): AnnotatedString {
     return buildAnnotatedString {
         var cursor = 0
-        val regex = Regex("(\\*\\*\\*.*?\\*\\*\\*|\\*\\*.*?\\*\\*|\\*.*?\\*|~~.*?~~|`.*?`|\\[[^\\]]+\\]\\([^)]+\\))")
+        val regex = Regex("(\\*\\*\\*.*?\\*\\*\\*|\\*\\*.*?\\*\\*|\\*.*?\\*|~~.*?~~|`.*?`|\\[[^\\]]+\\]\\([^)]+\\)|(?<!\\\\)\\$(?!\\s)[^\\$\\n]+?(?<!\\s)(?<!\\\\)\\$|\\\\\\([\\s\\S]+?\\\\\\))")
         val matches = regex.findAll(text)
 
         for (match in matches) {
             val range = match.range
             if (range.first > cursor) {
-                append(text.substring(cursor, range.first))
+                append(prettyFormatPlainText(text.substring(cursor, range.first)))
             }
 
             val value = match.value
@@ -760,13 +1113,41 @@ fun formatInlineMarkdown(text: String): AnnotatedString {
                         append(value)
                     }
                 }
-                else -> append(value)
+                value.startsWith("$") && value.endsWith("$") && value.length >= 2 -> {
+                    val inner = value.removeSurrounding("$")
+                    val pretty = formatInlineLatexToPrettyMath(inner)
+                    pushStyle(
+                        SpanStyle(
+                            fontFamily = FontFamily.Serif,
+                            fontStyle = FontStyle.Italic,
+                            color = Color(0xFFA8C7FA),
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
+                    append(pretty)
+                    pop()
+                }
+                value.startsWith("\\(") && value.endsWith("\\)") && value.length >= 4 -> {
+                    val inner = value.removePrefix("\\(").removeSuffix("\\)")
+                    val pretty = formatInlineLatexToPrettyMath(inner)
+                    pushStyle(
+                        SpanStyle(
+                            fontFamily = FontFamily.Serif,
+                            fontStyle = FontStyle.Italic,
+                            color = Color(0xFFA8C7FA),
+                            fontWeight = FontWeight.Medium
+                        )
+                    )
+                    append(pretty)
+                    pop()
+                }
+                else -> append(prettyFormatPlainText(value))
             }
             cursor = range.last + 1
         }
 
         if (cursor < text.length) {
-            append(text.substring(cursor))
+            append(prettyFormatPlainText(text.substring(cursor)))
         }
     }
 }

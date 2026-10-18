@@ -187,6 +187,14 @@ When all tool executions and tasks are completed, you MUST ALWAYS deliver a comp
 - Refactor & Modifikasi Kode: Kode apa saja yang dibuang/dihapus, dan kode apa yang ditambahkan beserta alasannya.
 - Verifikasi & Tindak Lanjut: Hasil pengujian, kompilasi, atau instruksi langkah berikutnya bagi pengguna.
 ${antiSlopSection}
+### MANDATORY MATHEMATICAL & LATEX FORMATTING PROTOCOL:
+When outputting any mathematical equations, formulas, algorithms, or statistical notations (such as Softmax, loss functions, probabilities, neural network layers, matrices, integrals, or Greek symbols):
+- ALWAYS format them using proper standard LaTeX syntax:
+  * Use display/block math ${'$'}${'$'} ... ${'$'}${'$'} for standalone equations, e.g.:
+    ${'$'}${'$'}P(\text{token}_i) = \frac{\exp(z_i / T)}{\sum_j \exp(z_j / T)}${'$'}${'$'}
+  * Use inline math ${'$'} ... ${'$'} for inline variables and brief expressions, e.g., ${'$'}P(x)${'$'}, ${'$'}E = mc^2${'$'}, ${'$'}\alpha${'$'}, ${'$'}z_i${'$'}.
+- STRICTLY FORBIDDEN: Writing formulas in raw ASCII pseudo-code (e.g. P(token_i) = exp(z_i / T) / Σ_j...). Always wrap math in standard LaTeX delimiters so the KaTeX visual engine renders it into crisp mathematical typography.
+
 ### EXECUTION RULES & CONSTRAINTS:
 - No emojis: DO NOT use emojis anywhere in your thinking, messages, or tool arguments.
 - Canvas Tool: For interactive web previews (HTML/CSS/JS) or standalone documents, invoke `open_canvas`.
