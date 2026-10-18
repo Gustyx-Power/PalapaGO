@@ -9,6 +9,13 @@
     <string name="model_claude_max_desc">%1$s (Claude Code Max)</string>
     <string name="model_standard_desc">%1$s (Standard)</string>
     <string name="compacting_context">Compacting conversation context...</string>
+    <string name="context_window_title">Context Window</string>
+    <string name="context_window_model">Model: %1$s</string>
+    <string name="context_tokens_used">Used Tokens</string>
+    <string name="context_tokens_total">Total Capacity</string>
+    <string name="context_tokens_remaining">Remaining</string>
+    <string name="context_compact_button">Compact Context</string>
+    <string name="context_compact_info">Compacting the context summarizes earlier conversation history so the model stays fast and responsive without exceeding limits.</string>
 
     <!-- Drawer -->
     <string name="new_chat">New Chat</string>
@@ -145,4 +152,16 @@
     <string name="image_compress_failed">Failed to compress image: %1$s</string>
     <string name="cd_camera">Camera</string>
     <string name="camera_permission_required">Camera permission is required to capture photos.</string>
+
+    <!-- Welcome Hero & Suggestions -->
+    <string name="welcome_hero_title">What would you like to build?</string>
+    <string name="welcome_hero_subtitle">Autonomous coding agent &amp; workspace assistant</string>
+    <string name="suggestion_web_title">Interactive Web App</string>
+    <string name="suggestion_web_prompt">Create an interactive single-page web app with modern HTML, CSS, and JavaScript.</string>
+    <string name="suggestion_inspect_title">Inspect Architecture</string>
+    <string name="suggestion_inspect_prompt">Inspect the workspace files and directory structure, and explain the architecture.</string>
+    <string name="suggestion_shell_title">Terminal Automation</string>
+    <string name="suggestion_shell_prompt">Help me write a shell automation script for this project\'s workflow.</string>
+    <string name="suggestion_research_title">Academic Papers</string>
+    <string name="suggestion_research_prompt">Search arXiv and research papers for the latest state of AI coding agents.</string>
 </resources>

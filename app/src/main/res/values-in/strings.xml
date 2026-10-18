@@ -9,6 +9,13 @@
     <string name="model_claude_max_desc">%1$s (Claude Code Max)</string>
     <string name="model_standard_desc">%1$s (Standar)</string>
     <string name="compacting_context">Meringkas konteks percakapan...</string>
+    <string name="context_window_title">Jendela Konteks</string>
+    <string name="context_window_model">Model: %1$s</string>
+    <string name="context_tokens_used">Token Terpakai</string>
+    <string name="context_tokens_total">Total Kapasitas</string>
+    <string name="context_tokens_remaining">Sisa Token</string>
+    <string name="context_compact_button">Padatkan Konteks</string>
+    <string name="context_compact_info">Memadatkan konteks akan merangkum riwayat percakapan sebelumnya agar model tetap responsif dan hemat token tanpa kehilangan inti instruksi.</string>
 
     <!-- Drawer -->
     <string name="new_chat">Percakapan Baru</string>
@@ -143,4 +150,18 @@
     <string name="service_channel_name">Eksekusi Latar Belakang GG Agent</string>
     <string name="service_channel_desc">Notifikasi saat GG Agent mengeksekusi di latar belakang</string>
     <string name="image_compress_failed">Gagal mengompres gambar: %1$s</string>
+    <string name="cd_camera">Kamera</string>
+    <string name="camera_permission_required">Izin kamera diperlukan untuk mengambil foto langsung.</string>
+
+    <!-- Welcome Hero & Suggestions -->
+    <string name="welcome_hero_title">Apa yang ingin Anda bangun?</string>
+    <string name="welcome_hero_subtitle">Agen coding dan asisten workspace Android berdaya penuh</string>
+    <string name="suggestion_web_title">Aplikasi Web Interaktif</string>
+    <string name="suggestion_web_prompt">Buat aplikasi web interaktif satu halaman lengkap dengan HTML, CSS, dan JavaScript modern.</string>
+    <string name="suggestion_inspect_title">Inspeksi Arsitektur</string>
+    <string name="suggestion_inspect_prompt">Analisis struktur file dan direktori dalam workspace ini, jelaskan arsitekturnya.</string>
+    <string name="suggestion_shell_title">Otomasi Terminal</string>
+    <string name="suggestion_shell_prompt">Bantu saya membuat skrip bash otomatisasi untuk alur kerja proyek ini.</string>
+    <string name="suggestion_research_title">Paper Akademik</string>
+    <string name="suggestion_research_prompt">Cari paper dan riset arXiv terbaru tentang implementasi arsitektur AI agent.</string>
 </resources>

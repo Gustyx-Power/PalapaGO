@@ -13,6 +13,7 @@ data class ContextMeterStatus(
     val maxCapacity: Int,
     val percentage: Float,
     val formattedDisplay: String,
+    val compactDisplay: String,
     val indicatorColor: Color
 )
 
@@ -35,30 +36,39 @@ class ContextMeterManager(
         val clampedUsed = usedTokens.coerceAtLeast(0)
         val percentage = (clampedUsed.toFloat() / capacity.toFloat()) * 100f
 
+        // Material 3 Expressive Tonal Status Colors
         val color = when {
-            percentage < 50f -> Color(0xFF4CAF50) // Green
-            percentage < 80f -> Color(0xFFFFC107) // Yellow
-            else -> Color(0xFFF44336)             // Red
+            percentage < 60f -> Color(0xFF7BE598) // M3 Mint Green (Optimal)
+            percentage < 85f -> Color(0xFFFFD180) // M3 Warm Amber (Moderate)
+            else -> Color(0xFFFFB4AB)             // M3 Coral Red (High)
         }
 
         val display = "${formatTokenNumber(clampedUsed)} / ${formatTokenNumber(capacity)} (${String.format(java.util.Locale.US, "%.1f", percentage)}%)"
+        val compact = "${formatTokenNumber(clampedUsed)} • ${String.format(java.util.Locale.US, "%.1f", percentage)}%"
 
         return ContextMeterStatus(
             usedTokens = clampedUsed,
             maxCapacity = capacity,
             percentage = percentage,
             formattedDisplay = display,
+            compactDisplay = compact,
             indicatorColor = color
         )
     }
 
-    private fun formatTokenNumber(tokens: Int): String {
-        return if (tokens >= 1_000_000) {
-            String.format(java.util.Locale.US, "%.1fM", tokens / 1_000_000.0)
-        } else if (tokens >= 1_000) {
-            String.format(java.util.Locale.US, "%.1fK", tokens / 1000.0)
-        } else {
-            tokens.toString()
+    companion object {
+        fun formatTokenNumber(tokens: Int): String {
+            return if (tokens >= 1_000_000) {
+                String.format(java.util.Locale.US, "%.1fM", tokens / 1_000_000.0)
+            } else if (tokens >= 1_000) {
+                String.format(java.util.Locale.US, "%.1fK", tokens / 1000.0)
+            } else {
+                tokens.toString()
+            }
+        }
+
+        fun formatFullNumber(tokens: Int): String {
+            return String.format(java.util.Locale.US, "%,d", tokens)
         }
     }
 
