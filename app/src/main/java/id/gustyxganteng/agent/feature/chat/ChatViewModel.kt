@@ -95,10 +95,17 @@ class ChatViewModel(
         _rateLimitStatus
     ) { sessionCtx, globalStats, agentState, canvas, rateLimit ->
         val currentSession = sessionCtx.sessions.find { it.id == sessionCtx.currentId } ?: sessionCtx.sessions.firstOrNull()
-        val totalTokens = sessionCtx.messages.mapNotNull { it.tokenUsage?.totalTokens }.maxOrNull() ?: 0
+        val lastMessageUsage = sessionCtx.messages.lastOrNull { it.tokenUsage != null }?.tokenUsage
+        val activeContextTokens = lastMessageUsage?.promptTokens ?: sessionCtx.messages.mapNotNull { it.tokenUsage?.totalTokens }.maxOrNull() ?: 0
         val rawModel = currentSession?.model ?: sessionCtx.settings.selectedModel
         val model = if (rawModel == "agnes-3.0-pro") "agnes-3.0-flash" else rawModel
-        val contextStatus = contextMeterManager.calculateStatus(totalTokens, model, sessionCtx.settings.executionMode)
+        val contextStatus = contextMeterManager.calculateStatus(
+            usedTokens = activeContextTokens,
+            model = model,
+            executionMode = sessionCtx.settings.executionMode,
+            claudeMaxMode = sessionCtx.settings.claudeMaxMode,
+            sessionMessages = sessionCtx.messages
+        )
 
         ChatUiState(
             sessions = sessionCtx.sessions,

@@ -562,7 +562,8 @@ class AgentOrchestrator(
             settingsRepository?.recordUsage(
                 promptTokens = adjustedUsage.promptTokens.toLong(),
                 completionTokens = adjustedUsage.completionTokens.toLong(),
-                totalTokens = adjustedUsage.totalTokens.toLong()
+                totalTokens = adjustedUsage.totalTokens.toLong(),
+                reasoningTokens = adjustedUsage.reasoningTokens.toLong()
             )
 
             // Jika tidak ada tool calls, loop selesai

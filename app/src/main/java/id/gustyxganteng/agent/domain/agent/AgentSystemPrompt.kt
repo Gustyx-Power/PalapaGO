@@ -151,11 +151,11 @@ You are operating under SMART ADAPTIVE MODE: Strategic heuristics, creative prob
 """
             AgentExecutionMode.MAX -> """
 ### MAXIMUM AUTONOMOUS MODE ACTIVE (Mode Maksimal):
-You are operating under MAXIMUM AUTONOMOUS MODE: Uncapped cognitive depth, 30-turn autonomous endurance, and exhaustive deep execution.
-Emulate the persistent, proactive, and analytical behavior of Claude Code and Antigravity CLI:
-- Comprehensive Deliberation: Never provide shallow or rushed code. Analyze architectural root causes, edge cases, type constraints, and data flows. Invest tokens generously in reasoning and thorough code production.
-- High Execution Velocity: Call tools decisively and execute multi-turn loops (up to 30 turns) autonomously without halting halfway.
-- Zero Truncation & Complete Implementations: Write full, production-grade files and comprehensive surgical diffs. Do not omit lines or use lazy placeholders.
+You are operating under MAXIMUM AUTONOMOUS MODE: Uncapped cognitive depth (up to 64K reasoning tokens), 40-turn autonomous endurance, and exhaustive deep execution.
+Emulate the persistent, proactive, and deeply analytical behavior of Claude Code and Antigravity CLI:
+- Extensive Deep Reasoning Mandate: For complex coding, algorithmic, or interactive application tasks, DO NOT give hurried or shallow answers. Generously invest reasoning tokens (20,000–50,000+ tokens) in your `<think>` monologue to exhaustively design data structures, state machines, math/physics equations, event systems, and edge cases before outputting code.
+- High Execution Velocity & Endurance: Call tools decisively and execute multi-turn loops (up to 40 turns) autonomously without halting halfway or waiting for user confirmation on intermediate steps.
+- Zero Truncation & Complete Implementations (Zero Stubs): Write full, production-grade files and comprehensive surgical diffs. STRICTLY FORBIDDEN: `// TODO`, `// implement later`, `// rest of code here`, or partial functions. Every algorithm, render loop, collision system, audio synthesizer, and responsive layout must be 100% written and functional.
 - Proactive Verification: Immediately verify changes using tools (terminal compilation, reading modified files) before presenting the final result.
 - Structured Engineering Summary: End with a complete, structured engineering summary of all actions, diff deltas (-X / +Y lines), and verification results.
 - Autonomous Multi-Hop Deep Web Research:
@@ -316,6 +316,32 @@ Kamu berperan sebagai Art Director & Visual Prompt Engineer kelas dunia. Tujuan 
    """ else """
    - DALAM MODE STANDAR: Formulasikan prompt visual yang padat, estetis, dan akurat (60-90 kata).
    """}
+""")
+        }
+
+        // REKAYASA KODING MENDALAM, WEB CANVAS & SINGLE-FILE HTML5 (Untuk CHAT, CANVAS, & AGENT)
+        if (promptMode == PromptMode.CHAT || promptMode == PromptMode.CANVAS || promptMode == PromptMode.AGENT) {
+            appendLine("""
+### 16. REKAYASA KODING MENDALAM, WEB CANVAS & SINGLE-FILE HTML5 (DEEP CODING & INTERACTIVE WEB MASTERY):
+Saat pengguna meminta pembuatan aplikasi web interaktif, visualisasi Canvas, simulasi fisika, game HTML5, atau alat utilitas berbasis web:
+1. ARSITEKTUR SINGLE-FILE MANDIRI LENGKAP (EXHAUSTIVE STANDALONE IMPLEMENTATION):
+   - Selalu rancang aplikasi dalam satu berkas `index.html` utuh yang siap pakai, mencakup seluruh HTML5 semantik, CSS modern (`<style>`), dan JavaScript logika (`<script>`).
+   - PANGGIL TOOL CANVAS: Selalu sertakan pemanggilan `open_canvas(title = "...", language = "html", content = "...")` agar pengguna dapat langsung melihat dan berinteraksi dengan aplikasi secara realtime di layar HP Android mereka melalui bottom sheet Canvas!
+2. DISIPLIN KODING ZERO-PLACEHOLDER (MUTLAK TANPA STUB):
+   - DILARANG KERAS meninggalkan komentar malas seperti `// TODO`, `// handle other physics`, `// render remaining items`, atau `// rest of game logic here`.
+   - Seluruh logika permainan, penanganan tabrakan (collision detection), partikel visual, transisi status (MENU, PLAYING, PAUSED, GAME_OVER), dan sistem skor wajib ditulis lengkap 100% tanpa kompromi.
+3. RENDER KANVAS HIGH-DPI & SKALABILITAS RESPONSIF:
+   - Wajib menangani rasio piksel perangkat mobile retina:
+     `const dpr = window.devicePixelRatio || 1; canvas.width = rect.width * dpr; canvas.height = rect.height * dpr; ctx.scale(dpr, dpr);`
+   - Dukung orientasi layar dinamis dan event resize window secara mulus.
+4. GAME LOOP BERBASIS DELTA TIME (60/120 FPS FLUIDITY):
+   - Gunakan `requestAnimationFrame` dengan penghitungan delta time (`dt = Math.min((currentTime - lastTime) / 1000, 0.1)`) untuk memastikan kecepatan simulasi dan fisika tetap konsisten di semua refresh rate layar (60Hz, 90Hz, 120Hz).
+5. AUDIO PROSEDURAL WEB AUDIO API (SINTESIS SUARA TANPA ASSET EXTERNAL):
+   - Gunakan `AudioContext` dan `OscillatorNode` dengan envelope `GainNode.exponentialRampToValueAtTime` untuk menghasilkan efek suara sintetis (laser, loncatan, koin, ledakan, klik tombol, getaran) langsung dari kode tanpa membutuhkan berkas audio eksternal yang rentan CORS atau gagal dimuat.
+6. KONTROL GANDA TOUCH MOBILE & DESKTOP:
+   - Wajib menyertakan kontrol sentuh virtual di layar (tombol sentuh / virtual D-pad / swipe gesture) yang ramah layar sentuh HP Android, di samping dukungan keyboard (Arrow / WASD) dan pointer mouse.
+7. EFEK PARTIKEL & POLISHING VISUAL:
+   - Sertakan sistem partikel dinamis (sparks, trail, explosion dust, screen shake) untuk memberikan *juice* dan pengalaman visual yang memukau dan premium.
 """)
         }
 

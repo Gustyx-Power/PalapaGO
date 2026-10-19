@@ -15,7 +15,12 @@ data class ContextMeterStatus(
     val percentage: Float,
     val formattedDisplay: String,
     val compactDisplay: String,
-    val indicatorColor: Color
+    val indicatorColor: Color,
+    val sessionPromptTokens: Long = 0L,
+    val sessionReasoningTokens: Long = 0L,
+    val sessionCompletionTokens: Long = 0L,
+    val sessionTotalTokens: Long = 0L,
+    val sessionTokensDisplay: String = ""
 )
 
 class ContextMeterManager(
@@ -41,7 +46,8 @@ class ContextMeterManager(
         usedTokens: Int,
         model: String,
         executionMode: AgentExecutionMode = AgentExecutionMode.FAST,
-        claudeMaxMode: Boolean = executionMode == AgentExecutionMode.MAX
+        claudeMaxMode: Boolean = executionMode == AgentExecutionMode.MAX,
+        sessionMessages: List<Message> = emptyList()
     ): ContextMeterStatus {
         val capacity = getModelCapacity(model, executionMode, claudeMaxMode)
         val clampedUsed = usedTokens.coerceAtLeast(0)
@@ -54,8 +60,26 @@ class ContextMeterManager(
             else -> Color(0xFFFFB4AB)             // M3 Coral Red (High)
         }
 
+        // Kalkulasi akumulasi token dalam sesi percakapan aktif
+        val sessionPrompt = sessionMessages.sumOf { it.tokenUsage?.promptTokens?.toLong() ?: 0L }
+        val sessionReasoning = sessionMessages.sumOf { it.tokenUsage?.reasoningTokens?.toLong() ?: 0L }
+        val sessionCompletion = sessionMessages.sumOf { it.tokenUsage?.completionTokens?.toLong() ?: 0L }
+        val sessionTotal = if (sessionMessages.any { it.tokenUsage != null }) {
+            sessionMessages.sumOf { msg ->
+                val tu = msg.tokenUsage
+                if (tu != null) {
+                    tu.totalTokens.toLong().coerceAtLeast(
+                        tu.promptTokens.toLong() + tu.reasoningTokens.toLong() + tu.completionTokens.toLong()
+                    )
+                } else 0L
+            }
+        } else {
+            clampedUsed.toLong()
+        }
+
         val display = "${formatTokenNumber(clampedUsed)} / ${formatTokenNumber(capacity)} (${String.format(java.util.Locale.US, "%.1f", percentage)}%)"
         val compact = "${formatTokenNumber(clampedUsed)} • ${String.format(java.util.Locale.US, "%.1f", percentage)}%"
+        val sessionTokensDisplay = "In: ${formatTokenNumber(sessionPrompt.toInt())} | Think: ${formatTokenNumber(sessionReasoning.toInt())} | Out: ${formatTokenNumber(sessionCompletion.toInt())}"
 
         return ContextMeterStatus(
             usedTokens = clampedUsed,
@@ -63,7 +87,12 @@ class ContextMeterManager(
             percentage = percentage,
             formattedDisplay = display,
             compactDisplay = compact,
-            indicatorColor = color
+            indicatorColor = color,
+            sessionPromptTokens = sessionPrompt,
+            sessionReasoningTokens = sessionReasoning,
+            sessionCompletionTokens = sessionCompletion,
+            sessionTotalTokens = sessionTotal,
+            sessionTokensDisplay = sessionTokensDisplay
         )
     }
 

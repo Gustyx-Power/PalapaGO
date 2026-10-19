@@ -72,6 +72,7 @@ import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerLowest
 import id.gustyxganteng.agent.core.designsystem.M3TextPrimary
 import id.gustyxganteng.agent.core.designsystem.M3TextSecondary
 import id.gustyxganteng.agent.core.model.AgentExecutionMode
+import id.gustyxganteng.agent.domain.context.ContextMeterManager
 import id.gustyxganteng.agent.domain.context.ContextMeterStatus
 import java.util.Locale
 import kotlin.math.cos
@@ -116,10 +117,12 @@ fun NeuralTelemetryModalSheet(
     // Perhitungan & Totalisasi Komprehensif
     val promptTokens = stats.promptTokens
     val completionTokens = stats.completionTokens
+    val reasoningTokens = stats.reasoningTokens
     val totalTokens = stats.totalTokens
     val totalRequests = stats.totalRequests
 
     val promptPct = if (totalTokens > 0L) (promptTokens.toDouble() / totalTokens.toDouble() * 100.0) else 0.0
+    val thinkPct = if (totalTokens > 0L) (reasoningTokens.toDouble() / totalTokens.toDouble() * 100.0) else 0.0
     val compPct = if (totalTokens > 0L) (completionTokens.toDouble() / totalTokens.toDouble() * 100.0) else 0.0
     val avgTokensPerReq = if (totalRequests > 0L) (totalTokens / totalRequests) else 0L
     val ioRatio = if (completionTokens > 0L) String.format(Locale.US, "%.1f : 1", promptTokens.toDouble() / completionTokens.toDouble()) else "1 : 1"
@@ -280,8 +283,10 @@ fun NeuralTelemetryModalSheet(
 
                     Spacer(Modifier.height(14.dp))
 
-                    // Split Progress Bar (Prompt vs Completion)
-                    val promptFraction = if (totalTokens > 0L) (promptTokens.toFloat() / totalTokens.toFloat()) else 0.5f
+                    // Split Progress Bar (Prompt vs Thinking vs Output)
+                    val promptFraction = if (totalTokens > 0L) (promptTokens.toFloat() / totalTokens.toFloat()) else 0.33f
+                    val thinkFraction = if (totalTokens > 0L) (reasoningTokens.toFloat() / totalTokens.toFloat()) else 0.33f
+                    val compFraction = if (totalTokens > 0L) (completionTokens.toFloat() / totalTokens.toFloat()) else 0.34f
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -295,23 +300,31 @@ fun NeuralTelemetryModalSheet(
                                 .fillMaxSize()
                                 .background(Color(0xFF64FFDA)) // Mint Cyan
                         )
+                        if (thinkFraction > 0.005f) {
+                            Box(
+                                modifier = Modifier
+                                    .weight(thinkFraction.coerceAtLeast(0.02f))
+                                    .fillMaxSize()
+                                    .background(Color(0xFFFFD180)) // Amber Gold (Thinking)
+                            )
+                        }
                         Box(
                             modifier = Modifier
-                                .weight((1f - promptFraction).coerceAtLeast(0.02f))
+                                .weight(compFraction.coerceAtLeast(0.02f))
                                 .fillMaxSize()
-                                .background(Color(0xFFE879F9)) // Magenta Purple
+                                .background(Color(0xFFE879F9)) // Magenta Purple (Output)
                         )
                     }
 
                     Spacer(Modifier.height(14.dp))
 
-                    // Breakdown Detail Grid
+                    // Breakdown Detail Grid (Prompt, Thinking, Output)
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         TokenLedgerMetricBox(
-                            title = "Konteks Masuk (Prompt)",
+                            title = "Konteks (Prompt)",
                             value = String.format(Locale.US, "%,d", promptTokens),
                             percentage = String.format(Locale.US, "%.1f%%", promptPct),
                             accentColor = Color(0xFF64FFDA),
@@ -319,7 +332,15 @@ fun NeuralTelemetryModalSheet(
                         )
 
                         TokenLedgerMetricBox(
-                            title = "Sintesis Keluar (Output)",
+                            title = "Penalaran (Thinking)",
+                            value = String.format(Locale.US, "%,d", reasoningTokens),
+                            percentage = String.format(Locale.US, "%.1f%%", thinkPct),
+                            accentColor = Color(0xFFFFD180),
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        TokenLedgerMetricBox(
+                            title = "Keluaran (Output)",
                             value = String.format(Locale.US, "%,d", completionTokens),
                             percentage = String.format(Locale.US, "%.1f%%", compPct),
                             accentColor = Color(0xFFE879F9),
@@ -472,6 +493,65 @@ fun NeuralTelemetryModalSheet(
                                 fontWeight = FontWeight.Bold,
                                 color = M3TextPrimary
                             )
+                        }
+                    }
+
+                    if (contextStatus != null && contextStatus.sessionTotalTokens > 0L) {
+                        Spacer(Modifier.height(14.dp))
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = M3SurfaceContainerLowest,
+                            border = BorderStroke(1.dp, M3OutlineVariant.copy(alpha = 0.5f)),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(modifier = Modifier.padding(12.dp)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "KONSUMSI TOKEN SESI INI",
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            letterSpacing = 0.5.sp
+                                        ),
+                                        color = M3Primary
+                                    )
+                                    Text(
+                                        text = "${String.format(Locale.US, "%,d", contextStatus.sessionTotalTokens)} token",
+                                        style = MaterialTheme.typography.labelMedium.copy(
+                                            fontWeight = FontWeight.Bold,
+                                            fontFamily = FontFamily.Monospace
+                                        ),
+                                        color = M3TextPrimary
+                                    )
+                                }
+                                Spacer(Modifier.height(6.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween
+                                ) {
+                                    Text(
+                                        text = "In: ${ContextMeterManager.formatTokenNumber(contextStatus.sessionPromptTokens.toInt())}",
+                                        fontSize = 11.sp,
+                                        fontFamily = FontFamily.Monospace,
+                                        color = Color(0xFF64FFDA)
+                                    )
+                                    Text(
+                                        text = "Think: ${ContextMeterManager.formatTokenNumber(contextStatus.sessionReasoningTokens.toInt())}",
+                                        fontSize = 11.sp,
+                                        fontFamily = FontFamily.Monospace,
+                                        color = Color(0xFFFFD180)
+                                    )
+                                    Text(
+                                        text = "Out: ${ContextMeterManager.formatTokenNumber(contextStatus.sessionCompletionTokens.toInt())}",
+                                        fontSize = 11.sp,
+                                        fontFamily = FontFamily.Monospace,
+                                        color = Color(0xFFE879F9)
+                                    )
+                                }
+                            }
                         }
                     }
                 }

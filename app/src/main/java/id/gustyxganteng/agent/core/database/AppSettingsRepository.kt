@@ -21,6 +21,7 @@ data class GlobalUsageStats(
     val totalRequests: Long = 0L,
     val promptTokens: Long = 0L,
     val completionTokens: Long = 0L,
+    val reasoningTokens: Long = 0L,
     val totalTokens: Long = 0L
 )
 
@@ -63,6 +64,7 @@ class AppSettingsRepository(private val context: Context) {
         val GLOBAL_TOTAL_REQUESTS = longPreferencesKey("global_total_requests")
         val GLOBAL_PROMPT_TOKENS = longPreferencesKey("global_prompt_tokens")
         val GLOBAL_COMPLETION_TOKENS = longPreferencesKey("global_completion_tokens")
+        val GLOBAL_REASONING_TOKENS = longPreferencesKey("global_reasoning_tokens")
         val GLOBAL_TOTAL_TOKENS = longPreferencesKey("global_total_tokens")
     }
 
@@ -200,20 +202,28 @@ class AppSettingsRepository(private val context: Context) {
             totalRequests = preferences[PreferencesKeys.GLOBAL_TOTAL_REQUESTS] ?: 0L,
             promptTokens = preferences[PreferencesKeys.GLOBAL_PROMPT_TOKENS] ?: 0L,
             completionTokens = preferences[PreferencesKeys.GLOBAL_COMPLETION_TOKENS] ?: 0L,
+            reasoningTokens = preferences[PreferencesKeys.GLOBAL_REASONING_TOKENS] ?: 0L,
             totalTokens = preferences[PreferencesKeys.GLOBAL_TOTAL_TOKENS] ?: 0L
         )
     }
 
-    suspend fun recordUsage(promptTokens: Long, completionTokens: Long, totalTokens: Long) {
+    suspend fun recordUsage(
+        promptTokens: Long,
+        completionTokens: Long,
+        totalTokens: Long,
+        reasoningTokens: Long = 0L
+    ) {
         context.dataStore.edit { preferences ->
             val currentReq = preferences[PreferencesKeys.GLOBAL_TOTAL_REQUESTS] ?: 0L
             val currentPrompt = preferences[PreferencesKeys.GLOBAL_PROMPT_TOKENS] ?: 0L
             val currentComp = preferences[PreferencesKeys.GLOBAL_COMPLETION_TOKENS] ?: 0L
+            val currentReasoning = preferences[PreferencesKeys.GLOBAL_REASONING_TOKENS] ?: 0L
             val currentTotal = preferences[PreferencesKeys.GLOBAL_TOTAL_TOKENS] ?: 0L
 
             preferences[PreferencesKeys.GLOBAL_TOTAL_REQUESTS] = currentReq + 1
             preferences[PreferencesKeys.GLOBAL_PROMPT_TOKENS] = currentPrompt + promptTokens.coerceAtLeast(0L)
             preferences[PreferencesKeys.GLOBAL_COMPLETION_TOKENS] = currentComp + completionTokens.coerceAtLeast(0L)
+            preferences[PreferencesKeys.GLOBAL_REASONING_TOKENS] = currentReasoning + reasoningTokens.coerceAtLeast(0L)
             preferences[PreferencesKeys.GLOBAL_TOTAL_TOKENS] = currentTotal + totalTokens.coerceAtLeast(0L)
         }
     }

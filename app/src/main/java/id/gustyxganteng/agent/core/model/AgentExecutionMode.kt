@@ -16,9 +16,9 @@ enum class AgentExecutionMode(
     FAST(
         id = "fast",
         badge = "CEPAT",
-        maxTurns = 6,
-        budgetTokens = 2048,
-        maxTokens = 8192,
+        maxTurns = 10,
+        budgetTokens = 4096,
+        maxTokens = 16384,
         reasoningEffort = "low"
     ),
 
@@ -26,9 +26,9 @@ enum class AgentExecutionMode(
     STANDARD(
         id = "standard",
         badge = "STANDAR",
-        maxTurns = 10,
-        budgetTokens = 4096,
-        maxTokens = 16384,
+        maxTurns = 16,
+        budgetTokens = 12288,
+        maxTokens = 32768,
         reasoningEffort = "medium"
     ),
 
@@ -36,9 +36,9 @@ enum class AgentExecutionMode(
     HIGH(
         id = "high",
         badge = "TINGGI",
-        maxTurns = 16,
-        budgetTokens = 8192,
-        maxTokens = 24576,
+        maxTurns = 24,
+        budgetTokens = 24576,
+        maxTokens = 49152,
         reasoningEffort = "high"
     ),
 
@@ -46,9 +46,9 @@ enum class AgentExecutionMode(
     SMART(
         id = "smart",
         badge = "SMART",
-        maxTurns = 20,
-        budgetTokens = 12288,
-        maxTokens = 32768,
+        maxTurns = 30,
+        budgetTokens = 32768,
+        maxTokens = 65536,
         reasoningEffort = "high"
     ),
 
@@ -56,9 +56,9 @@ enum class AgentExecutionMode(
     MAX(
         id = "max",
         badge = "MAX",
-        maxTurns = 30,
-        budgetTokens = 16384,
-        maxTokens = 65536,
+        maxTurns = 40,
+        budgetTokens = 65536,
+        maxTokens = 81920,
         reasoningEffort = "high"
     );
 

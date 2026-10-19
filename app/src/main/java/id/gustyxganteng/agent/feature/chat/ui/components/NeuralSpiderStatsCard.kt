@@ -156,8 +156,8 @@ fun NeuralSpiderStatsCard(
                     modifier = Modifier.weight(1f)
                 )
                 TelemetryMetricItem(
-                    title = "Request",
-                    value = "${stats.totalRequests}",
+                    title = "Thinking",
+                    value = formatCompactNumber(stats.reasoningTokens),
                     modifier = Modifier.weight(1f)
                 )
                 TelemetryMetricItem(
@@ -209,6 +209,7 @@ fun NeuralSpiderStatsCard(
                     HorizontalDivider(color = M3OutlineVariant)
                     TelemetryDetailRow("Total Eksekusi Request", "${stats.totalRequests} kali")
                     TelemetryDetailRow("Prompt Tokens (Konteks Masuk)", String.format(Locale.US, "%,d token", stats.promptTokens))
+                    TelemetryDetailRow("Penalaran (Thinking Tokens)", String.format(Locale.US, "%,d token", stats.reasoningTokens))
                     TelemetryDetailRow("Completion Tokens (Keluaran)", String.format(Locale.US, "%,d token", stats.completionTokens))
                     TelemetryDetailRow("Total Token Kumulatif", String.format(Locale.US, "%,d token", stats.totalTokens))
                 }

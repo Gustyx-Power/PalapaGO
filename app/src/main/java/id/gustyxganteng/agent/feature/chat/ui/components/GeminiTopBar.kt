@@ -57,6 +57,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -519,6 +520,77 @@ fun ContextDetailsBottomSheet(
                             ),
                             color = status.indicatorColor
                         )
+                    }
+                }
+            }
+
+            if (status.sessionTotalTokens > 0L) {
+                Spacer(Modifier.height(14.dp))
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = M3SurfaceContainerHigh,
+                    border = BorderStroke(1.dp, M3OutlineVariant),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "KONSUMSI TOKEN SESI INI",
+                                style = MaterialTheme.typography.labelSmall.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    letterSpacing = 0.5.sp
+                                ),
+                                color = M3Primary
+                            )
+                            Text(
+                                text = "${ContextMeterManager.formatFullNumber(status.sessionTotalTokens.toInt())} tokens",
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace
+                                ),
+                                color = M3TextPrimary
+                            )
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text("Input", fontSize = 10.sp, color = M3TextSecondary)
+                                Text(
+                                    text = ContextMeterManager.formatTokenNumber(status.sessionPromptTokens.toInt()),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace,
+                                    color = Color(0xFF64FFDA)
+                                )
+                            }
+                            Column {
+                                Text("Penalaran", fontSize = 10.sp, color = M3TextSecondary)
+                                Text(
+                                    text = ContextMeterManager.formatTokenNumber(status.sessionReasoningTokens.toInt()),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace,
+                                    color = Color(0xFFFFD180)
+                                )
+                            }
+                            Column(horizontalAlignment = Alignment.End) {
+                                Text("Output", fontSize = 10.sp, color = M3TextSecondary)
+                                Text(
+                                    text = ContextMeterManager.formatTokenNumber(status.sessionCompletionTokens.toInt()),
+                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace,
+                                    color = Color(0xFFE879F9)
+                                )
+                            }
+                        }
                     }
                 }
             }
