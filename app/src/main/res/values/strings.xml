@@ -216,15 +216,38 @@
     <string name="onboarding_btn_skip">Lewati</string>
     <string name="onboarding_btn_start">Mulai Eksplorasi</string>
     
-    <string name="onboarding_perm_storage_title">Akses Semua Berkas (Workspace)</string>
-    <string name="onboarding_perm_storage_desc">Dibutuhkan agar AI Agent dapat membaca kode, membuat file baru, dan mengelola git di folder proyek.</string>
-    <string name="onboarding_perm_notification_title">Notifikasi Latar Belakang</string>
-    <string name="onboarding_perm_notification_desc">Memberikan update progres saat AI menjalankan task panjang atau memerlukan konfirmasi persetujuan.</string>
-    <string name="onboarding_perm_camera_title">Kamera &amp; Analisis Visual</string>
-    <string name="onboarding_perm_camera_desc">Mengambil foto diagram arsitektur atau catatan fisik untuk langsung dianalisis oleh AI multimodal.</string>
+    <string name="onboarding_perm_storage_title">Berkas Workspace</string>
+    <string name="onboarding_perm_storage_desc">Membaca dan memodifikasi file kode di folder proyek Anda.</string>
+    <string name="onboarding_perm_notification_title">Notifikasi Sistem</string>
+    <string name="onboarding_perm_notification_desc">Update progres eksekusi agen dan konfirmasi persetujuan.</string>
+    <string name="onboarding_perm_camera_title">Kamera &amp; Visual</string>
+    <string name="onboarding_perm_camera_desc">Foto sketsa UI atau catatan fisik untuk dianalisis AI.</string>
     
-    <string name="onboarding_perm_granted">Izin Diberikan</string>
+    <string name="onboarding_perm_granted">Aktif</string>
     <string name="onboarding_perm_grant_btn">Beri Izin</string>
+    <string name="onboarding_perm_mandatory_badge">WAJIB</string>
+    <string name="onboarding_perm_optional_badge">OPSIONAL</string>
+    <string name="onboarding_perm_mandatory_notice">Izin penyimpanan dan notifikasi wajib diaktifkan sebelum dapat melanjutkan.</string>
+    
+    <string name="onboarding_welcome_language">Bahasa Indonesia</string>
+    <string name="onboarding_welcome_platform">Ruang Kerja AI &amp; Coding Otonom</string>
+    
+    <string name="onboarding_pref_section_mode">PILIH MODE AWAL</string>
+    <string name="onboarding_pref_mode_agent_title">Mode Agent (Disarankan)</string>
+    <string name="onboarding_pref_mode_agent_desc">Otonom penuh: eksekusi terminal, git commit, live canvas, dan manipulasi berkas proyek.</string>
+    <string name="onboarding_pref_mode_chat_title">Mode Chat Biasa</string>
+    <string name="onboarding_pref_mode_chat_desc">Tanya jawab langsung, konsultasi ide, dan diskusi kode tanpa folder ruang kerja.</string>
+    <string name="onboarding_pref_diff_title">Persetujuan Diff (Human-in-the-Loop)</string>
+    <string name="onboarding_pref_diff_desc">Tampilkan dialog konfirmasi sebelum AI menulis perubahan berkas ke penyimpanan.</string>
+    <string name="onboarding_pref_context_title">Kapasitas Context Window: 150K Token</string>
+    <string name="onboarding_pref_context_desc">Dikalibrasi pada 150.000 token untuk performa responsif, hemat memori, dan bebas lag.</string>
+    
+    <string name="onboarding_ready_summary_title">RINGKASAN KONFIGURASI</string>
+    <string name="onboarding_ready_summary_perm">Izin Sistem Aktif</string>
+    <string name="onboarding_ready_summary_mode">Mode Kerja Utama</string>
+    <string name="onboarding_ready_summary_diff">Persetujuan Keamanan</string>
+    <string name="onboarding_ready_summary_context">Batas Context Window</string>
+    
     <string name="onboarding_revisit_settings_title">Setup Wizard Onboarding</string>
     <string name="onboarding_revisit_settings_desc">Tinjau ulang panduan awal, verifikasi izin sistem, dan konfigurasi mode AI.</string>
 </resources>
