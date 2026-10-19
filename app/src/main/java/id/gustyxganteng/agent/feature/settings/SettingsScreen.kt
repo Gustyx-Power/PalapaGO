@@ -17,10 +17,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
@@ -55,6 +55,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -90,7 +92,6 @@ fun SettingsScreen(
     var yoloMode by remember { mutableStateOf(false) }
     var antiAiSlopMode by remember { mutableStateOf(true) }
     var tavilyDeepSearch by remember { mutableStateOf(false) }
-    var claudeMaxMode by remember { mutableStateOf(true) }
 
     LaunchedEffect(settings) {
         settings?.let {
@@ -99,7 +100,6 @@ fun SettingsScreen(
             yoloMode = it.yoloMode
             antiAiSlopMode = it.antiAiSlopMode
             tavilyDeepSearch = it.tavilyDeepSearchEnabled
-            claudeMaxMode = it.claudeMaxMode
         }
     }
 
@@ -178,11 +178,6 @@ fun SettingsScreen(
                 onTavilyDeepSearchChange = { tavilyDeepSearch = it }
             )
 
-            AgentModeCard(
-                claudeMaxMode = claudeMaxMode,
-                onClaudeMaxModeChange = { claudeMaxMode = it }
-            )
-
             Spacer(Modifier.height(8.dp))
 
             Button(
@@ -193,7 +188,6 @@ fun SettingsScreen(
                         settingsRepository.updateYoloMode(yoloMode)
                         settingsRepository.updateAntiAiSlopMode(antiAiSlopMode)
                         settingsRepository.updateTavilyDeepSearch(tavilyDeepSearch)
-                        settingsRepository.updateClaudeMaxMode(claudeMaxMode)
                         Toast.makeText(context, context.getString(R.string.settings_saved_toast), Toast.LENGTH_SHORT).show()
                         onNavigateBack()
                     }
@@ -257,10 +251,10 @@ private fun ModelSelectionCard(
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 FilterChip(
-                    selected = selectedModel == "agnes-3.0-flash",
+                    selected = true,
                     onClick = { onSelectModel("agnes-3.0-flash") },
                     shape = RoundedCornerShape(14.dp),
-                    label = { Text("agnes-3.0-flash", fontWeight = FontWeight.SemiBold) },
+                    label = { Text("PalapaGO Core", fontWeight = FontWeight.SemiBold) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = M3PrimaryContainer,
                         selectedLabelColor = M3OnPrimaryContainer
@@ -421,43 +415,3 @@ private fun WebSearchCard(
     }
 }
 
-@Composable
-private fun AgentModeCard(
-    claudeMaxMode: Boolean,
-    onClaudeMaxModeChange: (Boolean) -> Unit
-) {
-    Card(
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = M3SurfaceContainer),
-        border = BorderStroke(1.dp, M3OutlineVariant),
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            SettingsCardHeader(Icons.Default.Bolt, stringResource(R.string.settings_agent_mode_header))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.settings_claude_max_title), fontWeight = FontWeight.SemiBold, color = M3TextPrimary)
-                    Text(
-                        stringResource(R.string.settings_claude_max_desc),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = M3TextSecondary
-                    )
-                }
-                Spacer(Modifier.width(8.dp))
-                Switch(
-                    checked = claudeMaxMode,
-                    onCheckedChange = onClaudeMaxModeChange,
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = M3Primary,
-                        checkedTrackColor = M3PrimaryContainer
-                    )
-                )
-            }
-        }
-    }
-}
