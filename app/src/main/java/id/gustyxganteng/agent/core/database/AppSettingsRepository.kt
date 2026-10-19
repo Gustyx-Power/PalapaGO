@@ -66,6 +66,7 @@ class AppSettingsRepository(private val context: Context) {
         val GLOBAL_COMPLETION_TOKENS = longPreferencesKey("global_completion_tokens")
         val GLOBAL_REASONING_TOKENS = longPreferencesKey("global_reasoning_tokens")
         val GLOBAL_TOTAL_TOKENS = longPreferencesKey("global_total_tokens")
+        val HAS_COMPLETED_ONBOARDING = booleanPreferencesKey("has_completed_onboarding")
     }
 
     val settings: Flow<AppSettings> = context.dataStore.data.map { preferences ->
@@ -225,6 +226,22 @@ class AppSettingsRepository(private val context: Context) {
             preferences[PreferencesKeys.GLOBAL_COMPLETION_TOKENS] = currentComp + completionTokens.coerceAtLeast(0L)
             preferences[PreferencesKeys.GLOBAL_REASONING_TOKENS] = currentReasoning + reasoningTokens.coerceAtLeast(0L)
             preferences[PreferencesKeys.GLOBAL_TOTAL_TOKENS] = currentTotal + totalTokens.coerceAtLeast(0L)
+        }
+    }
+
+    val hasCompletedOnboarding: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[PreferencesKeys.HAS_COMPLETED_ONBOARDING] ?: false
+    }
+
+    suspend fun completeOnboarding() {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.HAS_COMPLETED_ONBOARDING] = true
+        }
+    }
+
+    suspend fun resetOnboarding() {
+        context.dataStore.edit { preferences ->
+            preferences[PreferencesKeys.HAS_COMPLETED_ONBOARDING] = false
         }
     }
 }

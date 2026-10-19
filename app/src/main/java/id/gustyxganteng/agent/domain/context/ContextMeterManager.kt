@@ -35,10 +35,10 @@ class ContextMeterManager(
         val lower = model.lowercase()
         val isMax = claudeMaxMode || executionMode == AgentExecutionMode.MAX
         return when {
-            lower.contains("flash") || lower.contains("pro") || lower.contains("agnes") || lower.contains("gemini") -> 1_000_000
+            lower.contains("flash") || lower.contains("pro") || lower.contains("agnes") || lower.contains("gemini") -> 150_000
             lower.contains("gpt-4o") -> 128_000
-            lower.contains("claude") && !isMax -> 200_000
-            else -> 1_000_000
+            lower.contains("claude") && !isMax -> 150_000
+            else -> 150_000
         }
     }
 

@@ -22,6 +22,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Security
@@ -82,7 +84,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(
     settingsRepository: AppSettingsRepository,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToOnboarding: () -> Unit = {}
 ) {
     val settings by settingsRepository.settings.collectAsState(initial = null)
     val scope = rememberCoroutineScope()
@@ -177,6 +180,10 @@ fun SettingsScreen(
             WebSearchCard(
                 tavilyDeepSearch = tavilyDeepSearch,
                 onTavilyDeepSearchChange = { tavilyDeepSearch = it }
+            )
+
+            OnboardingRevisitCard(
+                onClick = onNavigateToOnboarding
             )
 
             Spacer(Modifier.height(8.dp))
@@ -437,6 +444,60 @@ private fun WebSearchCard(
                     )
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun OnboardingRevisitCard(
+    onClick: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = M3SurfaceContainer),
+        border = BorderStroke(1.dp, M3OutlineVariant),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+    ) {
+        Row(
+            modifier = Modifier.padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = M3Primary.copy(alpha = 0.12f),
+                modifier = Modifier.size(42.dp)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        imageVector = Icons.Rounded.AutoAwesome,
+                        contentDescription = null,
+                        tint = M3Primary,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+            Spacer(Modifier.width(14.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.onboarding_revisit_settings_title),
+                    fontWeight = FontWeight.SemiBold,
+                    color = M3TextPrimary
+                )
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    text = stringResource(R.string.onboarding_revisit_settings_desc),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = M3TextSecondary
+                )
+            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
+                contentDescription = null,
+                tint = M3TextSecondary,
+                modifier = Modifier.size(18.dp)
+            )
         }
     }
 }

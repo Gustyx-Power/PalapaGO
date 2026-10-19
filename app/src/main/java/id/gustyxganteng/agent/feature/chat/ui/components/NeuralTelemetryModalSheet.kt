@@ -128,7 +128,7 @@ fun NeuralTelemetryModalSheet(
     val ioRatio = if (completionTokens > 0L) String.format(Locale.US, "%.1f : 1", promptTokens.toDouble() / completionTokens.toDouble()) else "1 : 1"
 
     val currentUsed = contextStatus?.usedTokens ?: 0
-    val currentMax = contextStatus?.maxCapacity ?: 1_000_000
+    val currentMax = contextStatus?.maxCapacity ?: 150_000
     val currentRemaining = (currentMax - currentUsed).coerceAtLeast(0)
     val currentPct = contextStatus?.percentage ?: 0f
 
