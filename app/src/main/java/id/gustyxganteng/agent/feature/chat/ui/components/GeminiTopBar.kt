@@ -173,7 +173,7 @@ fun GeminiTopBar(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             GeminiSparkleIcon(
-                                size = 14.dp,
+                                size = 18.dp,
                                 tint = if (isExecutionLocked) M3Primary.copy(alpha = 0.5f) else M3Primary
                             )
                             Spacer(Modifier.width(6.dp))

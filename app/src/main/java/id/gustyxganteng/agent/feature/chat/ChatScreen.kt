@@ -289,12 +289,12 @@ fun ChatScreen(
                     ) {
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = M3PrimaryContainer.copy(alpha = 0.5f),
-                            border = BorderStroke(1.dp, M3Primary.copy(alpha = 0.35f)),
-                            modifier = Modifier.size(36.dp)
+                            color = M3SurfaceContainerHigh,
+                            border = BorderStroke(1.dp, M3OutlineVariant),
+                            modifier = Modifier.size(38.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
-                                GeminiSparkleIcon(size = 20.dp, tint = M3Primary)
+                                GeminiSparkleIcon(size = 26.dp)
                             }
                         }
                         Spacer(Modifier.width(10.dp))
@@ -840,12 +840,12 @@ private fun WelcomeHeroSection(
     ) {
         Surface(
             shape = RoundedCornerShape(22.dp),
-            color = M3PrimaryContainer.copy(alpha = 0.5f),
-            border = BorderStroke(1.dp, M3Primary.copy(alpha = 0.4f)),
-            modifier = Modifier.size(60.dp)
+            color = M3SurfaceContainerHigh,
+            border = BorderStroke(1.dp, M3OutlineVariant),
+            modifier = Modifier.size(68.dp)
         ) {
             Box(contentAlignment = Alignment.Center) {
-                GeminiSparkleIcon(size = 32.dp, tint = M3Primary)
+                GeminiSparkleIcon(size = 48.dp)
             }
         }
 
