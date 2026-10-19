@@ -270,8 +270,9 @@ class AgentOrchestrator(
                 )
             }
 
+            val lastUserContent = filteredDbMessages.lastOrNull { it.role == MessageRole.USER }?.content ?: ""
+
             if (turnCount == 1 && !workspacePath.isNullOrBlank()) {
-                val lastUserContent = filteredDbMessages.lastOrNull { it.role == MessageRole.USER }?.content ?: ""
                 val ragContext = id.gustyxganteng.agent.domain.context.LocalCodebaseRag.retrieve(workspacePath, lastUserContent)
                 if (!ragContext.isNullOrBlank()) {
                     messages.add(
@@ -281,6 +282,50 @@ class AgentOrchestrator(
                             content = ragContext
                         )
                     )
+                }
+            }
+
+            // Pipeline Kolaboratif Multi-Agent: Turn 1 Chief Architect Pass (Gemini 3.8 Flash)
+            if (turnCount == 1 && geminiSidecarService != null && lastUserContent.isNotBlank()) {
+                val isCodingOrArchitectureTask = promptMode == PromptMode.CANVAS ||
+                    promptMode == PromptMode.AGENT ||
+                    effectiveMode == AgentExecutionMode.MAX ||
+                    effectiveMode == AgentExecutionMode.HIGH ||
+                    effectiveMode == AgentExecutionMode.SMART ||
+                    listOf("buat", "bikin", "koding", "canvas", "html", "css", "js", "web", "app", "game", "simulasi", "code", "aplikasi", "script", "refactor", "fitur").any {
+                        lastUserContent.contains(it, ignoreCase = true)
+                    }
+
+                if (isCodingOrArchitectureTask) {
+                    _agentState.value = AgentState.Streaming(
+                        content = "",
+                        reasoning = null,
+                        thinkingElapsedMs = 0,
+                        isThinking = true,
+                        thinkingTokens = 0,
+                        currentActivity = "Gemini 3.8 Flash (Chief Architect): Merancang blueprint sistem & arsitektur..."
+                    )
+                    try {
+                        val blueprint = geminiSidecarService.generateArchitectBlueprint(
+                            userPrompt = lastUserContent,
+                            workspaceContext = workspacePath ?: ""
+                        )
+                        if (blueprint.isNotBlank()) {
+                            messages.add(
+                                Message(
+                                    sessionId = sessionId,
+                                    role = MessageRole.SYSTEM,
+                                    content = """
+                                        [CHIEF SOFTWARE ARCHITECT BLUEPRINT — GEMINI 3.8 FLASH]
+                                        $blueprint
+                                        [DIRECTIVE FOR LEAD CODER (AGNES AI): Implement the full architecture above with comprehensive production-grade code, adhering strictly to zero-placeholder and high visual standards.]
+                                    """.trimIndent()
+                                )
+                            )
+                        }
+                    } catch (e: Exception) {
+                        android.util.Log.w("AgentOrchestrator", "Gemini architect pass skipped: ${e.message}")
+                    }
                 }
             }
 
@@ -746,7 +791,17 @@ class AgentOrchestrator(
         return when (toolName) {
             "list_directory" -> fileSystemTool.listDirectory(toolCallId, root, args)
             "read_file" -> fileSystemTool.readFile(toolCallId, root, args)
-            "write_file" -> fileSystemTool.writeFile(toolCallId, root, args)
+            "write_file" -> {
+                val writeRes = fileSystemTool.writeFile(toolCallId, root, args)
+                val fileContent = args["content"]?.jsonPrimitive?.content ?: ""
+                val filePath = args["path"]?.jsonPrimitive?.content ?: ""
+                if (writeRes.isSuccess && groqSidecarService != null && fileContent.lines().size >= 25) {
+                    val auditMsg = groqSidecarService.auditCodeQuality(fileContent, "File: $filePath")
+                    if (auditMsg.isNotBlank()) {
+                        writeRes.copy(stdout = "${writeRes.stdout}\n\n---\n**⚡ Groq Auditor Verification**: $auditMsg")
+                    } else writeRes
+                } else writeRes
+            }
             "apply_diff" -> fileSystemTool.applyDiff(toolCallId, root, args)
             "apply_unified_patch" -> fileSystemTool.applyUnifiedPatch(toolCallId, root, args)
             "search_files" -> fileSystemTool.searchFiles(toolCallId, root, args)
@@ -763,7 +818,17 @@ class AgentOrchestrator(
             "search_academic_papers" -> academicTool.searchAcademicPapers(toolCallId, args)
             "verify_doi_or_citation" -> academicTool.verifyDoiOrCitation(toolCallId, args)
             "download_paper_pdf" -> academicTool.downloadPaperPdf(toolCallId, root, args)
-            "open_canvas" -> canvasTool.execute(toolCallId, args)
+            "open_canvas" -> {
+                val canvasRes = canvasTool.execute(toolCallId, args)
+                val canvasContent = args["content"]?.jsonPrimitive?.content ?: ""
+                val canvasTitle = args["title"]?.jsonPrimitive?.content ?: ""
+                if (groqSidecarService != null && canvasContent.length >= 60) {
+                    val auditMsg = groqSidecarService.auditCodeQuality(canvasContent, "Canvas: $canvasTitle")
+                    if (auditMsg.isNotBlank()) {
+                        canvasRes.copy(stdout = "${canvasRes.stdout}\n\n---\n**⚡ Groq Auditor Pre-Flight**: $auditMsg")
+                    } else canvasRes
+                } else canvasRes
+            }
             "generate_image" -> {
                 if (isFastMode) {
                     ToolExecutionResult(

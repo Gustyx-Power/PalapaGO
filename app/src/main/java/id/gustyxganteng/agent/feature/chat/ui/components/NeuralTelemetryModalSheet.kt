@@ -559,9 +559,9 @@ fun NeuralTelemetryModalSheet(
 
             Spacer(Modifier.height(18.dp))
 
-            // Section 3: Status Multi-Engine
+            // Section 3: Status Pipeline Ensemble Kolaboratif
             Text(
-                text = "Arsitektur Multi-Engine & Sidecar",
+                text = "Pipeline Ensemble Kolaboratif (Koding Bersama)",
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
                 color = M3Primary,
                 modifier = Modifier.padding(start = 2.dp, bottom = 8.dp)
@@ -575,29 +575,36 @@ fun NeuralTelemetryModalSheet(
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
                     EngineStatusRow(
-                        name = "Agnes AI (Core Brain)",
-                        detail = "Model: $activeModel • Mode: ${executionMode.name}",
-                        status = "AKTIF",
+                        name = "Gemini 3.8 Flash (Chief Architect)",
+                        detail = "Role: Blueprint Arsitektur, Math/Physics Modelling & State Machine",
+                        status = "AKTIF (Planner)",
                         statusColor = Color(0xFF64FFDA)
                     )
                     HorizontalDivider(color = M3OutlineVariant.copy(alpha = 0.5f), modifier = Modifier.padding(vertical = 8.dp))
                     EngineStatusRow(
-                        name = "Groq Sidecar (Hardware Acceleration)",
-                        detail = "Model: openai/gpt-oss-20b (~1.000 t/s) • Truncation Guard",
-                        status = "AKTIF",
+                        name = "Agnes AI (Lead Fullstack Synthesizer)",
+                        detail = "Role: Sintesis Kode Produksi, Canvas Artifacts & Tool Loop ($activeModel)",
+                        status = "AKTIF (Coder)",
                         statusColor = Color(0xFF64FFDA)
                     )
                     HorizontalDivider(color = M3OutlineVariant.copy(alpha = 0.5f), modifier = Modifier.padding(vertical = 8.dp))
                     EngineStatusRow(
-                        name = "Agnes Image 2.5 Flash",
-                        detail = "Multimodal Vision & 5 Rasio Aspek Studio",
+                        name = "Groq LPU Sidecar (Fast Quality Auditor)",
+                        detail = "Role: Pre-Flight Linting (<250ms), Anti-Placeholder & Syntax Guard",
+                        status = "AKTIF (Auditor)",
+                        statusColor = Color(0xFF64FFDA)
+                    )
+                    HorizontalDivider(color = M3OutlineVariant.copy(alpha = 0.5f), modifier = Modifier.padding(vertical = 8.dp))
+                    EngineStatusRow(
+                        name = "Agnes Image 2.5 Flash (Visual Studio)",
+                        detail = "Role: Generasi Aset Visual & Komposisi Sinematik (5 Rasio)",
                         status = if (executionMode == AgentExecutionMode.FAST) "OFF (Mode Cepat)" else "SIAP",
                         statusColor = if (executionMode == AgentExecutionMode.FAST) Color(0xFFFFB4AB) else Color(0xFF64FFDA)
                     )
                     HorizontalDivider(color = M3OutlineVariant.copy(alpha = 0.5f), modifier = Modifier.padding(vertical = 8.dp))
                     EngineStatusRow(
-                        name = "Gemini Multimodal Sidecar",
-                        detail = "Visual Compression & Fallback Reasoning",
+                        name = "Resilient Mesh Failover Router",
+                        detail = "Role: Kaskade Otomatis Lapis Ke-2 (Agnes 1 → Agnes 2 → Gemini → Groq)",
                         status = "STANDBY",
                         statusColor = M3Primary
                     )
@@ -899,7 +906,7 @@ private fun SphericalNeuralGlobeCard(
                 NeuralFilterPill(label = "Konteks", count = formatNumber(promptTokens), color = Color(0xFF64FFDA))
                 NeuralFilterPill(label = "Sintesis", count = formatNumber(completionTokens), color = Color(0xFFE879F9))
                 NeuralFilterPill(label = "Memori", count = "$sessionsCount Sesi", color = Color(0xFF38BDF8))
-                NeuralFilterPill(label = "Sidecar", count = "Groq/Gemini", color = Color(0xFFFCD34D))
+                NeuralFilterPill(label = "Ensemble", count = "Gemini+Agnes+Groq", color = Color(0xFFFCD34D))
             }
         }
     }

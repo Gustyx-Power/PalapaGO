@@ -22,6 +22,7 @@ interface GroqSidecarService {
     suspend fun summarizeLargeOutput(rawOutput: String, sourceHint: String = ""): String
     suspend fun triageStacktrace(rawError: String): String
     suspend fun generateBranchSummary(sessionTitle: String, conversationSnippet: String): String
+    suspend fun auditCodeQuality(codeSnippet: String, contextHint: String = ""): String
 }
 
 class GroqSidecarServiceImpl(
@@ -104,6 +105,25 @@ class GroqSidecarServiceImpl(
         } else {
             fallbackBranchSummary(sessionTitle, conversationSnippet)
         }
+    }
+
+    override suspend fun auditCodeQuality(codeSnippet: String, contextHint: String): String = withContext(Dispatchers.IO) {
+        if (codeSnippet.length <= 40) return@withContext ""
+
+        val prompt = buildString {
+            appendLine("You are the Fast Quality Auditor in a multi-model collaborative coding ensemble.")
+            if (contextHint.isNotBlank()) appendLine("Context: $contextHint")
+            appendLine("Task: Audit the following code snippet. Check strictly for:")
+            appendLine("1. Any lazy placeholders, TODO comments, or incomplete functions ('// TODO', '// rest of code', 'pass', etc.)")
+            appendLine("2. Critical syntax flaws (unclosed brackets, unescaped tags).")
+            appendLine("If flawless and production-ready, output: 'VERIFIED: Clean & Production-Ready.'")
+            appendLine("If defects found, output: 'AUDIT WARNING: [brief 1-sentence issue description]'.")
+            appendLine("\n[CODE TO AUDIT]:\n")
+            append(codeSnippet.take(15000))
+        }
+
+        val result = executeGroqChat(prompt, maxTokens = 120)
+        result.ifBlank { "" }
     }
 
     private fun fallbackBranchSummary(sessionTitle: String, conversationSnippet: String): String {
