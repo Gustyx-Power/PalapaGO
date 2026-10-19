@@ -18,7 +18,7 @@ CYAN='\033[0;36m'
 BOLD='\033[1m'
 NC='\033[0m'
 
-echo -e "${CYAN}${BOLD}=== GG Agent: Build Debug & Install ===${NC}"
+echo -e "${CYAN}${BOLD}=== PalapaGO: Build Debug & Install ===${NC}"
 
 # Check Java
 if ! command -v java >/dev/null 2>&1; then
@@ -98,9 +98,9 @@ fi
 echo -e "\n${CYAN}[3/3] Menginstal APK ke perangkat...${NC}"
 adb $SELECTED_DEVICE install -r -d "$APK_PATH"
 
-echo -e "\n${CYAN}Membuka aplikasi GG Agent...${NC}"
+echo -e "\n${CYAN}Membuka aplikasi PalapaGO...${NC}"
 adb $SELECTED_DEVICE shell am start -n id.gustyxganteng.agent/.MainActivity -a android.intent.action.MAIN -c android.intent.category.LAUNCHER || true
 
 echo -e "\n${GREEN}${BOLD}=== Instalasi & Peluncuran Selesai ===${NC}"
 echo -e "Monitor log dengan:"
-echo -e "  ${BOLD}adb $SELECTED_DEVICE logcat -s GG-Agent:V AndroidRuntime:E *:S${NC}"
+echo -e "  ${BOLD}adb $SELECTED_DEVICE logcat -s PalapaGO:V GG-Agent:V AndroidRuntime:E *:S${NC}"

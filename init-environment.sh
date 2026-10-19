@@ -13,7 +13,7 @@ BOLD='\033[1m'
 NC='\033[0m'
 
 echo -e "${CYAN}${BOLD}======================================================${NC}"
-echo -e "${CYAN}${BOLD}  Inisialisasi Lingkungan Android GG Agent (CLI Mode) ${NC}"
+echo -e "${CYAN}${BOLD}  Inisialisasi Lingkungan Android PalapaGO (CLI Mode) ${NC}"
 echo -e "${CYAN}${BOLD}======================================================${NC}"
 
 # 1. Konfigurasi Direktori
