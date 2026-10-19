@@ -19,7 +19,9 @@ import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
-import kotlinx.serialization.json.putJsonArray
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -38,6 +40,14 @@ interface AgnesApiService {
         maxTokens: Int = 32768,
         reasoningEffort: String = "high"
     ): Flow<StreamEvent>
+
+    suspend fun generateImage(
+        baseUrl: String,
+        apiKey: String,
+        prompt: String,
+        model: String = "agnes-image-2.5-flash",
+        size: String = "1024x1024"
+    ): Result<String>
 }
 
 class AgnesApiServiceImpl(
@@ -140,9 +150,9 @@ class AgnesApiServiceImpl(
                 put("type", "object")
                 put("properties", propsJson)
                 if (tool.function.parameters.required.isNotEmpty()) {
-                    putJsonArray("required") {
-                        tool.function.parameters.required.forEach { add(it) }
-                    }
+                    put("required", buildJsonArray {
+                        tool.function.parameters.required.forEach { add(JsonPrimitive(it)) }
+                    })
                 }
             }
 
@@ -226,5 +236,73 @@ class AgnesApiServiceImpl(
             else -> "Gagal memproses permintaan ($lastResponseCode): $lastErrBody"
         }
         throw IOException(friendlyMsg)
+    }
+
+    override suspend fun generateImage(
+        baseUrl: String,
+        apiKey: String,
+        prompt: String,
+        model: String,
+        size: String
+    ): Result<String> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+        val keyPool = mutableListOf<String>()
+        if (apiKey.isNotBlank()) keyPool.add(apiKey)
+        val vaultPool = KeyVault.getAgnesKeyPool()
+        vaultPool.forEach { if (!keyPool.contains(it)) keyPool.add(it) }
+        if (keyPool.isEmpty()) {
+            return@withContext Result.failure(IllegalStateException("API Key Agnes tidak tersedia."))
+        }
+
+        val effectiveBaseUrl = if (baseUrl.isBlank()) KeyVault.getAgnesBaseUrl() else baseUrl
+        val endpoint = "${effectiveBaseUrl.trimEnd('/')}/images/generations"
+        val mediaType = "application/json; charset=utf-8".toMediaType()
+
+        var lastException: Exception? = null
+
+        for (activeKey in keyPool) {
+            try {
+                val payload = buildJsonObject {
+                    put("model", model)
+                    put("prompt", prompt)
+                    put("n", 1)
+                    put("size", size)
+                }
+
+                val requestBody = payload.toString().toRequestBody(mediaType)
+                val request = Request.Builder()
+                    .url(endpoint)
+                    .addHeader("Authorization", "Bearer $activeKey")
+                    .addHeader("Content-Type", "application/json")
+                    .post(requestBody)
+                    .build()
+
+                client.newCall(request).execute().use { response ->
+                    if (response.isSuccessful) {
+                        val bodyStr = response.body?.string() ?: return@use
+                        val parsed = json.parseToJsonElement(bodyStr).jsonObject
+                        val dataArray = parsed["data"]?.jsonArray
+                        val firstObj = dataArray?.firstOrNull()?.jsonObject
+                        val url = firstObj?.get("url")?.jsonPrimitive?.content
+                        if (!url.isNullOrBlank()) {
+                            return@withContext Result.success(url)
+                        } else {
+                            val b64 = firstObj?.get("b64_json")?.jsonPrimitive?.content
+                            if (!b64.isNullOrBlank()) {
+                                return@withContext Result.success("data:image/png;base64,$b64")
+                            }
+                        }
+                    } else if (response.code == 429 || response.code == 403) {
+                        lastException = IOException("Agnes Image API Key limit (${response.code}), failover...")
+                    } else {
+                        val errStr = response.body?.string() ?: ""
+                        lastException = IOException("Agnes Image API Error ${response.code}: $errStr")
+                    }
+                }
+            } catch (e: Exception) {
+                lastException = e
+            }
+        }
+
+        Result.failure(lastException ?: IOException("Gagal generate gambar dengan Agnes AI."))
     }
 }

@@ -123,46 +123,59 @@ class GroqSidecarServiceImpl(
         val keyPool = KeyVault.getGroqKeyPool()
         if (keyPool.isEmpty()) return ""
 
+        val candidateModels = listOf("openai/gpt-oss-20b", "qwen/qwen3.8-27b", "openai/gpt-oss-120b", "llama-3.1-8b-instant")
+
         for (apiKey in keyPool) {
-            try {
-                val payload = buildJsonObject {
-                    put("model", "llama-3.1-8b-instant")
-                    put("messages", buildJsonArray {
-                        add(buildJsonObject {
-                            put("role", "user")
-                            put("content", userMessage)
+            for (model in candidateModels) {
+                try {
+                    val payload = buildJsonObject {
+                        put("model", model)
+                        put("messages", buildJsonArray {
+                            add(buildJsonObject {
+                                put("role", "user")
+                                put("content", userMessage)
+                            })
                         })
-                    })
-                    put("max_tokens", maxTokens)
-                    put("temperature", 0.2)
-                }
-
-                val requestBody = payload.toString().toRequestBody(jsonMediaType)
-                val request = Request.Builder()
-                    .url(endpoint)
-                    .addHeader("Authorization", "Bearer $apiKey")
-                    .addHeader("Content-Type", "application/json")
-                    .post(requestBody)
-                    .build()
-
-                client.newCall(request).execute().use { response ->
-                    if (response.isSuccessful) {
-                        val bodyStr = response.body?.string() ?: return@use
-                        val parsed = json.parseToJsonElement(bodyStr).jsonObject
-                        val content = parsed["choices"]?.jsonArray
-                            ?.firstOrNull()?.jsonObject
-                            ?.get("message")?.jsonObject
-                            ?.get("content")?.jsonPrimitive?.content
-                        if (!content.isNullOrBlank()) {
-                            return content.trim()
-                        }
-                    } else if (response.code == 429 || response.code == 403) {
-                        Log.w("GroqSidecar", "Groq Key limit (${response.code}), failover to next key...")
-                        // Continue to next key in pool
+                        put("max_tokens", maxTokens)
+                        put("temperature", 0.2)
                     }
+
+                    val requestBody = payload.toString().toRequestBody(jsonMediaType)
+                    val request = Request.Builder()
+                        .url(endpoint)
+                        .addHeader("Authorization", "Bearer $apiKey")
+                        .addHeader("Content-Type", "application/json")
+                        .addHeader("User-Agent", "okhttp/4.12.0")
+                        .post(requestBody)
+                        .build()
+
+                    var shouldSwitchKey = false
+                    client.newCall(request).execute().use { response ->
+                        if (response.isSuccessful) {
+                            val bodyStr = response.body?.string() ?: return@use
+                            val parsed = json.parseToJsonElement(bodyStr).jsonObject
+                            val msgObj = parsed["choices"]?.jsonArray
+                                ?.firstOrNull()?.jsonObject
+                                ?.get("message")?.jsonObject
+                            val content = msgObj?.get("content")?.jsonPrimitive?.content
+                            val reasoning = msgObj?.get("reasoning")?.jsonPrimitive?.content
+                            val text = if (!content.isNullOrBlank()) content else reasoning
+                            if (!text.isNullOrBlank()) {
+                                return text.trim()
+                            }
+                        } else if (response.code == 404) {
+                            Log.w("GroqSidecar", "Model $model not found (404), trying next model...")
+                        } else if (response.code == 429 || response.code == 403) {
+                            Log.w("GroqSidecar", "Groq Key limit (${response.code}), failover to next key...")
+                            shouldSwitchKey = true
+                        }
+                    }
+                    if (shouldSwitchKey) {
+                        break
+                    }
+                } catch (e: Exception) {
+                    Log.w("GroqSidecar", "Groq call failed ($model): ${e.message}")
                 }
-            } catch (e: Exception) {
-                Log.w("GroqSidecar", "Groq call failed: ${e.message}")
             }
         }
         return ""

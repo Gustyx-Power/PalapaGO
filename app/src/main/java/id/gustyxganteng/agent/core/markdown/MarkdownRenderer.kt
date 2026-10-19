@@ -31,10 +31,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.rounded.Article
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.material.icons.automirrored.rounded.Article
+import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.Functions
-import androidx.compose.material.icons.rounded.OpenInNew
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -60,10 +62,13 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import id.gustyxganteng.agent.core.designsystem.M3OutlineVariant
 import id.gustyxganteng.agent.core.designsystem.M3Primary
 import id.gustyxganteng.agent.core.designsystem.M3TextSecondary
@@ -78,6 +83,7 @@ sealed interface MarkdownNode {
     data class NumberedItem(val number: String, val text: String) : MarkdownNode
     data class Table(val headers: List<String>, val rows: List<List<String>>) : MarkdownNode
     data class MathBlock(val formula: String) : MarkdownNode
+    data class ImageBlock(val alt: String, val url: String) : MarkdownNode
 }
 
 object MarkdownParser {
@@ -226,7 +232,17 @@ object MarkdownParser {
                 continue
             }
 
-            // 7. Regular paragraph / empty line
+            // 7. Standalone image (![alt](url))
+            val imgMatch = Regex("^!\\[(.*?)\\]\\((https?://\\S+|data:image/\\S+)\\)$").find(trimmed)
+            if (imgMatch != null) {
+                val alt = imgMatch.groupValues[1]
+                val url = imgMatch.groupValues[2]
+                nodes.add(MarkdownNode.ImageBlock(alt, url))
+                i++
+                continue
+            }
+
+            // 8. Regular paragraph / empty line
             if (trimmed.isNotEmpty()) {
                 nodes.add(MarkdownNode.Paragraph(trimmed))
             }
@@ -356,6 +372,13 @@ fun MarkdownContent(
                                 MarkdownDownloadButton(label = link.label, url = link.url)
                             }
                         }
+                    }
+                    is MarkdownNode.ImageBlock -> {
+                        MarkdownImageCard(
+                            alt = node.alt,
+                            url = node.url,
+                            modifier = Modifier.padding(vertical = 6.dp)
+                        )
                     }
                     is MarkdownNode.CodeBlock -> {
                         CodeBlockCard(
@@ -818,7 +841,7 @@ fun MarkdownActionChip(
 
     val containerColor = if (isDownload) MaterialTheme.colorScheme.primaryContainer else if (isDoi) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainer
     val contentColor = if (isDownload) MaterialTheme.colorScheme.onPrimaryContainer else if (isDoi) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-    val icon = if (isDownload) Icons.Rounded.FileDownload else if (isDoi) Icons.Rounded.OpenInNew else Icons.Rounded.Article
+    val icon = if (isDownload) Icons.Rounded.FileDownload else if (isDoi) Icons.AutoMirrored.Rounded.OpenInNew else Icons.AutoMirrored.Rounded.Article
 
     Surface(
         onClick = { downloadOrOpenUrl(context, url, suggestedTitle = label) },
@@ -1151,3 +1174,74 @@ fun formatInlineMarkdown(text: String): AnnotatedString {
         }
     }
 }
+
+@Composable
+fun MarkdownImageCard(
+    alt: String,
+    url: String,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable {
+                try {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                    context.startActivity(intent)
+                } catch (_: Exception) {}
+            }
+    ) {
+        Column {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 180.dp, max = 380.dp)
+                    .background(MaterialTheme.colorScheme.surfaceContainerLowest),
+                contentAlignment = Alignment.Center
+            ) {
+                AsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(url)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = alt,
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                )
+            }
+            if (alt.isNotBlank()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
+                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = alt,
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.OpenInNew,
+                        contentDescription = "Buka Gambar",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+

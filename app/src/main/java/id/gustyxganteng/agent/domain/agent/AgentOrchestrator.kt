@@ -17,6 +17,7 @@ import id.gustyxganteng.agent.core.util.JsonRepairUtil
 import id.gustyxganteng.agent.domain.tools.AcademicTool
 import id.gustyxganteng.agent.domain.tools.CanvasTool
 import id.gustyxganteng.agent.domain.tools.FileSystemTool
+import id.gustyxganteng.agent.domain.tools.ImageTool
 import id.gustyxganteng.agent.domain.tools.ShellTool
 import id.gustyxganteng.agent.domain.tools.WebTool
 import id.gustyxganteng.agent.core.model.PromptMode
@@ -70,6 +71,7 @@ class AgentOrchestrator(
     private val shellTool: ShellTool,
     private val webTool: WebTool,
     private val academicTool: AcademicTool = AcademicTool(),
+    private val imageTool: ImageTool? = null,
     private val settingsRepository: AppSettingsRepository? = null,
     private val groqSidecarService: GroqSidecarService? = null,
     private val geminiSidecarService: GeminiSidecarService? = null,
@@ -199,6 +201,7 @@ class AgentOrchestrator(
 
         // Kumpulkan definisi tool yang aktif berdasarkan promptMode
         val activeTools = mutableListOf<ToolDefinition>()
+        activeTools.add(ImageTool.DEFINITION)
         when (promptMode) {
             PromptMode.CHAT -> {
                 if (enableWebSearch) activeTools.addAll(WebTool.DEFINITIONS)
@@ -670,6 +673,10 @@ class AgentOrchestrator(
                         val title = parsedArgs["title"]?.jsonPrimitive?.content ?: "dokumen"
                         "Membuka Canvas: $title"
                     }
+                    "generate_image" -> {
+                        val prompt = parsedArgs["prompt"]?.jsonPrimitive?.content?.take(36) ?: "gambar"
+                        "Menghasilkan gambar ilustrasi AI: '$prompt'"
+                    }
                     else -> "Menjalankan $toolName..."
                 }
 
@@ -719,6 +726,34 @@ class AgentOrchestrator(
             "verify_doi_or_citation" -> academicTool.verifyDoiOrCitation(toolCallId, args)
             "download_paper_pdf" -> academicTool.downloadPaperPdf(toolCallId, root, args)
             "open_canvas" -> canvasTool.execute(toolCallId, args)
+            "generate_image" -> {
+                val prompt = args["prompt"]?.jsonPrimitive?.content ?: ""
+                val size = args["aspect_ratio"]?.jsonPrimitive?.content ?: "1024x1024"
+                val res = agnesApiService.generateImage(
+                    baseUrl = "",
+                    apiKey = "",
+                    prompt = prompt,
+                    size = size
+                )
+                res.fold(
+                    onSuccess = { url ->
+                        ToolExecutionResult(
+                            toolCallId = toolCallId,
+                            toolName = toolName,
+                            stdout = "![$prompt]($url)\n\n*Gambar berhasil digenerate oleh Agnes Image 2.5 Flash ($size)*\n[Buka Resolusi Penuh]($url)",
+                            isSuccess = true
+                        )
+                    },
+                    onFailure = { err ->
+                        ToolExecutionResult(
+                            toolCallId = toolCallId,
+                            toolName = toolName,
+                            stderr = "Gagal menghasilkan gambar: ${err.message}",
+                            isSuccess = false
+                        )
+                    }
+                )
+            }
             else -> ToolExecutionResult(toolCallId, toolName, stderr = "Tool tidak dikenal: $toolName", isSuccess = false)
         }
     }

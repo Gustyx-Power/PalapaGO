@@ -16,6 +16,7 @@ import id.gustyxganteng.agent.domain.agent.AgentOrchestrator
 import id.gustyxganteng.agent.domain.context.ContextMeterManager
 import id.gustyxganteng.agent.domain.tools.AcademicTool
 import id.gustyxganteng.agent.domain.tools.FileSystemTool
+import id.gustyxganteng.agent.domain.tools.ImageTool
 import id.gustyxganteng.agent.domain.tools.ShellTool
 import id.gustyxganteng.agent.domain.tools.WebTool
 import id.gustyxganteng.agent.feature.chat.ChatViewModel
@@ -74,6 +75,7 @@ val appModule = module {
     single { ShellTool() }
     single { WebTool() }
     single { AcademicTool() }
+    single { ImageTool(get(), get()) }
     single { ContextMeterManager(get(), get()) }
     single {
         AgentOrchestrator(
@@ -83,6 +85,7 @@ val appModule = module {
             shellTool = get(),
             webTool = get(),
             academicTool = get(),
+            imageTool = get(),
             settingsRepository = get(),
             groqSidecarService = get(),
             geminiSidecarService = get(),
