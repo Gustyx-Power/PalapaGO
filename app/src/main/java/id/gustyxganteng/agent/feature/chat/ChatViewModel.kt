@@ -6,10 +6,12 @@ import androidx.lifecycle.viewModelScope
 import id.gustyxganteng.agent.core.database.AppSettings
 import id.gustyxganteng.agent.core.database.AppSettingsRepository
 import id.gustyxganteng.agent.core.database.ChatRepository
+import id.gustyxganteng.agent.core.model.AgentExecutionMode
 import id.gustyxganteng.agent.core.model.CanvasArtifact
 import id.gustyxganteng.agent.core.model.ChatSession
 import id.gustyxganteng.agent.core.model.Message
 import id.gustyxganteng.agent.core.model.MessageRole
+import id.gustyxganteng.agent.core.model.PromptMode
 import id.gustyxganteng.agent.core.network.RateLimitStatus
 import id.gustyxganteng.agent.core.network.SmartRetryInterceptor
 import id.gustyxganteng.agent.core.service.AgentForegroundService
@@ -90,7 +92,7 @@ class ChatViewModel(
         val totalTokens = sessionCtx.messages.mapNotNull { it.tokenUsage?.totalTokens }.maxOrNull() ?: 0
         val rawModel = currentSession?.model ?: sessionCtx.settings.selectedModel
         val model = if (rawModel == "agnes-3.0-pro") "agnes-3.0-flash" else rawModel
-        val contextStatus = contextMeterManager.calculateStatus(totalTokens, model, sessionCtx.settings.claudeMaxMode)
+        val contextStatus = contextMeterManager.calculateStatus(totalTokens, model, sessionCtx.settings.executionMode)
 
         ChatUiState(
             sessions = sessionCtx.sessions,
@@ -188,6 +190,11 @@ class ChatViewModel(
         val settings = uiState.value.appSettings ?: return
         orchestrator.clearError()
 
+        val pMode = settings.promptMode
+        val effectiveWorkspace = if (pMode == PromptMode.CHAT) null else (session.workspacePath ?: settings.activeWorkspacePath)
+        val effectiveAcademic = pMode == PromptMode.ACADEMIC || settings.academicMode
+        val effectiveWebSearch = pMode == PromptMode.ACADEMIC || settings.webSearchEnabled
+
         viewModelScope.launch {
             AgentForegroundService.start(getApplication(), getApplication<Application>().getString(R.string.service_notification_text))
             orchestrator.runTurn(
@@ -196,14 +203,15 @@ class ChatViewModel(
                 baseUrl = settings.baseUrl,
                 apiKey = settings.apiKey,
                 model = if (session.model == "agnes-3.0-pro") "agnes-3.0-flash" else session.model,
-                workspacePath = session.workspacePath ?: settings.activeWorkspacePath,
+                workspacePath = effectiveWorkspace,
                 yoloMode = settings.yoloMode,
-                enableWebSearch = settings.webSearchEnabled,
+                enableWebSearch = effectiveWebSearch,
                 useTermuxEnv = true,
-                claudeMaxMode = settings.claudeMaxMode,
+                executionMode = settings.executionMode,
                 antiAiSlopMode = settings.antiAiSlopMode,
                 tavilyDeepSearchEnabled = settings.tavilyDeepSearchEnabled,
-                academicMode = settings.academicMode
+                academicMode = effectiveAcademic,
+                claudeMaxMode = settings.claudeMaxMode
             )
         }
     }
@@ -217,6 +225,11 @@ class ChatViewModel(
         val settings = uiState.value.appSettings ?: return
         orchestrator.clearError()
 
+        val pMode = settings.promptMode
+        val effectiveWorkspace = if (pMode == PromptMode.CHAT) null else (session.workspacePath ?: settings.activeWorkspacePath)
+        val effectiveAcademic = pMode == PromptMode.ACADEMIC || settings.academicMode
+        val effectiveWebSearch = pMode == PromptMode.ACADEMIC || settings.webSearchEnabled
+
         viewModelScope.launch {
             chatRepository.deleteMessagesSince(session.id, message.timestamp)
             AgentForegroundService.start(getApplication(), getApplication<Application>().getString(R.string.service_notification_text))
@@ -226,14 +239,15 @@ class ChatViewModel(
                 baseUrl = settings.baseUrl,
                 apiKey = settings.apiKey,
                 model = if (session.model == "agnes-3.0-pro") "agnes-3.0-flash" else session.model,
-                workspacePath = session.workspacePath ?: settings.activeWorkspacePath,
+                workspacePath = effectiveWorkspace,
                 yoloMode = settings.yoloMode,
-                enableWebSearch = settings.webSearchEnabled,
+                enableWebSearch = effectiveWebSearch,
                 useTermuxEnv = true,
-                claudeMaxMode = settings.claudeMaxMode,
+                executionMode = settings.executionMode,
                 antiAiSlopMode = settings.antiAiSlopMode,
                 tavilyDeepSearchEnabled = settings.tavilyDeepSearchEnabled,
-                academicMode = settings.academicMode
+                academicMode = effectiveAcademic,
+                claudeMaxMode = settings.claudeMaxMode
             )
         }
     }
@@ -243,6 +257,11 @@ class ChatViewModel(
         val settings = uiState.value.appSettings ?: return
 
         orchestrator.clearError()
+
+        val pMode = settings.promptMode
+        val effectiveWorkspace = if (pMode == PromptMode.CHAT) null else (session.workspacePath ?: settings.activeWorkspacePath)
+        val effectiveAcademic = pMode == PromptMode.ACADEMIC || settings.academicMode
+        val effectiveWebSearch = pMode == PromptMode.ACADEMIC || settings.webSearchEnabled
 
         viewModelScope.launch {
             val userMsg = Message(
@@ -262,21 +281,34 @@ class ChatViewModel(
                 baseUrl = settings.baseUrl,
                 apiKey = settings.apiKey,
                 model = if (session.model == "agnes-3.0-pro") "agnes-3.0-flash" else session.model,
-                workspacePath = session.workspacePath ?: settings.activeWorkspacePath,
+                workspacePath = effectiveWorkspace,
                 yoloMode = settings.yoloMode,
-                enableWebSearch = settings.webSearchEnabled,
+                enableWebSearch = effectiveWebSearch,
                 useTermuxEnv = true,
-                claudeMaxMode = settings.claudeMaxMode,
+                executionMode = settings.executionMode,
                 antiAiSlopMode = settings.antiAiSlopMode,
                 tavilyDeepSearchEnabled = settings.tavilyDeepSearchEnabled,
-                academicMode = settings.academicMode
+                academicMode = effectiveAcademic,
+                claudeMaxMode = settings.claudeMaxMode
             )
+        }
+    }
+
+    fun updateExecutionMode(mode: AgentExecutionMode) {
+        viewModelScope.launch {
+            settingsRepository.updateAgentExecutionMode(mode)
         }
     }
 
     fun updateClaudeMaxMode(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.updateClaudeMaxMode(enabled)
+        }
+    }
+
+    fun updatePromptMode(mode: PromptMode) {
+        viewModelScope.launch {
+            settingsRepository.updatePromptMode(mode)
         }
     }
 

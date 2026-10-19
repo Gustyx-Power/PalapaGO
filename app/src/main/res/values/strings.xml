@@ -1,16 +1,19 @@
 <resources>
-    <string name="app_name">GG Agent</string>
+    <string name="app_name">PalapaGO</string>
     <string name="app_subtitle">Android AI Workspace &amp; Coding Agent</string>
 
     <!-- TopBar & Navigation -->
     <string name="topbar_menu">Menu</string>
-    <string name="model_fast_desc">%1$s (Fast)</string>
-    <string name="model_pro_desc">%1$s (Advanced)</string>
-    <string name="model_claude_max_desc">%1$s (Claude Code Max)</string>
-    <string name="model_standard_desc">%1$s (Standard)</string>
+    <string name="model_fast_desc">Fast Mode</string>
+    <string name="model_standard_desc">Standard Mode</string>
+    <string name="model_high_desc">High Mode</string>
+    <string name="model_smart_desc">Smart Mode</string>
+    <string name="model_max_desc">Maximum Mode</string>
+    <string name="model_claude_max_desc">Maximum Mode</string>
+    <string name="execution_mode_locked_toast">Mode cannot be changed while AI is executing a task</string>
     <string name="compacting_context">Compacting conversation context...</string>
     <string name="context_window_title">Context Window</string>
-    <string name="context_window_model">Model: %1$s</string>
+    <string name="context_window_model">Engine: %1$s</string>
     <string name="context_tokens_used">Used Tokens</string>
     <string name="context_tokens_total">Total Capacity</string>
     <string name="context_tokens_remaining">Remaining</string>
@@ -23,6 +26,20 @@
     <string name="settings_and_byok">Settings</string>
     <string name="delete">Delete</string>
     <string name="default_session_title">New Chat</string>
+
+    <!-- Prompt Modes (Gemini-style Segmented Switcher) -->
+    <string name="prompt_mode_chat">Chat</string>
+    <string name="prompt_mode_chat_desc">General conversation and Q&amp;A without workspace folder</string>
+    <string name="prompt_mode_agent">Agent</string>
+    <string name="prompt_mode_agent_desc">Autonomous workspace &amp; coding agent (requires folder selection)</string>
+    <string name="prompt_mode_academic">Scholar</string>
+    <string name="prompt_mode_academic_desc">Scientific journal research, indexed citations, and study tasks</string>
+    <string name="prompt_mode_canvas">Canvas</string>
+    <string name="prompt_mode_canvas_desc">Interactive studio for documents, UI simulations, and code</string>
+    <string name="prompt_mode_agent_requires_folder">Agent mode requires choosing a project workspace folder first.</string>
+    <string name="prompt_placeholder_chat">Ask anything...</string>
+    <string name="prompt_placeholder_agent">Instruct agent to inspect, code, or execute in workspace...</string>
+    <string name="prompt_placeholder_academic">Search papers, cited research, or ask about study tasks...</string>
 
     <!-- Action Chips & Input Capsule -->
     <string name="chip_workspace">Workspace</string>
@@ -76,7 +93,7 @@
     <string name="workspace_created_success">Workspace created at %1$s</string>
     <string name="workspace_select_button">Select</string>
     <string name="storage_permission_title">All Files Access Required</string>
-    <string name="storage_permission_desc">GG Agent requires All Files Access permission to read and write code in your selected workspace.</string>
+    <string name="storage_permission_desc">PalapaGO requires All Files Access permission to read and write code in your selected workspace.</string>
     <string name="storage_permission_grant">Grant Permission</string>
 
     <!-- Approvals -->
@@ -110,7 +127,7 @@
     <string name="canvas_web_preview_title">Live Web Document</string>
     <string name="canvas_open_in_browser">Open in Browser</string>
     <string name="canvas_open_browser_failed">Failed to open browser: %1$s</string>
-    <string name="canvas_audit_title">Antigravity AI Web Inspection</string>
+    <string name="canvas_audit_title">Inspeksi</string>
     <string name="canvas_audit_verified">VERIFIED</string>
     <string name="canvas_audit_warning">REVIEW</string>
     <string name="canvas_audit_tokens">%1$d tokens • %2$s</string>
@@ -123,11 +140,11 @@
 
     <!-- Settings -->
     <string name="settings_title">Settings</string>
-    <string name="settings_byok_header">Agnes API Configuration</string>
-    <string name="settings_api_key_label">Agnes API Key</string>
+    <string name="settings_byok_header">Cloud API Configuration</string>
+    <string name="settings_api_key_label">API Key</string>
     <string name="settings_base_url_label">Base URL</string>
-    <string name="settings_model_header">Default Model Selection</string>
-    <string name="settings_model_desc">Fast reasoning model tailored for Android agentic tasks.</string>
+    <string name="settings_model_header">PalapaGO Engine</string>
+    <string name="settings_model_desc">PalapaGO intelligent reasoning engine optimized for Android coding and workspace tasks.</string>
     <string name="settings_custom_model_label">Custom Model Name</string>
     <string name="settings_security_header">Security &amp; Resilience</string>
     <string name="settings_max_retries">Max Retry Attempts: %1$d times</string>
@@ -139,15 +156,25 @@
     <string name="settings_tavily_title">Use Tavily Deep Search</string>
     <string name="settings_tavily_desc">Enable only for deep research. Standard mode uses unlimited DuckDuckGo &amp; Wikipedia.</string>
     <string name="settings_agent_mode_header">Agent Execution Mode</string>
-    <string name="settings_claude_max_title">Claude Code Max Mode</string>
-    <string name="settings_claude_max_desc">Deep reasoning (24k token budget), 25 autonomous turns, multi-hop web research, and auto-escalated Tavily Deep Search.</string>
+    <string name="settings_mode_fast_title">Fast</string>
+    <string name="settings_mode_fast_desc">Lightning-fast and concise (2k token budget, 6 turns). Ideal for quick Q&amp;A or focused edits.</string>
+    <string name="settings_mode_standard_title">Standard</string>
+    <string name="settings_mode_standard_desc">Optimal balance between speed and thoroughness (4k token budget, 10 turns).</string>
+    <string name="settings_mode_high_title">High</string>
+    <string name="settings_mode_high_desc">Deep architectural analysis, contract &amp; error auditing, and rigorous verification (12k token budget, 16 turns).</string>
+    <string name="settings_mode_smart_title">Smart</string>
+    <string name="settings_mode_smart_desc">Adaptive strategic reasoning, multi-angle exploration, and root-cause deduction (16k token budget, 20 turns).</string>
+    <string name="settings_mode_max_title">Maximum</string>
+    <string name="settings_mode_max_desc">Highest autonomous ceiling (24k token budget, 30 turns), multi-hop web research, and auto-escalated Tavily Deep Search.</string>
+    <string name="settings_claude_max_title">Maximum Mode</string>
+    <string name="settings_claude_max_desc">Highest autonomous ceiling (24k token budget, 30 turns), multi-hop web research, and auto-escalated Tavily Deep Search.</string>
     <string name="settings_save_button">Save Settings</string>
     <string name="settings_saved_toast">Settings saved successfully!</string>
 
     <!-- Foreground Service & Misc -->
-    <string name="service_notification_title">GG Agent</string>
-    <string name="service_notification_text">GG Agent is processing your coding task...</string>
-    <string name="service_channel_name">GG Agent Background Execution</string>
+    <string name="service_notification_title">PalapaGO</string>
+    <string name="service_notification_text">PalapaGO is processing your coding task...</string>
+    <string name="service_channel_name">PalapaGO Background Execution</string>
     <string name="service_channel_desc">Notifications during multi-turn agent execution</string>
     <string name="image_compress_failed">Failed to compress image: %1$s</string>
     <string name="cd_camera">Camera</string>

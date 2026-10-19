@@ -1,16 +1,19 @@
 <resources>
-    <string name="app_name">GG Agent</string>
+    <string name="app_name">PalapaGO</string>
     <string name="app_subtitle">Agen Coding &amp; Workspace AI Android</string>
 
     <!-- TopBar & Navigation -->
     <string name="topbar_menu">Menu</string>
-    <string name="model_fast_desc">%1$s (Cepat)</string>
-    <string name="model_pro_desc">%1$s (Tingkat Lanjut)</string>
-    <string name="model_claude_max_desc">%1$s (Claude Code Max)</string>
-    <string name="model_standard_desc">%1$s (Standar)</string>
+    <string name="model_fast_desc">Mode Cepat</string>
+    <string name="model_standard_desc">Mode Standar</string>
+    <string name="model_high_desc">Mode Tinggi</string>
+    <string name="model_smart_desc">Mode Smart</string>
+    <string name="model_max_desc">Mode Maksimal</string>
+    <string name="model_claude_max_desc">Mode Maksimal</string>
+    <string name="execution_mode_locked_toast">Mode tidak dapat diubah saat AI sedang menjalankan tugas</string>
     <string name="compacting_context">Meringkas konteks percakapan...</string>
     <string name="context_window_title">Jendela Konteks</string>
-    <string name="context_window_model">Model: %1$s</string>
+    <string name="context_window_model">Engine: %1$s</string>
     <string name="context_tokens_used">Token Terpakai</string>
     <string name="context_tokens_total">Total Kapasitas</string>
     <string name="context_tokens_remaining">Sisa Token</string>
@@ -23,6 +26,20 @@
     <string name="settings_and_byok">Pengaturan</string>
     <string name="delete">Hapus</string>
     <string name="default_session_title">Obrolan Baru</string>
+
+    <!-- Prompt Modes (Gemini-style Segmented Switcher) -->
+    <string name="prompt_mode_chat">Chat</string>
+    <string name="prompt_mode_chat_desc">Tanya jawab umum dan diskusi cepat tanpa folder</string>
+    <string name="prompt_mode_agent">Agent</string>
+    <string name="prompt_mode_agent_desc">Eksekusi workspace &amp; coding otonom (wajib pilih folder)</string>
+    <string name="prompt_mode_academic">Pelajar</string>
+    <string name="prompt_mode_academic_desc">Riset jurnal ilmiah, sitasi terindeks, dan tugas sekolah/kuliah</string>
+    <string name="prompt_mode_canvas">Canvas</string>
+    <string name="prompt_mode_canvas_desc">Studio interaktif untuk dokumen, simulasi UI, dan kode</string>
+    <string name="prompt_mode_agent_requires_folder">Mode Agent mewajibkan pemilihan folder workspace terlebih dahulu.</string>
+    <string name="prompt_placeholder_chat">Tanyakan apa saja...</string>
+    <string name="prompt_placeholder_agent">Perintahkan agent untuk menulis file, coding, dsb...</string>
+    <string name="prompt_placeholder_academic">Cari jurnal ilmiah, sitasi, tinjauan pustaka, atau tugas...</string>
 
     <!-- Action Chips & Input Capsule -->
     <string name="chip_workspace">Workspace</string>
@@ -76,7 +93,7 @@
     <string name="workspace_created_success">Workspace dibuat di %1$s</string>
     <string name="workspace_select_button">Pilih</string>
     <string name="storage_permission_title">Izin Akses Semua File Dibutuhkan</string>
-    <string name="storage_permission_desc">GG Agent membutuhkan izin Akses Semua File untuk membaca dan menulis kode di workspace pilihan Anda.</string>
+    <string name="storage_permission_desc">PalapaGO membutuhkan izin Akses Semua File untuk membaca dan menulis kode di workspace pilihan Anda.</string>
     <string name="storage_permission_grant">Berikan Izin</string>
 
     <!-- Approvals -->
@@ -110,7 +127,7 @@
     <string name="canvas_web_preview_title">Dokumen Web Langsung</string>
     <string name="canvas_open_in_browser">Buka di Browser</string>
     <string name="canvas_open_browser_failed">Gagal membuka browser: %1$s</string>
-    <string name="canvas_audit_title">Inspeksi Web AI Antigravity</string>
+    <string name="canvas_audit_title">Inspeksi</string>
     <string name="canvas_audit_verified">TERVERIFIKASI</string>
     <string name="canvas_audit_warning">PERIKSA</string>
     <string name="canvas_audit_tokens">%1$d token • %2$s</string>
@@ -123,11 +140,11 @@
 
     <!-- Settings -->
     <string name="settings_title">Pengaturan</string>
-    <string name="settings_byok_header">Konfigurasi API Agnes</string>
-    <string name="settings_api_key_label">API Key Agnes</string>
+    <string name="settings_byok_header">Konfigurasi Cloud API</string>
+    <string name="settings_api_key_label">API Key</string>
     <string name="settings_base_url_label">Base URL</string>
-    <string name="settings_model_header">Pilihan Model Default</string>
-    <string name="settings_model_desc">Model penalaran cepat yang dioptimalkan untuk eksekusi tugas coding di Android.</string>
+    <string name="settings_model_header">Engine PalapaGO</string>
+    <string name="settings_model_desc">Engine penalaran cerdas PalapaGO yang dioptimalkan untuk eksekusi tugas workspace &amp; coding di Android.</string>
     <string name="settings_custom_model_label">Nama Model Kustom</string>
     <string name="settings_security_header">Keamanan &amp; Resiliensi</string>
     <string name="settings_max_retries">Batas Maksimal Percobaan Ulang (Retry): %1$d kali</string>
@@ -139,16 +156,26 @@
     <string name="settings_tavily_title">Gunakan Tavily Deep Search</string>
     <string name="settings_tavily_desc">Aktifkan hanya untuk riset mendalam. Mode standar menggunakan DuckDuckGo &amp; Wikipedia tanpa batas.</string>
     <string name="settings_agent_mode_header">Mode Eksekusi Agent</string>
-    <string name="settings_claude_max_title">Mode Claude Code Max</string>
-    <string name="settings_claude_max_desc">Penalaran mendalam (budget 24k token), 25 loop otonom, riset web multi-hop, dan eskalasi otomatis Tavily Deep Search.</string>
+    <string name="settings_mode_fast_title">Cepat</string>
+    <string name="settings_mode_fast_desc">Respons kilat dan ringkas (budget 2k token, 6 turn). Cocok untuk tanya-jawab cepat atau edit kode terarah.</string>
+    <string name="settings_mode_standard_title">Standar</string>
+    <string name="settings_mode_standard_desc">Keseimbangan optimal antara kecepatan dan ketelitian (budget 4k token, 10 turn).</string>
+    <string name="settings_mode_high_title">Tinggi</string>
+    <string name="settings_mode_high_desc">Analisis arsitektur mendalam, audit tipe &amp; error, serta verifikasi ketat (budget 12k token, 16 turn).</string>
+    <string name="settings_mode_smart_title">Smart</string>
+    <string name="settings_mode_smart_desc">Penalaran strategis adaptif, eksplorasi multi-sudut, dan deduksi akar masalah (budget 16k token, 20 turn).</string>
+    <string name="settings_mode_max_title">Maksimal</string>
+    <string name="settings_mode_max_desc">Daya otonom tertinggi (budget 24k token, 30 turn), riset web multi-hop, dan eskalasi otomatis Tavily Deep Search.</string>
+    <string name="settings_claude_max_title">Mode Maksimal</string>
+    <string name="settings_claude_max_desc">Daya otonom tertinggi (budget 24k token, 30 turn), riset web multi-hop, dan eskalasi otomatis Tavily Deep Search.</string>
     <string name="settings_save_button">Simpan Pengaturan</string>
     <string name="settings_saved_toast">Pengaturan berhasil disimpan!</string>
 
     <!-- Foreground Service & Misc -->
-    <string name="service_notification_title">GG Agent</string>
-    <string name="service_notification_text">GG Agent sedang memproses tugas coding Anda...</string>
-    <string name="service_channel_name">Eksekusi Latar Belakang GG Agent</string>
-    <string name="service_channel_desc">Notifikasi saat GG Agent mengeksekusi di latar belakang</string>
+    <string name="service_notification_title">PalapaGO</string>
+    <string name="service_notification_text">PalapaGO sedang memproses tugas coding Anda...</string>
+    <string name="service_channel_name">Eksekusi Latar Belakang PalapaGO</string>
+    <string name="service_channel_desc">Notifikasi saat PalapaGO mengeksekusi di latar belakang</string>
     <string name="image_compress_failed">Gagal mengompres gambar: %1$s</string>
     <string name="cd_camera">Kamera</string>
     <string name="camera_permission_required">Izin kamera diperlukan untuk mengambil foto langsung.</string>

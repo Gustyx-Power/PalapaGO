@@ -1,5 +1,6 @@
 package id.gustyxganteng.agent.feature.chat.ui.components
 
+import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -24,6 +25,7 @@ import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Menu
 import androidx.compose.material.icons.rounded.PieChart
 import androidx.compose.material3.Button
@@ -41,13 +43,16 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -67,6 +72,11 @@ import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerLow
 import id.gustyxganteng.agent.core.designsystem.M3Tertiary
 import id.gustyxganteng.agent.core.designsystem.M3TertiaryContainer
 import id.gustyxganteng.agent.core.designsystem.M3TextPrimary
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Psychology
+import androidx.compose.material.icons.automirrored.rounded.TrendingUp
+import androidx.compose.material.icons.rounded.Tune
+import id.gustyxganteng.agent.core.model.AgentExecutionMode
 import id.gustyxganteng.agent.core.designsystem.M3TextSecondary
 import id.gustyxganteng.agent.domain.context.ContextMeterManager
 import id.gustyxganteng.agent.domain.context.ContextMeterStatus
@@ -74,15 +84,33 @@ import id.gustyxganteng.agent.domain.context.ContextMeterStatus
 @Composable
 fun GeminiTopBar(
     selectedModel: String,
-    claudeMaxMode: Boolean = true,
+    executionMode: AgentExecutionMode = AgentExecutionMode.FAST,
     contextStatus: ContextMeterStatus?,
     onOpenDrawer: () -> Unit,
     onSelectModel: (String) -> Unit,
-    onToggleClaudeMaxMode: (Boolean) -> Unit = {},
+    onSelectExecutionMode: (AgentExecutionMode) -> Unit = {},
     onCompactContext: () -> Unit,
+    isExecutionLocked: Boolean = false,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     var showModelMenu by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isExecutionLocked) {
+        if (isExecutionLocked) {
+            showModelMenu = false
+        }
+    }
+
+    val currentMode = executionMode
+
+    val (badgeBg, badgeFg) = when (currentMode) {
+        AgentExecutionMode.FAST -> Pair(M3SurfaceContainerHighest, M3TextSecondary)
+        AgentExecutionMode.STANDARD -> Pair(M3Primary.copy(alpha = 0.2f), M3Primary)
+        AgentExecutionMode.HIGH -> Pair(Color(0xFF2E4D27), Color(0xFFB7F397))
+        AgentExecutionMode.SMART -> Pair(Color(0xFF3B3366), Color(0xFFD0BCFF))
+        AgentExecutionMode.MAX -> Pair(M3TertiaryContainer, M3Tertiary)
+    }
 
     Surface(
         color = M3Surface,
@@ -118,51 +146,65 @@ fun GeminiTopBar(
                 Box {
                     Surface(
                         shape = RoundedCornerShape(24.dp),
-                        color = M3SurfaceContainerHigh,
-                        border = BorderStroke(1.dp, M3OutlineVariant),
+                        color = if (isExecutionLocked) M3SurfaceContainerHigh.copy(alpha = 0.6f) else M3SurfaceContainerHigh,
+                        border = BorderStroke(
+                            1.dp,
+                            if (isExecutionLocked) M3OutlineVariant.copy(alpha = 0.5f) else M3OutlineVariant
+                        ),
                         modifier = Modifier
                             .clip(RoundedCornerShape(24.dp))
-                            .clickable { showModelMenu = true }
+                            .clickable {
+                                if (isExecutionLocked) {
+                                    Toast.makeText(
+                                        context,
+                                        context.getString(R.string.execution_mode_locked_toast),
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } else {
+                                    showModelMenu = true
+                                }
+                            }
                     ) {
                         Row(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            GeminiSparkleIcon(size = 14.dp, tint = M3Primary)
+                            GeminiSparkleIcon(
+                                size = 14.dp,
+                                tint = if (isExecutionLocked) M3Primary.copy(alpha = 0.5f) else M3Primary
+                            )
                             Spacer(Modifier.width(6.dp))
                             Text(
-                                text = selectedModel,
+                                text = stringResource(R.string.app_name),
                                 style = MaterialTheme.typography.labelMedium.copy(
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 13.sp
                                 ),
-                                color = M3TextPrimary,
+                                color = if (isExecutionLocked) M3TextPrimary.copy(alpha = 0.6f) else M3TextPrimary,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
-                            if (claudeMaxMode) {
-                                Spacer(Modifier.width(6.dp))
-                                Surface(
-                                    shape = RoundedCornerShape(6.dp),
-                                    color = M3TertiaryContainer
-                                ) {
-                                    Text(
-                                        text = "MAX",
-                                        style = MaterialTheme.typography.labelSmall.copy(
-                                            fontWeight = FontWeight.ExtraBold,
-                                            fontSize = 9.sp
-                                        ),
-                                        color = M3Tertiary,
-                                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                                    )
-                                }
+                            Spacer(Modifier.width(6.dp))
+                            Surface(
+                                shape = RoundedCornerShape(6.dp),
+                                color = if (isExecutionLocked) badgeBg.copy(alpha = 0.5f) else badgeBg
+                            ) {
+                                Text(
+                                    text = currentMode.badge,
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.ExtraBold,
+                                        fontSize = 9.sp
+                                    ),
+                                    color = if (isExecutionLocked) badgeFg.copy(alpha = 0.6f) else badgeFg,
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
+                                )
                             }
                             Spacer(Modifier.width(4.dp))
                             Icon(
-                                imageVector = Icons.Default.ArrowDropDown,
+                                imageVector = if (isExecutionLocked) Icons.Rounded.Lock else Icons.Default.ArrowDropDown,
                                 contentDescription = null,
-                                tint = M3TextSecondary,
-                                modifier = Modifier.size(18.dp)
+                                tint = if (isExecutionLocked) M3TextSecondary.copy(alpha = 0.5f) else M3TextSecondary,
+                                modifier = Modifier.size(if (isExecutionLocked) 14.dp else 18.dp)
                             )
                         }
                     }
@@ -174,51 +216,65 @@ fun GeminiTopBar(
                         containerColor = M3SurfaceContainerHigh,
                         border = BorderStroke(1.dp, M3OutlineVariant)
                     ) {
-                        DropdownMenuItem(
-                            text = {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        Icons.Rounded.Bolt,
-                                        contentDescription = null,
-                                        tint = M3Tertiary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(Modifier.width(10.dp))
-                                    Text(
-                                        stringResource(R.string.model_claude_max_desc, "agnes-3.0-flash"),
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-                            },
-                            onClick = {
-                                onSelectModel("agnes-3.0-flash")
-                                onToggleClaudeMaxMode(true)
-                                showModelMenu = false
-                            }
+                        val menuItems = listOf(
+                            Triple(AgentExecutionMode.FAST, R.string.model_fast_desc, Icons.Rounded.Bolt),
+                            Triple(AgentExecutionMode.STANDARD, R.string.model_standard_desc, Icons.Rounded.Tune),
+                            Triple(AgentExecutionMode.HIGH, R.string.model_high_desc, Icons.AutoMirrored.Rounded.TrendingUp),
+                            Triple(AgentExecutionMode.SMART, R.string.model_smart_desc, Icons.Rounded.Psychology),
+                            Triple(AgentExecutionMode.MAX, R.string.model_max_desc, Icons.Rounded.AutoAwesome)
                         )
-                        HorizontalDivider(color = M3OutlineVariant)
-                        DropdownMenuItem(
-                            text = {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
-                                    Icon(
-                                        Icons.Rounded.AutoAwesome,
-                                        contentDescription = null,
-                                        tint = M3Primary,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                    Spacer(Modifier.width(10.dp))
-                                    Text(
-                                        stringResource(R.string.model_standard_desc, "agnes-3.0-flash"),
-                                        fontWeight = FontWeight.Medium
-                                    )
-                                }
-                            },
-                            onClick = {
-                                onSelectModel("agnes-3.0-flash")
-                                onToggleClaudeMaxMode(false)
-                                showModelMenu = false
+
+                        menuItems.forEachIndexed { index, (mode, descRes, icon) ->
+                            val isSelected = mode == currentMode
+                            val itemTint = when (mode) {
+                                AgentExecutionMode.FAST -> M3TextSecondary
+                                AgentExecutionMode.STANDARD -> M3Primary
+                                AgentExecutionMode.HIGH -> Color(0xFFB7F397)
+                                AgentExecutionMode.SMART -> Color(0xFFD0BCFF)
+                                AgentExecutionMode.MAX -> M3Tertiary
                             }
-                        )
+
+                            DropdownMenuItem(
+                                text = {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Icon(
+                                            imageVector = icon,
+                                            contentDescription = null,
+                                            tint = itemTint,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(Modifier.width(10.dp))
+                                        Text(
+                                            text = stringResource(descRes),
+                                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                            color = if (isSelected) M3Primary else M3TextPrimary,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                        if (isSelected) {
+                                            Spacer(Modifier.width(8.dp))
+                                            Icon(
+                                                imageVector = Icons.Rounded.Check,
+                                                contentDescription = null,
+                                                tint = M3Primary,
+                                                modifier = Modifier.size(16.dp)
+                                            )
+                                        }
+                                    }
+                                },
+                                onClick = {
+                                    onSelectModel("agnes-3.0-flash")
+                                    onSelectExecutionMode(mode)
+                                    showModelMenu = false
+                                }
+                            )
+
+                            if (index < menuItems.size - 1) {
+                                HorizontalDivider(color = M3OutlineVariant.copy(alpha = 0.5f))
+                            }
+                        }
                     }
                 }
 
@@ -269,7 +325,7 @@ fun GeminiTopBar(
                     if (showContextSheet) {
                         ContextDetailsBottomSheet(
                             status = contextStatus,
-                            modelName = selectedModel,
+                            modelName = "PalapaGO Core",
                             onDismiss = { showContextSheet = false },
                             onCompactContext = {
                                 showContextSheet = false

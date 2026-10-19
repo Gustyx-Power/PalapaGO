@@ -1,6 +1,7 @@
 package id.gustyxganteng.agent.feature.chat
 
 import android.Manifest
+import id.gustyxganteng.agent.core.model.AgentExecutionMode
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.widget.Toast
@@ -120,6 +121,7 @@ import id.gustyxganteng.agent.core.markdown.MarkdownContent
 import id.gustyxganteng.agent.core.model.CanvasArtifact
 import id.gustyxganteng.agent.core.model.Message
 import id.gustyxganteng.agent.core.model.MessageRole
+import id.gustyxganteng.agent.core.model.PromptMode
 import id.gustyxganteng.agent.core.model.TokenUsage
 import id.gustyxganteng.agent.core.util.ImageCompressor
 import id.gustyxganteng.agent.domain.agent.AgentState
@@ -417,17 +419,19 @@ fun ChatScreen(
         Scaffold(
             containerColor = M3Surface,
             topBar = {
+                val isExecutionLocked = uiState.agentState !is AgentState.Idle && uiState.agentState !is AgentState.Error
                 GeminiTopBar(
                     selectedModel = uiState.currentSession?.model ?: uiState.appSettings?.selectedModel ?: "agnes-3.0-flash",
-                    claudeMaxMode = uiState.appSettings?.claudeMaxMode ?: true,
+                    executionMode = uiState.appSettings?.executionMode ?: AgentExecutionMode.FAST,
                     contextStatus = uiState.contextStatus,
                     onOpenDrawer = { scope.launch { drawerState.open() } },
                     onSelectModel = { viewModel.updateSessionModel(it) },
-                    onToggleClaudeMaxMode = { viewModel.updateClaudeMaxMode(it) },
+                    onSelectExecutionMode = { viewModel.updateExecutionMode(it) },
                     onCompactContext = {
                         viewModel.compactSession()
                         Toast.makeText(context, context.getString(R.string.compacting_context), Toast.LENGTH_SHORT).show()
-                    }
+                    },
+                    isExecutionLocked = isExecutionLocked
                 )
             }
         ) { innerPadding ->
@@ -461,10 +465,10 @@ fun ChatScreen(
                     items(uiState.messages) { message ->
                         ChatMessageItem(
                             message = message,
-                            modelName = uiState.currentSession?.model ?: "agnes-3.0-flash",
+                            modelName = stringResource(R.string.app_name),
                             allMessages = uiState.messages,
-                            onOpenCanvas = { title, lang, content ->
-                                viewModel.openCanvas(CanvasArtifact(title = title, language = lang, content = content))
+                            onOpenCanvas = { title, lang, content, filePath ->
+                                viewModel.openCanvas(CanvasArtifact(title = title, language = lang, content = content, associatedFilePath = filePath))
                             },
                             onEditPrompt = { text ->
                                 inputText = text
@@ -504,7 +508,7 @@ fun ChatScreen(
                                     GeminiSparkleIcon(size = 15.dp, tint = M3Primary)
                                     Spacer(Modifier.width(7.dp))
                                     Text(
-                                        text = uiState.currentSession?.model ?: "agnes-3.0-flash",
+                                        text = stringResource(R.string.app_name),
                                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
                                         color = M3Primary
                                     )
@@ -708,10 +712,18 @@ fun ChatScreen(
                 GeminiBottomCapsule(
                     inputText = inputText,
                     onInputTextChanged = { inputText = it },
+                    promptMode = uiState.appSettings?.promptMode ?: PromptMode.CHAT,
+                    onSelectPromptMode = { mode ->
+                        viewModel.updatePromptMode(mode)
+                        if (mode == PromptMode.AGENT) {
+                            val activeWs = uiState.currentSession?.workspacePath ?: uiState.appSettings?.activeWorkspacePath
+                            if (activeWs.isNullOrBlank()) {
+                                showWorkspaceManager = true
+                            }
+                        }
+                    },
                     activeWorkspacePath = uiState.currentSession?.workspacePath ?: uiState.appSettings?.activeWorkspacePath,
                     isWebSearchActive = uiState.appSettings?.webSearchEnabled == true,
-                    isAcademicActive = uiState.appSettings?.academicMode == true,
-                    isYoloModeActive = uiState.appSettings?.yoloMode == true,
                     isStreaming = isStreamingActive,
                     attachedImages = attachedImages.toList(),
                     onRemoveAttachedImage = { index ->
@@ -721,7 +733,6 @@ fun ChatScreen(
                     },
                     onOpenWorkspaceManager = { showWorkspaceManager = true },
                     onToggleWebSearch = { viewModel.toggleWebSearch() },
-                    onToggleAcademic = { viewModel.toggleAcademicMode() },
                     onOpenCanvas = {
                         viewModel.openCanvas(
                             CanvasArtifact(
@@ -731,11 +742,15 @@ fun ChatScreen(
                             )
                         )
                     },
-                    onToggleYolo = { viewModel.toggleYoloMode() },
                     onAttachImage = { imagePicker.launch("image/*") },
                     onCaptureCamera = launchCamera,
                     onSend = {
-                        if (inputText.isNotBlank() || attachedImages.isNotEmpty()) {
+                        val activeWs = uiState.currentSession?.workspacePath ?: uiState.appSettings?.activeWorkspacePath
+                        val currentMode = uiState.appSettings?.promptMode ?: PromptMode.CHAT
+                        if (currentMode == PromptMode.AGENT && activeWs.isNullOrBlank()) {
+                            Toast.makeText(context, context.getString(R.string.prompt_mode_agent_requires_folder), Toast.LENGTH_LONG).show()
+                            showWorkspaceManager = true
+                        } else if (inputText.isNotBlank() || attachedImages.isNotEmpty()) {
                             val promptText = if (inputText.isNotBlank()) inputText else "Analisis gambar yang dilampirkan ini."
                             viewModel.sendMessage(promptText, attachedImages.toList())
                             inputText = ""
@@ -954,7 +969,7 @@ fun ChatMessageItem(
     message: Message,
     modelName: String,
     allMessages: List<Message> = emptyList(),
-    onOpenCanvas: (title: String, language: String, content: String) -> Unit,
+    onOpenCanvas: (title: String, language: String, content: String, filePath: String?) -> Unit,
     onEditPrompt: (String) -> Unit = {},
     onReloadMessage: (Message) -> Unit = {}
 ) {
@@ -1131,11 +1146,16 @@ fun ChatMessageItem(
                         } catch (e: Exception) {
                             ""
                         }
+                        val canvasFilePath = try {
+                            org.json.JSONObject(toolCall.function.arguments).optString("file_path", "").takeIf { it.isNotBlank() }
+                        } catch (e: Exception) {
+                            null
+                        }
                         CanvasPreviewCard(
                             title = canvasTitle,
                             language = canvasLang,
                             onOpenCanvas = {
-                                onOpenCanvas(canvasTitle, canvasLang, canvasContent)
+                                onOpenCanvas(canvasTitle, canvasLang, canvasContent, canvasFilePath)
                             }
                         )
                     }
@@ -1145,7 +1165,7 @@ fun ChatMessageItem(
                 if (message.content.isNotBlank()) {
                     MarkdownContent(
                         markdown = message.content,
-                        onOpenInCanvas = onOpenCanvas
+                        onOpenInCanvas = { t, l, c -> onOpenCanvas(t, l, c, null) }
                     )
                 }
 
@@ -1159,7 +1179,7 @@ fun ChatMessageItem(
                         title = webTitle,
                         language = "html",
                         onOpenCanvas = {
-                            onOpenCanvas(webTitle, "html", cleanWebDoc)
+                            onOpenCanvas(webTitle, "html", cleanWebDoc, null)
                         }
                     )
                 }
@@ -1264,7 +1284,8 @@ fun ChatMessageItem(
                                     onOpenCanvas(
                                         context.getString(R.string.canvas_ai_response),
                                         "markdown",
-                                        message.content
+                                        message.content,
+                                        null
                                     )
                                 },
                                 modifier = Modifier.fillMaxSize()
