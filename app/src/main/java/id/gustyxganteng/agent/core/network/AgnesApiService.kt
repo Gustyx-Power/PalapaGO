@@ -169,40 +169,62 @@ class AgnesApiServiceImpl(
         val jsonBody = json.encodeToString(requestPayload)
         val requestBody = jsonBody.toRequestBody("application/json; charset=utf-8".toMediaType())
 
-        if (apiKey.isBlank()) {
+        val candidateKeys = mutableListOf<String>()
+        if (apiKey.isNotBlank()) candidateKeys.add(apiKey.trim())
+        for (k in KeyVault.getAgnesKeyPool()) {
+            if (k.isNotBlank() && !candidateKeys.contains(k)) {
+                candidateKeys.add(k)
+            }
+        }
+
+        if (candidateKeys.isEmpty()) {
             throw IOException("API Key belum terkonfigurasi. Pastikan API Key sudah diisi pada Pengaturan atau local.properties.")
         }
 
-        val request = Request.Builder()
-            .url(endpoint)
-            .addHeader("Authorization", "Bearer ${apiKey.trim()}")
-            .addHeader("x-api-key", apiKey.trim())
-            .addHeader("anthropic-version", "2023-06-01")
-            .addHeader("Accept", "text/event-stream")
-            .addHeader("Cache-Control", "no-cache")
-            .addHeader("Connection", "keep-alive")
-            .addHeader("Accept-Encoding", "identity")
-            .addHeader("Content-Type", "application/json")
-            .post(requestBody)
-            .build()
+        var lastResponseCode = 0
+        var lastErrBody = ""
 
-        val call = client.newCall(request)
-        val response = call.execute()
+        for ((index, currentKey) in candidateKeys.withIndex()) {
+            val request = Request.Builder()
+                .url(endpoint)
+                .addHeader("Authorization", "Bearer $currentKey")
+                .addHeader("x-api-key", currentKey)
+                .addHeader("anthropic-version", "2023-06-01")
+                .addHeader("Accept", "text/event-stream")
+                .addHeader("Cache-Control", "no-cache")
+                .addHeader("Connection", "keep-alive")
+                .addHeader("Accept-Encoding", "identity")
+                .addHeader("Content-Type", "application/json")
+                .post(requestBody)
+                .build()
 
-        if (!response.isSuccessful) {
-            val errBody = response.body?.string() ?: "HTTP ${response.code}"
-            response.close()
-            val friendlyMsg = when (response.code) {
-                401 -> "Autentikasi gagal (HTTP 401): API Key tidak valid. Periksa konfigurasi API Key di Pengaturan."
-                403 -> "Akses ditolak (HTTP 403): Tidak memiliki izin akses."
-                404 -> "Endpoint API tidak ditemukan (HTTP 404): $endpoint"
-                429 -> "Rate limit tercapai (HTTP 429): Terlalu banyak permintaan ke server API. Mohon tunggu sesaat."
-                else -> "Gagal memproses permintaan (${response.code}): $errBody"
+            val call = client.newCall(request)
+            val response = call.execute()
+
+            if (response.isSuccessful) {
+                val body = response.body ?: throw IOException("Empty response body from API server")
+                return sseStreamParser.parseStream(body)
             }
-            throw IOException(friendlyMsg)
+
+            lastResponseCode = response.code
+            lastErrBody = response.body?.string() ?: "HTTP ${response.code}"
+            response.close()
+
+            // Jika kena Rate Limit (429) atau Quota (403), coba failover ke key berikutnya jika ada
+            if ((lastResponseCode == 429 || lastResponseCode == 403) && index < candidateKeys.size - 1) {
+                android.util.Log.w("AgnesApiService", "Kunci Agnes #$index terkena limit ($lastResponseCode). Beralih ke kunci cadangan...")
+                continue
+            }
+            break
         }
 
-        val body = response.body ?: throw IOException("Empty response body from API server")
-        return sseStreamParser.parseStream(body)
+        val friendlyMsg = when (lastResponseCode) {
+            401 -> "Autentikasi gagal (HTTP 401): API Key tidak valid. Periksa konfigurasi API Key di Pengaturan."
+            403 -> "Akses ditolak (HTTP 403): Tidak memiliki izin akses atau kuota habis: $lastErrBody"
+            404 -> "Endpoint API tidak ditemukan (HTTP 404): $endpoint"
+            429 -> "Rate limit tercapai (HTTP 429): Terlalu banyak permintaan ke server API ($lastErrBody). Mohon tunggu sesaat."
+            else -> "Gagal memproses permintaan ($lastResponseCode): $lastErrBody"
+        }
+        throw IOException(friendlyMsg)
     }
 }

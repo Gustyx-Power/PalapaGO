@@ -7,8 +7,32 @@ object KeyVault {
     private const val XOR_KEY: Byte = 0x5A
 
     fun getAgnesApiKey(): String = deobfuscate(BuildConfig.AGNES_API_KEY)
+    fun getAgnesApiKeySecondary(): String = deobfuscate(BuildConfig.AGNES_API_KEY_SECONDARY)
+
+    fun getAgnesKeyPool(): List<String> {
+        val list = mutableListOf<String>()
+        val primary = getAgnesApiKey()
+        if (primary.isNotBlank()) list.add(primary)
+        val secondary = getAgnesApiKeySecondary()
+        if (secondary.isNotBlank() && secondary != primary) list.add(secondary)
+        return list
+    }
 
     fun getAgnesBaseUrl(): String = BuildConfig.AGNES_BASE_URL.ifBlank { "https://apihub.agnes-ai.com/v1" }
+
+    fun getGroqApiKey(): String = deobfuscate(BuildConfig.GROQ_API_KEY)
+    fun getGroqApiKeySecondary(): String = deobfuscate(BuildConfig.GROQ_API_KEY_SECONDARY)
+
+    fun getGroqKeyPool(): List<String> {
+        val list = mutableListOf<String>()
+        val primary = getGroqApiKey()
+        if (primary.isNotBlank()) list.add(primary)
+        val secondary = getGroqApiKeySecondary()
+        if (secondary.isNotBlank() && secondary != primary) list.add(secondary)
+        return list
+    }
+
+    fun getGeminiApiKey(): String = deobfuscate(BuildConfig.GEMINI_API_KEY)
 
     fun getTavilyApiKey(): String = deobfuscate(BuildConfig.TAVILY_API_KEY)
 

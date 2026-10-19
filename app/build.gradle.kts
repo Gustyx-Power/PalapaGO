@@ -24,7 +24,12 @@ fun obfuscateKey(raw: String): String {
 }
 
 val agnesApiKey = localProperties.getProperty("AGNES_API_KEY") ?: ""
+val agnesApiKeySecondary = localProperties.getProperty("AGNES_API_KEY_SECONDARY") ?: ""
 val agnesBaseUrl = localProperties.getProperty("AGNES_BASE_URL") ?: "https://apihub.agnes-ai.com/v1"
+val groqApiKey = localProperties.getProperty("GROQ_API_KEY") ?: localProperties.getProperty("GROQ_API") ?: ""
+val groqApiKeySecondary = localProperties.getProperty("GROQ_API_KEY_SECONDARY") ?: ""
+val rawGeminiKey = localProperties.getProperty("GEMINI_API_KEY") ?: localProperties.getProperty("GEMINI_API") ?: ""
+val geminiApiKey = rawGeminiKey.replace("gemini api ", "").trim()
 val tavilyApiKey = localProperties.getProperty("TAVILY_API_KEY") ?: ""
 
 android {
@@ -39,7 +44,11 @@ android {
         versionName = "1.0.0"
 
         buildConfigField("String", "AGNES_API_KEY", "\"${obfuscateKey(agnesApiKey)}\"")
+        buildConfigField("String", "AGNES_API_KEY_SECONDARY", "\"${obfuscateKey(agnesApiKeySecondary)}\"")
         buildConfigField("String", "AGNES_BASE_URL", "\"$agnesBaseUrl\"")
+        buildConfigField("String", "GROQ_API_KEY", "\"${obfuscateKey(groqApiKey)}\"")
+        buildConfigField("String", "GROQ_API_KEY_SECONDARY", "\"${obfuscateKey(groqApiKeySecondary)}\"")
+        buildConfigField("String", "GEMINI_API_KEY", "\"${obfuscateKey(geminiApiKey)}\"")
         buildConfigField("String", "TAVILY_API_KEY", "\"${obfuscateKey(tavilyApiKey)}\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

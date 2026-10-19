@@ -19,6 +19,9 @@ import id.gustyxganteng.agent.domain.tools.CanvasTool
 import id.gustyxganteng.agent.domain.tools.FileSystemTool
 import id.gustyxganteng.agent.domain.tools.ShellTool
 import id.gustyxganteng.agent.domain.tools.WebTool
+import id.gustyxganteng.agent.core.model.PromptMode
+import id.gustyxganteng.agent.core.network.GroqSidecarService
+import id.gustyxganteng.agent.core.network.GeminiSidecarService
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
@@ -68,6 +71,8 @@ class AgentOrchestrator(
     private val webTool: WebTool,
     private val academicTool: AcademicTool = AcademicTool(),
     private val settingsRepository: AppSettingsRepository? = null,
+    private val groqSidecarService: GroqSidecarService? = null,
+    private val geminiSidecarService: GeminiSidecarService? = null,
     private val json: Json = Json { ignoreUnknownKeys = true }
 ) {
     private val _agentState = MutableStateFlow<AgentState>(AgentState.Idle)
@@ -118,6 +123,7 @@ class AgentOrchestrator(
         antiAiSlopMode: Boolean = true,
         tavilyDeepSearchEnabled: Boolean = false,
         academicMode: Boolean = false,
+        promptMode: PromptMode = PromptMode.CHAT,
         claudeMaxMode: Boolean = executionMode == AgentExecutionMode.MAX
     ) {
         val previousJob = activeJob
@@ -146,6 +152,7 @@ class AgentOrchestrator(
                     antiAiSlopMode = antiAiSlopMode,
                     tavilyDeepSearchEnabled = tavilyDeepSearchEnabled,
                     academicMode = academicMode,
+                    promptMode = promptMode,
                     claudeMaxMode = claudeMaxMode
                 )
             } catch (e: CancellationException) {
@@ -175,6 +182,7 @@ class AgentOrchestrator(
         antiAiSlopMode: Boolean = true,
         tavilyDeepSearchEnabled: Boolean = false,
         academicMode: Boolean = false,
+        promptMode: PromptMode = PromptMode.CHAT,
         claudeMaxMode: Boolean = executionMode == AgentExecutionMode.MAX
     ) {
         var continueLoop = true
@@ -189,17 +197,32 @@ class AgentOrchestrator(
         val maxTokens = effectiveMode.maxTokens
         val reasoningEffort = effectiveMode.reasoningEffort
 
-        // Kumpulkan definisi tool yang aktif (FileSystem dan Shell selalu aktif dengan default /storage/emulated/0)
+        // Kumpulkan definisi tool yang aktif berdasarkan promptMode
         val activeTools = mutableListOf<ToolDefinition>()
-        activeTools.addAll(FileSystemTool.DEFINITIONS)
-        activeTools.add(ShellTool.DEFINITION)
-        if (enableWebSearch) {
-            activeTools.addAll(WebTool.DEFINITIONS)
+        when (promptMode) {
+            PromptMode.CHAT -> {
+                if (enableWebSearch) activeTools.addAll(WebTool.DEFINITIONS)
+                activeTools.add(CanvasTool.DEFINITION)
+            }
+            PromptMode.CANVAS -> {
+                activeTools.add(CanvasTool.DEFINITION)
+                activeTools.addAll(FileSystemTool.DEFINITIONS)
+                if (enableWebSearch) activeTools.addAll(WebTool.DEFINITIONS)
+            }
+            PromptMode.ACADEMIC -> {
+                activeTools.addAll(AcademicTool.DEFINITIONS)
+                if (enableWebSearch) activeTools.addAll(WebTool.DEFINITIONS)
+                activeTools.addAll(FileSystemTool.DEFINITIONS)
+                activeTools.add(CanvasTool.DEFINITION)
+            }
+            PromptMode.AGENT -> {
+                activeTools.addAll(FileSystemTool.DEFINITIONS)
+                activeTools.add(ShellTool.DEFINITION)
+                if (enableWebSearch) activeTools.addAll(WebTool.DEFINITIONS)
+                activeTools.addAll(AcademicTool.DEFINITIONS)
+                activeTools.add(CanvasTool.DEFINITION)
+            }
         }
-        if (enableWebSearch || academicMode) {
-            activeTools.addAll(AcademicTool.DEFINITIONS)
-        }
-        activeTools.add(CanvasTool.DEFINITION)
 
         while (continueLoop && turnCount < maxTurns) {
             turnCount++
@@ -210,7 +233,8 @@ class AgentOrchestrator(
                 hasWebTools = enableWebSearch,
                 executionMode = effectiveMode,
                 antiAiSlopMode = antiAiSlopMode,
-                academicMode = academicMode
+                academicMode = academicMode,
+                promptMode = promptMode
             )
             val systemMessage = Message(
                 sessionId = sessionId,
@@ -220,6 +244,17 @@ class AgentOrchestrator(
             val filteredDbMessages = dbMessages.filter { it.role != MessageRole.SYSTEM }
             val messages = mutableListOf<Message>()
             messages.add(systemMessage)
+
+            // Auto-Reminder di Turn 8+ (Recency bias injection untuk menjaga disiplin)
+            if (turnCount >= 8) {
+                messages.add(
+                    Message(
+                        sessionId = sessionId,
+                        role = MessageRole.SYSTEM,
+                        content = "[SYSTEM REMINDER: Turn $turnCount/$maxTurns. Wajib patuhi Zero Lazy Placeholders, Surgical Patching (Pilar 8), State Anchor (Pilar 10), dan verifikasi Definition of Done (Pilar 12) sebelum mengakhiri tugas.]"
+                    )
+                )
+            }
 
             if (turnCount == 1 && !workspacePath.isNullOrBlank()) {
                 val lastUserContent = filteredDbMessages.lastOrNull { it.role == MessageRole.USER }?.content ?: ""
@@ -690,9 +725,19 @@ class AgentOrchestrator(
 
     private suspend fun saveToolResult(sessionId: String, toolCallId: String, result: ToolExecutionResult) {
         val rawContent = if (result.isSuccess) {
-            result.stdout.ifEmpty { "Berhasil dieksekusi (tanpa output)." }
+            val stdout = result.stdout.ifEmpty { "Berhasil dieksekusi (tanpa output)." }
+            if (groqSidecarService != null && stdout.length > 1500) {
+                groqSidecarService.summarizeLargeOutput(stdout, sourceHint = "Tool: ${result.toolName}")
+            } else {
+                stdout
+            }
         } else {
-            "Error: ${result.stderr.ifEmpty { "Gagal dengan exit code ${result.exitCode}" }}"
+            val stderr = result.stderr.ifEmpty { "Gagal dengan exit code ${result.exitCode}" }
+            if (groqSidecarService != null && stderr.length > 800) {
+                groqSidecarService.triageStacktrace(stderr)
+            } else {
+                "Error: $stderr"
+            }
         }
 
         val content = if (rawContent.length > 12000) {

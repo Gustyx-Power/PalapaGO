@@ -6,6 +6,10 @@ import id.gustyxganteng.agent.core.database.ChatRepository
 import id.gustyxganteng.agent.core.database.GGAgentDatabase
 import id.gustyxganteng.agent.core.network.AgnesApiService
 import id.gustyxganteng.agent.core.network.AgnesApiServiceImpl
+import id.gustyxganteng.agent.core.network.GeminiSidecarService
+import id.gustyxganteng.agent.core.network.GeminiSidecarServiceImpl
+import id.gustyxganteng.agent.core.network.GroqSidecarService
+import id.gustyxganteng.agent.core.network.GroqSidecarServiceImpl
 import id.gustyxganteng.agent.core.network.SmartRetryInterceptor
 import id.gustyxganteng.agent.core.network.SseStreamParser
 import id.gustyxganteng.agent.domain.agent.AgentOrchestrator
@@ -62,6 +66,9 @@ val appModule = module {
         )
     }
 
+    single<GroqSidecarService> { GroqSidecarServiceImpl() }
+    single<GeminiSidecarService> { GeminiSidecarServiceImpl() }
+
     // Tools & Context
     single { FileSystemTool() }
     single { ShellTool() }
@@ -77,6 +84,8 @@ val appModule = module {
             webTool = get(),
             academicTool = get(),
             settingsRepository = get(),
+            groqSidecarService = get(),
+            geminiSidecarService = get(),
             json = get()
         )
     }
@@ -90,7 +99,8 @@ val appModule = module {
             workspaceDao = get(),
             orchestrator = get(),
             contextMeterManager = get(),
-            retryInterceptor = get()
+            retryInterceptor = get(),
+            groqSidecarService = getOrNull()
         )
     }
 }
