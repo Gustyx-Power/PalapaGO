@@ -7,6 +7,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.view.ViewGroup
 import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.core.content.FileProvider
@@ -104,7 +105,27 @@ fun CanvasModalSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var selectedTab by remember { mutableStateOf(CanvasTab.PREVIEW) }
-    var currentContent by remember(artifact) { mutableStateOf(artifact.content) }
+    var currentContent by remember(artifact) {
+        val initial = if (!artifact.associatedFilePath.isNullOrBlank() && !workspacePath.isNullOrBlank()) {
+            val file = File(workspacePath, artifact.associatedFilePath)
+            if (file.exists() && file.isFile) {
+                file.readText()
+            } else artifact.content
+        } else if (!workspacePath.isNullOrBlank()) {
+            val directFile = File(workspacePath, artifact.title)
+            val htmlFile = if (!artifact.title.endsWith(".html", ignoreCase = true)) {
+                File(workspacePath, "${artifact.title}.html")
+            } else null
+            when {
+                directFile.exists() && directFile.isFile -> directFile.readText()
+                htmlFile != null && htmlFile.exists() && htmlFile.isFile -> htmlFile.readText()
+                else -> artifact.content
+            }
+        } else {
+            artifact.content
+        }
+        mutableStateOf(initial)
+    }
     var instructionText by remember { mutableStateOf("") }
     var showSaveDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -267,36 +288,111 @@ fun CanvasModalSheet(
             """.trimIndent()
         } else if (isAndroid) {
             AndroidSimulatorRenderer.render(artifact.title, trimmed)
-        } else if (!trimmed.startsWith("<!DOCTYPE", ignoreCase = true) && !trimmed.startsWith("<html", ignoreCase = true)) {
-            """
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <style>
-                    *, *::before, *::after {
-                        box-sizing: border-box;
-                    }
-                    body {
-                        margin: 0;
-                        padding: 16px;
-                        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-                        background-color: #ffffff;
-                        color: #111111;
-                        line-height: 1.5;
-                    }
-                </style>
-            </head>
-            <body>
-                $trimmed
-            </body>
-            </html>
-            """.trimIndent()
-        } else if (!trimmed.contains("viewport", ignoreCase = true) && trimmed.contains("<head>", ignoreCase = true)) {
-            trimmed.replace("<head>", "<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">")
         } else {
-            trimmed
+            val cleanHtml = if (trimmed.startsWith("```") && trimmed.endsWith("```")) {
+                trimmed.substringAfter("\n").substringBeforeLast("```").trim()
+            } else {
+                trimmed
+            }
+
+            // Normalize dvh units which evaluate to 0 in embedded Android WebView
+            val dvhNormalized = cleanHtml
+                .replace(Regex("""(\d+)dvh""", RegexOption.IGNORE_CASE), "$1vh")
+                .replace(Regex("""100dvh""", RegexOption.IGNORE_CASE), "100vh")
+
+            val layoutHelper = """
+                <style id="canvas-runtime-style">
+                  :root { --dvh: 100vh; --vh: 1vh; }
+                  html, body {
+                    min-height: 100% !important;
+                    width: 100% !important;
+                    -webkit-text-size-adjust: 100%;
+                  }
+                  #app, #root, .app-root {
+                    min-height: 100% !important;
+                    max-width: 100vw;
+                  }
+                  ::-webkit-scrollbar {
+                    display: none !important;
+                    width: 0 !important;
+                    height: 0 !important;
+                  }
+                </style>
+                <script id="canvas-runtime-helper">
+                  (function() {
+                    function normalizeLayout() {
+                      var h = window.innerHeight;
+                      document.documentElement.style.setProperty('--dvh', h + 'px');
+                      document.documentElement.style.setProperty('--vh', (h * 0.01) + 'px');
+                      var app = document.getElementById('app') || document.getElementById('root');
+                      if (app) {
+                        var s = window.getComputedStyle(app);
+                        if (s.height === '0px' || s.height === '16px' || parseInt(s.height) <= 20) {
+                          app.style.setProperty('height', '100%', 'important');
+                          app.style.setProperty('min-height', '100%', 'important');
+                        }
+                      }
+                      var panels = document.querySelectorAll('.panel');
+                      panels.forEach(function(p) {
+                        var ps = window.getComputedStyle(p);
+                        if (ps.display === 'block' && (ps.flexDirection === 'row' || ps.flexWrap === 'wrap')) {
+                          p.style.setProperty('display', 'flex', 'important');
+                        }
+                      });
+                      if (typeof window.resizeCanvas === 'function') {
+                        try { window.resizeCanvas(); } catch(e){}
+                      }
+                    }
+                    if (document.readyState === 'loading') {
+                      document.addEventListener('DOMContentLoaded', normalizeLayout);
+                    } else {
+                      normalizeLayout();
+                    }
+                    window.addEventListener('resize', normalizeLayout);
+                    window.addEventListener('load', normalizeLayout);
+                    setTimeout(normalizeLayout, 100);
+                    setTimeout(normalizeLayout, 400);
+                  })();
+                </script>
+            """.trimIndent()
+
+            if (dvhNormalized.contains("<head>", ignoreCase = true)) {
+                val headRegex = Regex("""<head>""", RegexOption.IGNORE_CASE)
+                val viewportTag = if (!dvhNormalized.contains("viewport", ignoreCase = true)) {
+                    "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">\n"
+                } else ""
+                dvhNormalized.replaceFirst(headRegex, "<head>\n$viewportTag$layoutHelper")
+            } else if (dvhNormalized.contains("<html", ignoreCase = true)) {
+                val htmlRegex = Regex("""<html[^>]*>""", RegexOption.IGNORE_CASE)
+                dvhNormalized.replaceFirst(htmlRegex, "$0\n<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n$layoutHelper</head>")
+            } else if (dvhNormalized.startsWith("<!DOCTYPE", ignoreCase = true)) {
+                dvhNormalized + "\n" + layoutHelper
+            } else {
+                """
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <style>
+                        *, *::before, *::after { box-sizing: border-box; }
+                        body {
+                            margin: 0;
+                            padding: 16px;
+                            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                            background-color: #0b0c0e;
+                            color: #f4f4f5;
+                            line-height: 1.5;
+                        }
+                    </style>
+                    $layoutHelper
+                </head>
+                <body>
+                    $dvhNormalized
+                </body>
+                </html>
+                """.trimIndent()
+            }
         }
     }
 
@@ -325,170 +421,199 @@ fun CanvasModalSheet(
                 color = id.gustyxganteng.agent.core.designsystem.M3Surface,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Close button
-                    Surface(
-                        shape = CircleShape,
-                        color = id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHigh,
-                        border = BorderStroke(1.dp, id.gustyxganteng.agent.core.designsystem.M3OutlineVariant),
-                        modifier = Modifier.size(38.dp)
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    // Tier 1: Navigation & Title & Actions
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(onClick = onDismiss) {
-                            Icon(
-                                imageVector = Icons.Rounded.Close,
-                                contentDescription = stringResource(R.string.cd_close),
-                                tint = id.gustyxganteng.agent.core.designsystem.M3TextPrimary,
-                                modifier = Modifier.size(18.dp)
+                        // Close button
+                        Surface(
+                            shape = CircleShape,
+                            color = id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHigh,
+                            border = BorderStroke(1.dp, id.gustyxganteng.agent.core.designsystem.M3OutlineVariant),
+                            modifier = Modifier.size(36.dp)
+                        ) {
+                            IconButton(onClick = onDismiss) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Close,
+                                    contentDescription = stringResource(R.string.cd_close),
+                                    tint = id.gustyxganteng.agent.core.designsystem.M3TextPrimary,
+                                    modifier = Modifier.size(17.dp)
+                                )
+                            }
+                        }
+
+                        Spacer(Modifier.width(10.dp))
+
+                        // Title & Language (Full available width)
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = artifact.title,
+                                style = MaterialTheme.typography.titleMedium.copy(
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 15.sp
+                                ),
+                                color = id.gustyxganteng.agent.core.designsystem.M3TextPrimary,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = stringResource(R.string.canvas_language, artifact.language.uppercase()),
+                                style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                                color = id.gustyxganteng.agent.core.designsystem.M3Primary
                             )
                         }
-                    }
 
-                    // Title & Language
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(horizontal = 10.dp)
-                    ) {
-                        Text(
-                            text = artifact.title,
-                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold, fontSize = 15.sp),
-                            color = id.gustyxganteng.agent.core.designsystem.M3TextPrimary,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = stringResource(R.string.canvas_language, artifact.language.uppercase()),
-                            style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                            color = id.gustyxganteng.agent.core.designsystem.M3Primary
-                        )
-                    }
-
-                    // Segmented Button [ Preview | Code ]
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHigh,
-                        border = BorderStroke(1.dp, id.gustyxganteng.agent.core.designsystem.M3OutlineVariant),
-                        modifier = Modifier.padding(end = 4.dp)
-                    ) {
+                        // Actions Row: Browser & Save
                         Row(
-                            modifier = Modifier.padding(3.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Preview Option
-                            val previewBg by animateColorAsState(
-                                targetValue = if (selectedTab == CanvasTab.PREVIEW) id.gustyxganteng.agent.core.designsystem.M3PrimaryContainer else Color.Transparent,
-                                label = "previewBg"
-                            )
-                            val previewContentColor by animateColorAsState(
-                                targetValue = if (selectedTab == CanvasTab.PREVIEW) id.gustyxganteng.agent.core.designsystem.M3OnPrimaryContainer else id.gustyxganteng.agent.core.designsystem.M3TextSecondary,
-                                label = "previewColor"
-                            )
-                            Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = previewBg,
-                                modifier = Modifier.clickable { selectedTab = CanvasTab.PREVIEW }
-                            ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                            if (isWeb) {
+                                Surface(
+                                    shape = CircleShape,
+                                    color = id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHigh,
+                                    border = BorderStroke(1.dp, id.gustyxganteng.agent.core.designsystem.M3OutlineVariant),
+                                    modifier = Modifier.size(36.dp)
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Rounded.Visibility,
-                                        contentDescription = null,
-                                        tint = previewContentColor,
-                                        modifier = Modifier.size(15.dp)
-                                    )
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(
-                                        text = stringResource(R.string.canvas_tab_preview),
-                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                                        color = previewContentColor
-                                    )
+                                    IconButton(onClick = {
+                                        try {
+                                            val cacheFile = File(context.cacheDir, "canvas_preview.html")
+                                            cacheFile.writeText(formattedHtml)
+                                            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", cacheFile)
+                                            val intent = Intent(Intent.ACTION_VIEW).apply {
+                                                setDataAndType(uri, "text/html")
+                                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                            }
+                                            context.startActivity(intent)
+                                        } catch (e: Exception) {
+                                            Toast.makeText(
+                                                context,
+                                                context.getString(R.string.canvas_open_browser_failed, e.message ?: ""),
+                                                Toast.LENGTH_SHORT
+                                            ).show()
+                                        }
+                                    }) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.OpenInBrowser,
+                                            contentDescription = stringResource(R.string.canvas_open_in_browser),
+                                            tint = id.gustyxganteng.agent.core.designsystem.M3TextSecondary,
+                                            modifier = Modifier.size(17.dp)
+                                        )
+                                    }
                                 }
                             }
 
-                            // Code Option
-                            val codeBg by animateColorAsState(
-                                targetValue = if (selectedTab == CanvasTab.CODE) id.gustyxganteng.agent.core.designsystem.M3PrimaryContainer else Color.Transparent,
-                                label = "codeBg"
-                            )
-                            val codeContentColor by animateColorAsState(
-                                targetValue = if (selectedTab == CanvasTab.CODE) id.gustyxganteng.agent.core.designsystem.M3OnPrimaryContainer else id.gustyxganteng.agent.core.designsystem.M3TextSecondary,
-                                label = "codeColor"
-                            )
                             Surface(
-                                shape = RoundedCornerShape(16.dp),
-                                color = codeBg,
-                                modifier = Modifier.clickable { selectedTab = CanvasTab.CODE }
+                                shape = CircleShape,
+                                color = id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHigh,
+                                border = BorderStroke(1.dp, id.gustyxganteng.agent.core.designsystem.M3OutlineVariant),
+                                modifier = Modifier.size(36.dp)
                             ) {
-                                Row(
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
+                                IconButton(onClick = { showSaveDialog = true }) {
                                     Icon(
-                                        imageVector = Icons.Rounded.Code,
-                                        contentDescription = null,
-                                        tint = codeContentColor,
-                                        modifier = Modifier.size(15.dp)
-                                    )
-                                    Spacer(Modifier.width(4.dp))
-                                    Text(
-                                        text = stringResource(R.string.canvas_tab_code),
-                                        style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                                        color = codeContentColor
+                                        imageVector = Icons.Rounded.Save,
+                                        contentDescription = stringResource(R.string.canvas_save_to_workspace),
+                                        tint = id.gustyxganteng.agent.core.designsystem.M3TextSecondary,
+                                        modifier = Modifier.size(17.dp)
                                     )
                                 }
                             }
                         }
                     }
 
-                    // Open in Browser button
-                    if (isWeb) {
-                        IconButton(onClick = {
-                            try {
-                                val cacheFile = File(context.cacheDir, "canvas_preview.html")
-                                cacheFile.writeText(formattedHtml)
-                                val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", cacheFile)
-                                val intent = Intent(Intent.ACTION_VIEW).apply {
-                                    setDataAndType(uri, "text/html")
-                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                    // Tier 2: Centered Segmented Control [ Preview | Code ]
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHigh,
+                            border = BorderStroke(1.dp, id.gustyxganteng.agent.core.designsystem.M3OutlineVariant)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(3.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                // Preview Option
+                                val previewBg by animateColorAsState(
+                                    targetValue = if (selectedTab == CanvasTab.PREVIEW) id.gustyxganteng.agent.core.designsystem.M3PrimaryContainer else Color.Transparent,
+                                    label = "previewBg"
+                                )
+                                val previewContentColor by animateColorAsState(
+                                    targetValue = if (selectedTab == CanvasTab.PREVIEW) id.gustyxganteng.agent.core.designsystem.M3OnPrimaryContainer else id.gustyxganteng.agent.core.designsystem.M3TextSecondary,
+                                    label = "previewColor"
+                                )
+                                Surface(
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = previewBg,
+                                    modifier = Modifier.clickable { selectedTab = CanvasTab.PREVIEW }
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Visibility,
+                                            contentDescription = null,
+                                            tint = previewContentColor,
+                                            modifier = Modifier.size(15.dp)
+                                        )
+                                        Spacer(Modifier.width(5.dp))
+                                        Text(
+                                            text = stringResource(R.string.canvas_tab_preview),
+                                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                                            color = previewContentColor
+                                        )
+                                    }
                                 }
-                                context.startActivity(intent)
-                            } catch (e: Exception) {
-                                Toast.makeText(
-                                    context,
-                                    context.getString(R.string.canvas_open_browser_failed, e.message ?: ""),
-                                    Toast.LENGTH_SHORT
-                                ).show()
-                            }
-                        }) {
-                            Icon(
-                                imageVector = Icons.Rounded.OpenInBrowser,
-                                contentDescription = stringResource(R.string.canvas_open_in_browser),
-                                tint = GeminiPrimary
-                            )
-                        }
-                    }
 
-                    // Save to Workspace button
-                    IconButton(onClick = { showSaveDialog = true }) {
-                        Icon(
-                            imageVector = Icons.Rounded.Save,
-                            contentDescription = stringResource(R.string.canvas_save_to_workspace),
-                            tint = GeminiPrimary
-                        )
+                                // Code Option
+                                val codeBg by animateColorAsState(
+                                    targetValue = if (selectedTab == CanvasTab.CODE) id.gustyxganteng.agent.core.designsystem.M3PrimaryContainer else Color.Transparent,
+                                    label = "codeBg"
+                                )
+                                val codeContentColor by animateColorAsState(
+                                    targetValue = if (selectedTab == CanvasTab.CODE) id.gustyxganteng.agent.core.designsystem.M3OnPrimaryContainer else id.gustyxganteng.agent.core.designsystem.M3TextSecondary,
+                                    label = "codeColor"
+                                )
+                                Surface(
+                                    shape = RoundedCornerShape(16.dp),
+                                    color = codeBg,
+                                    modifier = Modifier.clickable { selectedTab = CanvasTab.CODE }
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 5.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Rounded.Code,
+                                            contentDescription = null,
+                                            tint = codeContentColor,
+                                            modifier = Modifier.size(15.dp)
+                                        )
+                                        Spacer(Modifier.width(5.dp))
+                                        Text(
+                                            text = stringResource(R.string.canvas_tab_code),
+                                            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+                                            color = codeContentColor
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
 
-            HorizontalDivider(color = GeminiSurfaceVariant.copy(alpha = 0.5f))
+            HorizontalDivider(color = id.gustyxganteng.agent.core.designsystem.M3OutlineVariant, thickness = 1.dp)
 
             // Main Content Area
             Box(
@@ -514,14 +639,19 @@ fun CanvasModalSheet(
                                 AndroidView(
                                     factory = { ctx ->
                                         WebView(ctx).apply {
-                                            setBackgroundColor(android.graphics.Color.WHITE)
+                                            layoutParams = ViewGroup.LayoutParams(
+                                                ViewGroup.LayoutParams.MATCH_PARENT,
+                                                ViewGroup.LayoutParams.MATCH_PARENT
+                                            )
+                                            setBackgroundColor(android.graphics.Color.TRANSPARENT)
+                                            WebView.setWebContentsDebuggingEnabled(true)
                                             @Suppress("DEPRECATION")
                                             settings.apply {
                                                 javaScriptEnabled = true
                                                 domStorageEnabled = true
                                                 databaseEnabled = true
                                                 useWideViewPort = true
-                                                loadWithOverviewMode = true
+                                                loadWithOverviewMode = false
                                                 allowContentAccess = true
                                                 allowFileAccess = true
                                                 allowFileAccessFromFileURLs = true
@@ -599,15 +729,15 @@ fun CanvasModalSheet(
                             // Line Numbers Column
                             Box(
                                 modifier = Modifier
-                                    .background(GeminiSurface)
+                                    .background(id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerLowest)
                                     .padding(horizontal = 10.dp, vertical = 16.dp)
                             ) {
                                 Text(
                                     text = lineNumbersText,
                                     fontFamily = FontFamily.Monospace,
-                                    fontSize = 13.sp,
+                                    fontSize = 12.5.sp,
                                     lineHeight = 18.sp,
-                                    color = GeminiTextSecondary.copy(alpha = 0.6f)
+                                    color = id.gustyxganteng.agent.core.designsystem.M3TextTertiary
                                 )
                             }
 
@@ -620,16 +750,16 @@ fun CanvasModalSheet(
                                     .horizontalScroll(horizontalScrollState),
                                 textStyle = TextStyle(
                                     fontFamily = FontFamily.Monospace,
-                                    fontSize = 13.sp,
+                                    fontSize = 12.5.sp,
                                     lineHeight = 18.sp,
-                                    color = GeminiTextPrimary
+                                    color = id.gustyxganteng.agent.core.designsystem.M3TextPrimary
                                 ),
                                 colors = TextFieldDefaults.colors(
                                     focusedContainerColor = Color.Transparent,
                                     unfocusedContainerColor = Color.Transparent,
                                     focusedIndicatorColor = Color.Transparent,
                                     unfocusedIndicatorColor = Color.Transparent,
-                                    cursorColor = GeminiPrimary
+                                    cursorColor = id.gustyxganteng.agent.core.designsystem.M3Primary
                                 )
                             )
                         }
@@ -637,7 +767,7 @@ fun CanvasModalSheet(
                 }
             }
 
-            HorizontalDivider(color = GeminiSurfaceVariant.copy(alpha = 0.5f))
+            HorizontalDivider(color = id.gustyxganteng.agent.core.designsystem.M3OutlineVariant, thickness = 1.dp)
 
             // Quick-Edit Prompt Bar (Bottom)
             Surface(

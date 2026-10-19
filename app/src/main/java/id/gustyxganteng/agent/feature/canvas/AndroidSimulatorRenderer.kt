@@ -491,7 +491,7 @@ chmod +x gradlew
             <div id="todo-list" style="flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px;">
                 <div class="todo-item" onclick="toggleTodo(this)">
                     <input type="checkbox" style="margin-right:8px;">
-                    <span style="flex:1;">Uji coba aplikasi Android di GG Agent</span>
+                    <span style="flex:1;">Uji coba aplikasi Android di PalapaGO</span>
                     <button onclick="deleteTodo(event, this)" style="background:none; border:none; color:#ef4444; font-size:14px; cursor:pointer;">✕</button>
                 </div>
                 <div class="todo-item" onclick="toggleTodo(this)">

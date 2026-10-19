@@ -15,10 +15,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
@@ -65,9 +68,9 @@ fun CanvasAuditInspectionBar(
     var expanded by remember { mutableStateOf(false) }
 
     Surface(
-        color = GeminiSurface,
-        shape = RoundedCornerShape(14.dp),
-        border = BorderStroke(1.dp, GeminiSurfaceVariant),
+        color = id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerLow,
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, id.gustyxganteng.agent.core.designsystem.M3OutlineVariant),
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 4.dp)
@@ -78,19 +81,19 @@ fun CanvasAuditInspectionBar(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { expanded = !expanded }
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .padding(horizontal = 10.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                GeminiSparkleIcon(size = 14.dp)
-                Spacer(Modifier.width(8.dp))
+                GeminiSparkleIcon(size = 13.dp)
+                Spacer(Modifier.width(6.dp))
 
                 Text(
                     text = stringResource(R.string.canvas_audit_title),
-                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = GeminiTextPrimary
+                    style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold, fontSize = 12.sp),
+                    color = id.gustyxganteng.agent.core.designsystem.M3TextPrimary
                 )
 
-                Spacer(Modifier.width(8.dp))
+                Spacer(Modifier.width(6.dp))
 
                 // Status Pill
                 val statusBg = if (auditResult.isValid) Color(0xFF162D1D) else Color(0xFF332714)
@@ -109,7 +112,7 @@ fun CanvasAuditInspectionBar(
                     Text(
                         text = statusText,
                         color = statusColor,
-                        fontSize = 10.sp,
+                        fontSize = 9.5.sp,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
@@ -120,25 +123,25 @@ fun CanvasAuditInspectionBar(
                 // Token & Duration Pill
                 Surface(
                     shape = RoundedCornerShape(6.dp),
-                    color = GeminiSurfaceVariant
+                    color = id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHigh
                 ) {
                     val durationText = String.format("%.1fs", auditResult.durationMs / 1000f)
                     Text(
                         text = stringResource(R.string.canvas_audit_tokens, auditResult.tokensUsed, durationText),
-                        color = GeminiPrimary,
-                        fontSize = 11.sp,
+                        color = id.gustyxganteng.agent.core.designsystem.M3Primary,
+                        fontSize = 10.5.sp,
                         fontFamily = FontFamily.Monospace,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 3.dp)
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                     )
                 }
 
-                Spacer(Modifier.width(6.dp))
+                Spacer(Modifier.width(4.dp))
 
                 Icon(
                     imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                     contentDescription = null,
-                    tint = GeminiTextSecondary,
-                    modifier = Modifier.size(18.dp)
+                    tint = id.gustyxganteng.agent.core.designsystem.M3TextSecondary,
+                    modifier = Modifier.size(16.dp)
                 )
             }
 
@@ -151,10 +154,12 @@ fun CanvasAuditInspectionBar(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .heightIn(max = 240.dp)
+                        .verticalScroll(rememberScrollState())
                         .padding(horizontal = 12.dp, vertical = 8.dp)
                 ) {
                     HorizontalDivider(
-                        color = GeminiSurfaceVariant.copy(alpha = 0.6f),
+                        color = id.gustyxganteng.agent.core.designsystem.M3OutlineVariant,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
 
