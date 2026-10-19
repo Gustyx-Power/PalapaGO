@@ -26,6 +26,13 @@ Modern image generation models (like DALL-E 3, Imagen 3, Agnes Image, and Flux) 
    - For television broadcasts, news lower-thirds, or street signs:
      `a crisp lower-third breaking news banner reading: "LIVE: KEBAKARAN HUTAN MELUAS", sharp white capitalized typography on dark semi-translucent red banner bar`.
 
+4. **Speech Bubble Word Budget & Latent Pixel Physics**:
+   - **Spatial Resolution & VAE Limitation**: In multi-panel layouts (e.g. 4 stacked panels), speech bubbles are physically small (~60-100px wide). A sentence with 3-5 words forces font size down to 6-8 pixels per letter, which is below the latent diffusion VAE threshold (<1 latent pixel), causing the model to collapse text into unreadable scribble runes / faux-kanji.
+   - **The Golden Rule for Speech Bubbles**:
+     * **Character Limit**: Strictly **1 to 2 short words per bubble** in bold block capitals (e.g., `"PADAMKAN!"`, `"BERTAHAN!"`, `"BERSULANG!"`).
+     * **Never Request Generic Bubbles**: Never write `speech bubbles with dialogue` without providing the EXACT quoted words. Unquoted bubbles are automatically filled with scribble textures by the diffusion model.
+     * **Zero Dialogue Manga (Cinematic Storytelling)**: If the user request does not explicitly ask for dialogue lines, instruct the engine to use **Cinematic Visual Storytelling WITHOUT speech bubbles** (`no speech bubbles, no dialogue boxes, pure cinematic key visual panels, dramatic character expressions and dynamic action tell the story`). This completely prevents garbled text bubbles.
+
 ---
 
 ## 2. Multi-Panel Manga & Comic Strip Choreography
@@ -38,10 +45,10 @@ When requested to produce a **manga, comic, manhwa, or sequential graphic**:
      - **Panel 1 (Top Wide)**: Establishing shot with environment, lighting, and headline banner.
      - **Panel 2 (Middle Left)**: Dynamic action shot, character interaction, water hoses, fire.
      - **Panel 3 (Middle Right)**: Emotional character close-up, sweat, determination, smoke reflection in eyes.
-     - **Panel 4 (Bottom Wide)**: Contrast scene or thematic climax with speech bubbles.
+     - **Panel 4 (Bottom Wide)**: Contrast scene or thematic climax.
 2. **Reading Flow & Speech Bubbles**:
-   - Explicitly position speech bubbles (`upper-left`, `center-top`, `bottom-right`) so they do not obstruct character faces.
-   - Anchor dialogue: `speech bubble with tail pointing to firefighter reading: "TETAP SEMANGAT!"`.
+   - If dialogue is included: keep each bubble to strictly 1-2 bold capital words: `Panel 3 speech bubble: "PADAMKAN!", Panel 4 speech bubble: "BERSULANG!"`.
+   - Explicit negative directive: `Strictly 1-2 words per speech bubble in large bold block capitals. Absolutely NO multi-line sentences, NO unquoted filler bubbles, NO illegible scribbles, NO alien runes, NO pseudo-Japanese squiggles`.
 3. **Manga Visual Language**:
    - `Japanese manga anime aesthetic, detailed ink screentone hatching, dynamic speed lines, cel-shaded color grade, dramatic smoke and embers, cinematic chiaroscuro contrast`.
 

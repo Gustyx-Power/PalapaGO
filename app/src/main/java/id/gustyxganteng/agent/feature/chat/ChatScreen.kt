@@ -499,6 +499,7 @@ fun ChatScreen(
                             message = message,
                             modelName = stringResource(R.string.app_name),
                             allMessages = uiState.messages,
+                            isAgentRunning = uiState.agentState !is AgentState.Idle,
                             onOpenCanvas = { title, lang, content, filePath ->
                                 viewModel.openCanvas(CanvasArtifact(title = title, language = lang, content = content, associatedFilePath = filePath))
                             },
@@ -1034,6 +1035,7 @@ fun ChatMessageItem(
     message: Message,
     modelName: String,
     allMessages: List<Message> = emptyList(),
+    isAgentRunning: Boolean = false,
     onOpenCanvas: (title: String, language: String, content: String, filePath: String?) -> Unit,
     onEditPrompt: (String) -> Unit = {},
     onReloadMessage: (Message) -> Unit = {},
@@ -1210,7 +1212,6 @@ fun ChatMessageItem(
                 }
                 return
             } else if (imageToolCall != null && imageUrl == null) {
-                // Sedang dalam proses pembuatan gambar
                 SelectionContainer {
                     Column(
                         modifier = Modifier
@@ -1230,10 +1231,43 @@ fun ChatMessageItem(
                             )
                         }
 
-                        ImageGeneratingSilhouette(
-                            statusText = "Membuat sketsa...",
-                            modifier = Modifier.padding(vertical = 4.dp)
-                        )
+                        if (isAgentRunning) {
+                            ImageGeneratingSilhouette(
+                                statusText = "Membuat sketsa...",
+                                modifier = Modifier.padding(vertical = 4.dp)
+                            )
+                        } else {
+                            Surface(
+                                shape = RoundedCornerShape(14.dp),
+                                color = M3SurfaceContainer,
+                                border = BorderStroke(1.dp, M3OutlineVariant),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(14.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Refresh,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Spacer(Modifier.width(10.dp))
+                                    Text(
+                                        text = "Generasi gambar terputus atau gagal dimuat.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = M3TextSecondary,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    TextButton(onClick = { onReloadMessage(message) }) {
+                                        Text("Coba Lagi", color = M3Primary, fontWeight = FontWeight.SemiBold)
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
                 return

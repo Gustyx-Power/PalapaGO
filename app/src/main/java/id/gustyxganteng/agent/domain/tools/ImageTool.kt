@@ -85,13 +85,13 @@ class ImageTool(
             if (isWildfireElNino) {
                 builder.append("Panel 1 (Top Wide): devastating Indonesia forest wildfire during severe El Nino drought, orange sky, breaking news banner reading: \"LIVE: KEBAKARAN HUTAN MELUAS\". ")
                 builder.append("Panel 2 (Middle Left): heroic Indonesian firefighters in red helmets spraying high-pressure water hoses into roaring inferno. ")
-                builder.append("Panel 3 (Middle Right): intense close-up of young weary firefighter face with sweat and soot, eyes reflecting blazing fire. ")
-                builder.append("Panel 4 (Bottom Wide): stark contrast of corrupt politicians in a lavish luxury dining hall toasting champagne glasses ignoring the crisis. ")
+                builder.append("Panel 3 (Middle Right): intense close-up of young weary firefighter face with sweat and soot, eyes reflecting blazing fire, single speech bubble with large bold clearly printed word: \"PADAMKAN!\". ")
+                builder.append("Panel 4 (Bottom Wide): stark contrast of corrupt politicians in a lavish luxury dining hall toasting champagne glasses ignoring the crisis, single speech bubble with large bold clearly printed word: \"BERSULANG!\". ")
             } else {
                 builder.append(trimmed).append(". ")
             }
             builder.append("Dynamic Japanese manga anime key visual, cel-shaded ink lines, screentone shading, atmospheric volumetric smoke and glowing embers, dramatic chiaroscuro contrast. ")
-            builder.append("Sharp vectorized Indonesian text in speech bubbles, bold sans-serif legible typography, zero gibberish letters, 8k resolution.")
+            builder.append("All text strictly in large bold clearly legible Latin block capital letters: 'LIVE: KEBAKARAN HUTAN MELUAS', 'PADAMKAN!', 'BERSULANG!'. Maximum 1 single word per speech bubble. Absolutely NO multi-line text, NO unquoted filler bubbles, NO illegible scribbles, NO alien runes, zero pseudo-Japanese squiggles, 8k resolution.")
         } else {
             builder.append(trimmed)
             if (isMaxMode) {
