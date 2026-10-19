@@ -226,64 +226,79 @@ fun NeuralTelemetryModalSheet(
             )
 
             Surface(
-                shape = RoundedCornerShape(18.dp),
+                shape = RoundedCornerShape(20.dp),
                 color = M3SurfaceContainerHigh,
                 border = BorderStroke(1.dp, M3OutlineVariant),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    // Total Token Hero Row
+                Column(modifier = Modifier.padding(18.dp)) {
+                    // Header: Eyebrow + Request Counter Badge
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Column {
-                            Text(
-                                text = "TOTAL TOKEN KUMULATIF",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    letterSpacing = 1.sp
-                                ),
-                                color = M3TextSecondary
-                            )
-                            Spacer(Modifier.height(4.dp))
-                            Text(
-                                text = String.format(Locale.US, "%,d", totalTokens),
-                                style = MaterialTheme.typography.headlineMedium.copy(
-                                    fontWeight = FontWeight.Bold,
-                                    fontFamily = FontFamily.Monospace,
-                                    fontSize = 26.sp
-                                ),
-                                color = M3TextPrimary
-                            )
-                        }
+                        Text(
+                            text = "TOTAL TOKEN KUMULATIF",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.Bold,
+                                letterSpacing = 1.2.sp
+                            ),
+                            color = M3TextSecondary
+                        )
 
                         Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = M3Primary.copy(alpha = 0.15f),
-                            border = BorderStroke(1.dp, M3Primary.copy(alpha = 0.35f)),
-                            modifier = Modifier.padding(start = 8.dp)
+                            shape = RoundedCornerShape(10.dp),
+                            color = M3Primary.copy(alpha = 0.12f),
+                            border = BorderStroke(1.dp, M3Primary.copy(alpha = 0.3f))
                         ) {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                                modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp)
                             ) {
-                                Icon(Icons.Rounded.Calculate, contentDescription = null, tint = M3Primary, modifier = Modifier.size(16.dp))
-                                Spacer(Modifier.width(6.dp))
+                                Icon(Icons.Rounded.Calculate, contentDescription = null, tint = M3Primary, modifier = Modifier.size(14.dp))
+                                Spacer(Modifier.width(5.dp))
                                 Text(
                                     text = "$totalRequests Request",
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    fontSize = 11.5.sp,
                                     color = M3Primary
                                 )
                             }
                         }
                     }
 
+                    Spacer(Modifier.height(6.dp))
+
+                    // Hero Token Counter
+                    Row(
+                        verticalAlignment = Alignment.Bottom
+                    ) {
+                        Text(
+                            text = String.format(Locale.US, "%,d", totalTokens),
+                            style = MaterialTheme.typography.headlineMedium.copy(
+                                fontWeight = FontWeight.Bold,
+                                fontFamily = FontFamily.Monospace,
+                                fontSize = 28.sp,
+                                letterSpacing = (-0.5).sp
+                            ),
+                            color = M3TextPrimary
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            text = "token",
+                            style = MaterialTheme.typography.bodySmall.copy(
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 13.sp
+                            ),
+                            color = M3TextSecondary,
+                            modifier = Modifier.padding(bottom = 4.dp)
+                        )
+                    }
+
                     Spacer(Modifier.height(14.dp))
 
-                    // Split Progress Bar (Prompt vs Thinking vs Output)
+                    // Multi-Segment Distribution Bar
                     val promptFraction = if (totalTokens > 0L) (promptTokens.toFloat() / totalTokens.toFloat()) else 0.33f
                     val thinkFraction = if (totalTokens > 0L) (reasoningTokens.toFloat() / totalTokens.toFloat()) else 0.33f
                     val compFraction = if (totalTokens > 0L) (completionTokens.toFloat() / totalTokens.toFloat()) else 0.34f
@@ -298,98 +313,123 @@ fun NeuralTelemetryModalSheet(
                             modifier = Modifier
                                 .weight(promptFraction.coerceAtLeast(0.02f))
                                 .fillMaxSize()
-                                .background(Color(0xFF64FFDA)) // Mint Cyan
+                                .background(Color(0xFF64FFDA))
                         )
                         if (thinkFraction > 0.005f) {
                             Box(
                                 modifier = Modifier
                                     .weight(thinkFraction.coerceAtLeast(0.02f))
                                     .fillMaxSize()
-                                    .background(Color(0xFFFFD180)) // Amber Gold (Thinking)
+                                    .background(Color(0xFFFFD180))
                             )
                         }
                         Box(
                             modifier = Modifier
                                 .weight(compFraction.coerceAtLeast(0.02f))
                                 .fillMaxSize()
-                                .background(Color(0xFFE879F9)) // Magenta Purple (Output)
+                                .background(Color(0xFFE879F9))
                         )
                     }
 
                     Spacer(Modifier.height(14.dp))
 
-                    // Breakdown Detail Grid (Prompt, Thinking, Output)
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    // Structured Breakdown Ledger
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = M3SurfaceContainerLowest,
+                        border = BorderStroke(1.dp, M3OutlineVariant.copy(alpha = 0.5f)),
+                        modifier = Modifier.fillMaxWidth()
                     ) {
-                        TokenLedgerMetricBox(
-                            title = "Konteks (Prompt)",
-                            value = String.format(Locale.US, "%,d", promptTokens),
-                            percentage = String.format(Locale.US, "%.1f%%", promptPct),
-                            accentColor = Color(0xFF64FFDA),
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        TokenLedgerMetricBox(
-                            title = "Penalaran (Thinking)",
-                            value = String.format(Locale.US, "%,d", reasoningTokens),
-                            percentage = String.format(Locale.US, "%.1f%%", thinkPct),
-                            accentColor = Color(0xFFFFD180),
-                            modifier = Modifier.weight(1f)
-                        )
-
-                        TokenLedgerMetricBox(
-                            title = "Keluaran (Output)",
-                            value = String.format(Locale.US, "%,d", completionTokens),
-                            percentage = String.format(Locale.US, "%.1f%%", compPct),
-                            accentColor = Color(0xFFE879F9),
-                            modifier = Modifier.weight(1f)
-                        )
+                        Column {
+                            TokenLedgerRow(
+                                label = "Konteks (Prompt)",
+                                sublabel = "Instruksi pengguna & riwayat percakapan",
+                                value = promptTokens,
+                                percentage = promptPct,
+                                color = Color(0xFF64FFDA)
+                            )
+                            HorizontalDivider(color = M3OutlineVariant.copy(alpha = 0.4f), modifier = Modifier.padding(horizontal = 12.dp))
+                            TokenLedgerRow(
+                                label = "Penalaran (Thinking)",
+                                sublabel = "Monolog kognitif & rantai pemikiran internal",
+                                value = reasoningTokens,
+                                percentage = thinkPct,
+                                color = Color(0xFFFFD180)
+                            )
+                            HorizontalDivider(color = M3OutlineVariant.copy(alpha = 0.4f), modifier = Modifier.padding(horizontal = 12.dp))
+                            TokenLedgerRow(
+                                label = "Sintesis (Output)",
+                                sublabel = "Hasil respons teks, kode & parameter tool",
+                                value = completionTokens,
+                                percentage = compPct,
+                                color = Color(0xFFE879F9)
+                            )
+                        }
                     }
 
                     Spacer(Modifier.height(12.dp))
 
-                    // Ratio & Efficiency Sub-metrics
+                    // Symmetrical Footer Metrics
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(M3SurfaceContainerLowest)
-                            .border(BorderStroke(1.dp, M3OutlineVariant.copy(alpha = 0.5f)), RoundedCornerShape(10.dp))
-                            .padding(horizontal = 10.dp, vertical = 7.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "Rata-rata: ",
-                                fontSize = 11.sp,
-                                fontFamily = FontFamily.Monospace,
-                                color = M3TextSecondary
-                            )
-                            Text(
-                                text = "${String.format(Locale.US, "%,d", avgTokensPerReq)} tok/req",
-                                fontSize = 11.sp,
-                                fontFamily = FontFamily.Monospace,
-                                fontWeight = FontWeight.SemiBold,
-                                color = M3TextPrimary
-                            )
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = M3SurfaceContainerLowest,
+                            border = BorderStroke(1.dp, M3OutlineVariant.copy(alpha = 0.5f)),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Column(modifier = Modifier.padding(11.dp)) {
+                                Text(
+                                    text = "RATA-RATA / REQ",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 0.5.sp
+                                    ),
+                                    color = M3TextSecondary
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = "${String.format(Locale.US, "%,d", avgTokensPerReq)} tok",
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 13.5.sp
+                                    ),
+                                    color = M3TextPrimary
+                                )
+                            }
                         }
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "Rasio I/O: ",
-                                fontSize = 11.sp,
-                                fontFamily = FontFamily.Monospace,
-                                color = M3TextSecondary
-                            )
-                            Text(
-                                text = ioRatio,
-                                fontSize = 11.sp,
-                                fontFamily = FontFamily.Monospace,
-                                fontWeight = FontWeight.Bold,
-                                color = M3Primary
-                            )
+
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = M3SurfaceContainerLowest,
+                            border = BorderStroke(1.dp, M3OutlineVariant.copy(alpha = 0.5f)),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Column(modifier = Modifier.padding(11.dp)) {
+                                Text(
+                                    text = "RASIO INPUT : OUTPUT",
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontSize = 9.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        letterSpacing = 0.5.sp
+                                    ),
+                                    color = M3TextSecondary
+                                )
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = ioRatio,
+                                    style = MaterialTheme.typography.bodyMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontFamily = FontFamily.Monospace,
+                                        fontSize = 13.5.sp
+                                    ),
+                                    color = M3Primary
+                                )
+                            }
                         }
                     }
                 }
@@ -953,56 +993,75 @@ private fun NeuralFilterPill(
 }
 
 @Composable
-private fun TokenLedgerMetricBox(
-    title: String,
-    value: String,
-    percentage: String,
-    accentColor: Color,
-    modifier: Modifier = Modifier
+private fun TokenLedgerRow(
+    label: String,
+    sublabel: String,
+    value: Long,
+    percentage: Double,
+    color: Color
 ) {
-    Surface(
-        shape = RoundedCornerShape(14.dp),
-        color = M3SurfaceContainerLowest,
-        border = BorderStroke(1.dp, M3OutlineVariant),
-        modifier = modifier
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 10.dp, horizontal = 12.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.labelSmall,
-                color = M3TextSecondary,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.weight(1f)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(9.dp)
+                    .clip(CircleShape)
+                    .background(color)
             )
-            Spacer(Modifier.height(6.dp))
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Spacer(Modifier.width(10.dp))
+            Column {
                 Text(
-                    text = value,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Monospace,
-                        fontSize = 15.sp
+                    text = label,
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 13.sp
                     ),
                     color = M3TextPrimary
                 )
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = accentColor.copy(alpha = 0.15f),
-                    border = BorderStroke(1.dp, accentColor.copy(alpha = 0.35f))
-                ) {
-                    Text(
-                        text = percentage,
-                        fontSize = 10.5.sp,
-                        fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.Bold,
-                        color = accentColor,
-                        modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                    )
-                }
+                Text(
+                    text = sublabel,
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
+                    color = M3TextSecondary
+                )
+            }
+        }
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.End
+        ) {
+            Text(
+                text = String.format(Locale.US, "%,d", value),
+                style = MaterialTheme.typography.bodyMedium.copy(
+                    fontWeight = FontWeight.Bold,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 14.sp
+                ),
+                color = M3TextPrimary
+            )
+            Spacer(Modifier.width(10.dp))
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = color.copy(alpha = 0.15f),
+                border = BorderStroke(1.dp, color.copy(alpha = 0.35f))
+            ) {
+                Text(
+                    text = String.format(Locale.US, "%.1f%%", percentage),
+                    fontSize = 10.5.sp,
+                    fontFamily = FontFamily.Monospace,
+                    fontWeight = FontWeight.Bold,
+                    color = color,
+                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.5.dp)
+                )
             }
         }
     }
