@@ -2,6 +2,7 @@ package id.gustyxganteng.agent.domain.agent
 
 import id.gustyxganteng.agent.core.database.AppSettingsRepository
 import id.gustyxganteng.agent.core.database.ChatRepository
+import id.gustyxganteng.agent.core.model.AgentExecutionMode
 import id.gustyxganteng.agent.core.model.CanvasArtifact
 import id.gustyxganteng.agent.core.model.FunctionCall
 import id.gustyxganteng.agent.core.model.Message
@@ -12,6 +13,7 @@ import id.gustyxganteng.agent.core.model.ToolCall
 import id.gustyxganteng.agent.core.model.ToolDefinition
 import id.gustyxganteng.agent.core.model.ToolExecutionResult
 import id.gustyxganteng.agent.core.network.AgnesApiService
+import id.gustyxganteng.agent.core.util.JsonRepairUtil
 import id.gustyxganteng.agent.domain.tools.AcademicTool
 import id.gustyxganteng.agent.domain.tools.CanvasTool
 import id.gustyxganteng.agent.domain.tools.FileSystemTool
@@ -112,14 +114,23 @@ class AgentOrchestrator(
         yoloMode: Boolean,
         enableWebSearch: Boolean,
         useTermuxEnv: Boolean,
-        claudeMaxMode: Boolean = true,
+        executionMode: AgentExecutionMode = AgentExecutionMode.FAST,
         antiAiSlopMode: Boolean = true,
         tavilyDeepSearchEnabled: Boolean = false,
-        academicMode: Boolean = false
+        academicMode: Boolean = false,
+        claudeMaxMode: Boolean = executionMode == AgentExecutionMode.MAX
     ) {
         val previousJob = activeJob
         activeJob?.cancel()
         activeJob = scope.launch(Dispatchers.IO) {
+            _agentState.value = AgentState.Streaming(
+                content = "",
+                reasoning = null,
+                thinkingElapsedMs = 0,
+                isThinking = true,
+                thinkingTokens = 0,
+                currentActivity = "Mempersiapkan instruksi..."
+            )
             try {
                 previousJob?.join()
                 executeTurnLoop(
@@ -131,10 +142,11 @@ class AgentOrchestrator(
                     yoloMode = yoloMode,
                     enableWebSearch = enableWebSearch,
                     useTermuxEnv = useTermuxEnv,
-                    claudeMaxMode = claudeMaxMode,
+                    executionMode = executionMode,
                     antiAiSlopMode = antiAiSlopMode,
                     tavilyDeepSearchEnabled = tavilyDeepSearchEnabled,
-                    academicMode = academicMode
+                    academicMode = academicMode,
+                    claudeMaxMode = claudeMaxMode
                 )
             } catch (e: CancellationException) {
                 // Jangan ubah CancellationException menjadi AgentState.Error
@@ -159,17 +171,23 @@ class AgentOrchestrator(
         yoloMode: Boolean,
         enableWebSearch: Boolean,
         useTermuxEnv: Boolean,
-        claudeMaxMode: Boolean = true,
+        executionMode: AgentExecutionMode = AgentExecutionMode.FAST,
         antiAiSlopMode: Boolean = true,
         tavilyDeepSearchEnabled: Boolean = false,
-        academicMode: Boolean = false
+        academicMode: Boolean = false,
+        claudeMaxMode: Boolean = executionMode == AgentExecutionMode.MAX
     ) {
         var continueLoop = true
         var turnCount = 0
-        val maxTurns = if (claudeMaxMode) 25 else 8
-        val budgetTokens = if (claudeMaxMode) 24576 else 4096
-        val maxTokens = if (claudeMaxMode) 40960 else 8192
-        val reasoningEffort = if (claudeMaxMode) "high" else "medium"
+        val effectiveMode = if (claudeMaxMode && executionMode != AgentExecutionMode.MAX) {
+            AgentExecutionMode.MAX
+        } else {
+            executionMode
+        }
+        val maxTurns = effectiveMode.maxTurns
+        val budgetTokens = effectiveMode.budgetTokens
+        val maxTokens = effectiveMode.maxTokens
+        val reasoningEffort = effectiveMode.reasoningEffort
 
         // Kumpulkan definisi tool yang aktif (FileSystem dan Shell selalu aktif dengan default /storage/emulated/0)
         val activeTools = mutableListOf<ToolDefinition>()
@@ -190,7 +208,7 @@ class AgentOrchestrator(
                 workspacePath = workspacePath,
                 yoloMode = yoloMode,
                 hasWebTools = enableWebSearch,
-                claudeMaxMode = claudeMaxMode,
+                executionMode = effectiveMode,
                 antiAiSlopMode = antiAiSlopMode,
                 academicMode = academicMode
             )
@@ -435,7 +453,10 @@ class AgentOrchestrator(
                 }
             }
 
-            val accumulatedToolCalls = toolCallMap.values.mapNotNull { it.build() }
+            val accumulatedToolCalls = toolCallMap.values.mapNotNull { it.build() }.map { tc ->
+                val safeArgs = JsonRepairUtil.repairOrSanitize(tc.function.arguments)
+                tc.copy(function = tc.function.copy(arguments = safeArgs))
+            }
             val finalContent = contentBuilder.toString().trim()
             val finalReasoning = reasoningBuilder.toString().trim().ifEmpty { null }
             val computedThinkingTokens = if (!finalReasoning.isNullOrEmpty()) {
@@ -506,11 +527,7 @@ class AgentOrchestrator(
             for (toolCall in accumulatedToolCalls) {
                 val toolName = toolCall.function.name
                 val rawArgs = toolCall.function.arguments
-                val parsedArgs = try {
-                    json.parseToJsonElement(rawArgs).jsonObject
-                } catch (_: Exception) {
-                    JsonObject(emptyMap())
-                }
+                val parsedArgs = JsonRepairUtil.parseSafeObject(rawArgs)
 
                 // Cek approval jika YOLO mode mati
                 val requiresApproval = !yoloMode && (toolName == "write_file" || toolName == "apply_diff" || toolName == "apply_unified_patch" || toolName == "execute_shell")
@@ -629,7 +646,7 @@ class AgentOrchestrator(
                     workspacePath = workspacePath,
                     useTermuxEnv = useTermuxEnv,
                     tavilyDeepSearchEnabled = tavilyDeepSearchEnabled,
-                    claudeMaxMode = claudeMaxMode
+                    claudeMaxMode = effectiveMode == AgentExecutionMode.MAX
                 )
                 saveToolResult(sessionId, toolCall.id, result)
             }

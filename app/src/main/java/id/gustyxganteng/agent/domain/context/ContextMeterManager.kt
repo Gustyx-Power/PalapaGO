@@ -2,6 +2,7 @@ package id.gustyxganteng.agent.domain.context
 
 import androidx.compose.ui.graphics.Color
 import id.gustyxganteng.agent.core.database.ChatRepository
+import id.gustyxganteng.agent.core.model.AgentExecutionMode
 import id.gustyxganteng.agent.core.model.Message
 import id.gustyxganteng.agent.core.model.MessageRole
 import id.gustyxganteng.agent.core.model.TokenUsage
@@ -21,18 +22,28 @@ class ContextMeterManager(
     private val chatRepository: ChatRepository,
     private val agnesApiService: AgnesApiService
 ) {
-    fun getModelCapacity(model: String, claudeMaxMode: Boolean = false): Int {
+    fun getModelCapacity(
+        model: String,
+        executionMode: AgentExecutionMode = AgentExecutionMode.FAST,
+        claudeMaxMode: Boolean = executionMode == AgentExecutionMode.MAX
+    ): Int {
         val lower = model.lowercase()
+        val isMax = claudeMaxMode || executionMode == AgentExecutionMode.MAX
         return when {
             lower.contains("flash") || lower.contains("pro") || lower.contains("agnes") || lower.contains("gemini") -> 1_000_000
             lower.contains("gpt-4o") -> 128_000
-            lower.contains("claude") && !claudeMaxMode -> 200_000
+            lower.contains("claude") && !isMax -> 200_000
             else -> 1_000_000
         }
     }
 
-    fun calculateStatus(usedTokens: Int, model: String, claudeMaxMode: Boolean = false): ContextMeterStatus {
-        val capacity = getModelCapacity(model, claudeMaxMode)
+    fun calculateStatus(
+        usedTokens: Int,
+        model: String,
+        executionMode: AgentExecutionMode = AgentExecutionMode.FAST,
+        claudeMaxMode: Boolean = executionMode == AgentExecutionMode.MAX
+    ): ContextMeterStatus {
+        val capacity = getModelCapacity(model, executionMode, claudeMaxMode)
         val clampedUsed = usedTokens.coerceAtLeast(0)
         val percentage = (clampedUsed.toFloat() / capacity.toFloat()) * 100f
 
