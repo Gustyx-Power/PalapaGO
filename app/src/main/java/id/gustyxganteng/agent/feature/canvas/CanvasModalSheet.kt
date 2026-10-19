@@ -1,14 +1,18 @@
 package id.gustyxganteng.agent.feature.canvas
 
+import android.content.Context
 import android.content.Intent
+import android.view.MotionEvent
+import android.view.View
+import android.view.ViewGroup
 import android.webkit.ConsoleMessage
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
-import android.view.ViewGroup
 import android.widget.Toast
+
 import androidx.compose.animation.animateColorAsState
 import androidx.core.content.FileProvider
 import java.io.File
@@ -88,6 +92,40 @@ import id.gustyxganteng.agent.core.designsystem.GeminiTextSecondary
 import id.gustyxganteng.agent.core.markdown.MarkdownContent
 import id.gustyxganteng.agent.core.model.CanvasArtifact
 
+class ScrollableCanvasWebView(context: Context) : WebView(context) {
+    init {
+        isVerticalScrollBarEnabled = true
+        isHorizontalScrollBarEnabled = true
+        isNestedScrollingEnabled = false
+        overScrollMode = View.OVER_SCROLL_ALWAYS
+        scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
+    }
+
+    override fun dispatchTouchEvent(event: MotionEvent): Boolean {
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
+                parent?.requestDisallowInterceptTouchEvent(true)
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                parent?.requestDisallowInterceptTouchEvent(false)
+            }
+        }
+        return super.dispatchTouchEvent(event)
+    }
+
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        when (event.actionMasked) {
+            MotionEvent.ACTION_DOWN, MotionEvent.ACTION_MOVE -> {
+                parent?.requestDisallowInterceptTouchEvent(true)
+            }
+            MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                parent?.requestDisallowInterceptTouchEvent(false)
+            }
+        }
+        return super.onTouchEvent(event)
+    }
+}
+
 enum class CanvasTab {
     PREVIEW,
     CODE
@@ -132,7 +170,10 @@ fun CanvasModalSheet(
 
     val isWeb = remember(artifact.language, currentContent) {
         val lang = artifact.language.lowercase().trim()
-        lang in listOf("html", "js", "javascript", "css", "web", "htm", "svg", "react", "jsx", "tsx", "ts", "typescript", "node", "android", "kotlin", "compose") ||
+        val trimmed = currentContent.trim()
+        trimmed.startsWith("http://", ignoreCase = true) ||
+            trimmed.startsWith("https://", ignoreCase = true) ||
+            lang in listOf("html", "js", "javascript", "css", "web", "htm", "svg", "react", "jsx", "tsx", "ts", "typescript", "node", "android", "kotlin", "compose", "url") ||
             currentContent.contains("<!DOCTYPE html>", ignoreCase = true) ||
             currentContent.contains("<html", ignoreCase = true) ||
             currentContent.contains("<svg", ignoreCase = true) ||
@@ -191,13 +232,16 @@ fun CanvasModalSheet(
                 <script src="https://cdn.tailwindcss.com"></script>
                 <style>
                     *, *::before, *::after { box-sizing: border-box; }
-                    body {
+                    html, body {
                         margin: 0;
                         padding: 16px;
                         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
                         background-color: #0b0c0e;
                         color: #f4f4f5;
                         min-height: 100vh;
+                        overflow-y: auto !important;
+                        -webkit-overflow-scrolling: touch !important;
+                        touch-action: pan-y !important;
                     }
                 </style>
             </head>
@@ -233,7 +277,7 @@ fun CanvasModalSheet(
                 <title>Node / JS Live Execution</title>
                 <style>
                     *, *::before, *::after { box-sizing: border-box; }
-                    body {
+                    html, body {
                         margin: 0;
                         padding: 16px;
                         font-family: monospace;
@@ -241,6 +285,9 @@ fun CanvasModalSheet(
                         color: #e6edf3;
                         font-size: 13px;
                         line-height: 1.6;
+                        overflow-y: auto !important;
+                        -webkit-overflow-scrolling: touch !important;
+                        touch-action: pan-y !important;
                     }
                     .header {
                         display: flex;
@@ -303,19 +350,41 @@ fun CanvasModalSheet(
             val layoutHelper = """
                 <style id="canvas-runtime-style">
                   :root { --dvh: 100vh; --vh: 1vh; }
-                  html, body {
+                  html {
                     min-height: 100% !important;
                     width: 100% !important;
+                    overflow-x: hidden !important;
+                    overflow-y: auto !important;
+                    -webkit-overflow-scrolling: touch !important;
+                  }
+                  body {
+                    min-height: 100% !important;
+                    width: 100% !important;
+                    overflow-x: hidden !important;
+                    overflow-y: auto !important;
+                    -webkit-overflow-scrolling: touch !important;
+                    touch-action: pan-y !important;
                     -webkit-text-size-adjust: 100%;
                   }
                   #app, #root, .app-root {
                     min-height: 100% !important;
                     max-width: 100vw;
+                    overflow-y: visible !important;
                   }
+                  /* Sleek accessible scrollbar */
                   ::-webkit-scrollbar {
-                    display: none !important;
-                    width: 0 !important;
-                    height: 0 !important;
+                    width: 6px !important;
+                    height: 6px !important;
+                  }
+                  ::-webkit-scrollbar-track {
+                    background: transparent !important;
+                  }
+                  ::-webkit-scrollbar-thumb {
+                    background: rgba(255, 255, 255, 0.25) !important;
+                    border-radius: 6px !important;
+                  }
+                  ::-webkit-scrollbar-thumb:hover {
+                    background: rgba(255, 255, 255, 0.45) !important;
                   }
                 </style>
                 <script id="canvas-runtime-helper">
@@ -324,6 +393,14 @@ fun CanvasModalSheet(
                       var h = window.innerHeight;
                       document.documentElement.style.setProperty('--dvh', h + 'px');
                       document.documentElement.style.setProperty('--vh', (h * 0.01) + 'px');
+                      if (document.documentElement) {
+                        document.documentElement.style.setProperty('overflow-y', 'auto', 'important');
+                      }
+                      if (document.body) {
+                        document.body.style.setProperty('overflow-y', 'auto', 'important');
+                        document.body.style.setProperty('touch-action', 'pan-y', 'important');
+                        document.body.style.setProperty('-webkit-overflow-scrolling', 'touch', 'important');
+                      }
                       var app = document.getElementById('app') || document.getElementById('root');
                       if (app) {
                         var s = window.getComputedStyle(app);
@@ -359,12 +436,12 @@ fun CanvasModalSheet(
             if (dvhNormalized.contains("<head>", ignoreCase = true)) {
                 val headRegex = Regex("""<head>""", RegexOption.IGNORE_CASE)
                 val viewportTag = if (!dvhNormalized.contains("viewport", ignoreCase = true)) {
-                    "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no\">\n"
+                    "<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, minimum-scale=1.0, user-scalable=yes\">\n"
                 } else ""
                 dvhNormalized.replaceFirst(headRegex, "<head>\n$viewportTag$layoutHelper")
             } else if (dvhNormalized.contains("<html", ignoreCase = true)) {
                 val htmlRegex = Regex("""<html[^>]*>""", RegexOption.IGNORE_CASE)
-                dvhNormalized.replaceFirst(htmlRegex, "$0\n<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n$layoutHelper</head>")
+                dvhNormalized.replaceFirst(htmlRegex, "$0\n<head><meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0, minimum-scale=1.0, user-scalable=yes\">\n$layoutHelper</head>")
             } else if (dvhNormalized.startsWith("<!DOCTYPE", ignoreCase = true)) {
                 dvhNormalized + "\n" + layoutHelper
             } else {
@@ -373,16 +450,19 @@ fun CanvasModalSheet(
                 <html lang="en">
                 <head>
                     <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, user-scalable=yes">
                     <style>
                         *, *::before, *::after { box-sizing: border-box; }
-                        body {
+                        html, body {
                             margin: 0;
                             padding: 16px;
                             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
                             background-color: #0b0c0e;
                             color: #f4f4f5;
                             line-height: 1.5;
+                            overflow-y: auto !important;
+                            -webkit-overflow-scrolling: touch !important;
+                            touch-action: pan-y !important;
                         }
                     </style>
                     $layoutHelper
@@ -481,13 +561,21 @@ fun CanvasModalSheet(
                                 ) {
                                     IconButton(onClick = {
                                         try {
-                                            val cacheFile = File(context.cacheDir, "canvas_preview.html")
-                                            cacheFile.writeText(formattedHtml)
-                                            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", cacheFile)
-                                            val intent = Intent(Intent.ACTION_VIEW).apply {
-                                                setDataAndType(uri, "text/html")
-                                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                            val trimmed = currentContent.trim()
+                                            val isDirectUrl = trimmed.startsWith("http://", ignoreCase = true) || trimmed.startsWith("https://", ignoreCase = true)
+                                            val intent = if (isDirectUrl) {
+                                                Intent(Intent.ACTION_VIEW, android.net.Uri.parse(trimmed)).apply {
+                                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                                }
+                                            } else {
+                                                val cacheFile = File(context.cacheDir, "canvas_preview.html")
+                                                cacheFile.writeText(formattedHtml)
+                                                val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", cacheFile)
+                                                Intent(Intent.ACTION_VIEW).apply {
+                                                    setDataAndType(uri, "text/html")
+                                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                                                }
                                             }
                                             context.startActivity(intent)
                                         } catch (e: Exception) {
@@ -638,20 +726,24 @@ fun CanvasModalSheet(
 
                                 AndroidView(
                                     factory = { ctx ->
-                                        WebView(ctx).apply {
+                                        ScrollableCanvasWebView(ctx).apply {
                                             layoutParams = ViewGroup.LayoutParams(
                                                 ViewGroup.LayoutParams.MATCH_PARENT,
                                                 ViewGroup.LayoutParams.MATCH_PARENT
                                             )
                                             setBackgroundColor(android.graphics.Color.TRANSPARENT)
                                             WebView.setWebContentsDebuggingEnabled(true)
+                                            isVerticalScrollBarEnabled = true
+                                            isHorizontalScrollBarEnabled = true
+                                            scrollBarStyle = View.SCROLLBARS_INSIDE_OVERLAY
+                                            overScrollMode = View.OVER_SCROLL_ALWAYS
                                             @Suppress("DEPRECATION")
                                             settings.apply {
                                                 javaScriptEnabled = true
                                                 domStorageEnabled = true
                                                 databaseEnabled = true
                                                 useWideViewPort = true
-                                                loadWithOverviewMode = false
+                                                loadWithOverviewMode = true
                                                 allowContentAccess = true
                                                 allowFileAccess = true
                                                 allowFileAccessFromFileURLs = true
@@ -684,15 +776,24 @@ fun CanvasModalSheet(
                                         }
                                     },
                                     update = { webView ->
-                                        if (webView.tag != formattedHtml) {
-                                            webView.tag = formattedHtml
-                                            val baseUrl = if (!workspacePath.isNullOrBlank()) {
-                                                val dir = File(workspacePath)
-                                                if (dir.exists()) "file://${dir.absolutePath}/" else "https://localhost/"
-                                            } else {
-                                                "https://localhost/"
+                                        val trimmed = currentContent.trim()
+                                        val isDirectUrl = trimmed.startsWith("http://", ignoreCase = true) || trimmed.startsWith("https://", ignoreCase = true)
+                                        if (isDirectUrl) {
+                                            if (webView.tag != trimmed) {
+                                                webView.tag = trimmed
+                                                webView.loadUrl(trimmed)
                                             }
-                                            webView.loadDataWithBaseURL(baseUrl, formattedHtml, "text/html", "UTF-8", null)
+                                        } else {
+                                            if (webView.tag != formattedHtml) {
+                                                webView.tag = formattedHtml
+                                                val baseUrl = if (!workspacePath.isNullOrBlank()) {
+                                                    val dir = File(workspacePath)
+                                                    if (dir.exists()) "file://${dir.absolutePath}/" else "https://localhost/"
+                                                } else {
+                                                    "https://localhost/"
+                                                }
+                                                webView.loadDataWithBaseURL(baseUrl, formattedHtml, "text/html", "UTF-8", null)
+                                            }
                                         }
                                     },
                                     modifier = Modifier

@@ -78,7 +78,7 @@ chmod +x gradlew
     <title>$cleanTitle - Android Live Simulator</title>
     <style>
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
+        html, body {
             background-color: #0b0c10;
             color: #e2e4ea;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -87,6 +87,9 @@ chmod +x gradlew
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
+            overflow-y: auto !important;
+            -webkit-overflow-scrolling: touch !important;
+            touch-action: pan-y !important;
         }
         .runtime-badge {
             display: inline-flex;
