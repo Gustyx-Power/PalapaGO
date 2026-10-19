@@ -589,6 +589,13 @@ fun NeuralTelemetryModalSheet(
                     )
                     HorizontalDivider(color = M3OutlineVariant.copy(alpha = 0.5f), modifier = Modifier.padding(vertical = 8.dp))
                     EngineStatusRow(
+                        name = "Xemarux Router (Next-Gen Deep Thinking)",
+                        detail = "Role: Kimi-k2.8-preview (40 RPM) & DeepSeek-v4.1-flash (12 RPM)",
+                        status = "AKTIF (Co-Reasoner)",
+                        statusColor = Color(0xFF64FFDA)
+                    )
+                    HorizontalDivider(color = M3OutlineVariant.copy(alpha = 0.5f), modifier = Modifier.padding(vertical = 8.dp))
+                    EngineStatusRow(
                         name = "Groq LPU Sidecar (Fast Quality Auditor)",
                         detail = "Role: Pre-Flight Linting (<250ms), Anti-Placeholder & Syntax Guard",
                         status = "AKTIF (Auditor)",
@@ -604,7 +611,7 @@ fun NeuralTelemetryModalSheet(
                     HorizontalDivider(color = M3OutlineVariant.copy(alpha = 0.5f), modifier = Modifier.padding(vertical = 8.dp))
                     EngineStatusRow(
                         name = "Resilient Mesh Failover Router",
-                        detail = "Role: Kaskade Otomatis Lapis Ke-2 (Agnes 1 → Agnes 2 → Gemini → Groq)",
+                        detail = "Role: Kaskade Otomatis (Agnes 1-2 → Xemarux Kimi/DeepSeek → Gemini → Groq)",
                         status = "STANDBY",
                         statusColor = M3Primary
                     )
@@ -906,7 +913,7 @@ private fun SphericalNeuralGlobeCard(
                 NeuralFilterPill(label = "Konteks", count = formatNumber(promptTokens), color = Color(0xFF64FFDA))
                 NeuralFilterPill(label = "Sintesis", count = formatNumber(completionTokens), color = Color(0xFFE879F9))
                 NeuralFilterPill(label = "Memori", count = "$sessionsCount Sesi", color = Color(0xFF38BDF8))
-                NeuralFilterPill(label = "Ensemble", count = "Gemini+Agnes+Groq", color = Color(0xFFFCD34D))
+                NeuralFilterPill(label = "Ensemble", count = "Agnes+Kimi+Gemini+Groq", color = Color(0xFFFCD34D))
             }
         }
     }

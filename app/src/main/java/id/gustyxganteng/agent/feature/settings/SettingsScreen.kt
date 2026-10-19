@@ -19,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Save
@@ -249,12 +250,37 @@ private fun ModelSelectionCard(
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             SettingsCardHeader(Icons.Default.Speed, stringResource(R.string.settings_model_header))
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 FilterChip(
-                    selected = true,
+                    selected = selectedModel == "agnes-3.0-flash",
                     onClick = { onSelectModel("agnes-3.0-flash") },
                     shape = RoundedCornerShape(14.dp),
-                    label = { Text("PalapaGO Core", fontWeight = FontWeight.SemiBold) },
+                    label = { Text("Agnes AI Core (Utama)", fontWeight = FontWeight.SemiBold) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = M3PrimaryContainer,
+                        selectedLabelColor = M3OnPrimaryContainer
+                    ),
+                    border = BorderStroke(1.dp, M3Primary.copy(alpha = 0.5f))
+                )
+                FilterChip(
+                    selected = selectedModel == "kimi-k2.8-preview",
+                    onClick = { onSelectModel("kimi-k2.8-preview") },
+                    shape = RoundedCornerShape(14.dp),
+                    label = { Text("Kimi K2.8 (Thinking 40 RPM)", fontWeight = FontWeight.SemiBold) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = M3PrimaryContainer,
+                        selectedLabelColor = M3OnPrimaryContainer
+                    ),
+                    border = BorderStroke(1.dp, M3Primary.copy(alpha = 0.5f))
+                )
+                FilterChip(
+                    selected = selectedModel == "deepseek-v4.1-flash",
+                    onClick = { onSelectModel("deepseek-v4.1-flash") },
+                    shape = RoundedCornerShape(14.dp),
+                    label = { Text("DeepSeek v4.1 Flash (12 RPM)", fontWeight = FontWeight.SemiBold) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = M3PrimaryContainer,
                         selectedLabelColor = M3OnPrimaryContainer

@@ -31,6 +31,8 @@ val groqApiKeySecondary = localProperties.getProperty("GROQ_API_KEY_SECONDARY") 
 val rawGeminiKey = localProperties.getProperty("GEMINI_API_KEY") ?: localProperties.getProperty("GEMINI_API") ?: ""
 val geminiApiKey = rawGeminiKey.replace("gemini api ", "").trim()
 val tavilyApiKey = localProperties.getProperty("TAVILY_API_KEY") ?: ""
+val xemaruxApiKey = localProperties.getProperty("XEMARUX_API_KEY") ?: ""
+val xemaruxBaseUrl = localProperties.getProperty("XEMARUX_BASE_URL") ?: "https://ai.xemarux.com/v1"
 
 android {
     namespace = "id.gustyxganteng.agent"
@@ -50,6 +52,8 @@ android {
         buildConfigField("String", "GROQ_API_KEY_SECONDARY", "\"${obfuscateKey(groqApiKeySecondary)}\"")
         buildConfigField("String", "GEMINI_API_KEY", "\"${obfuscateKey(geminiApiKey)}\"")
         buildConfigField("String", "TAVILY_API_KEY", "\"${obfuscateKey(tavilyApiKey)}\"")
+        buildConfigField("String", "XEMARUX_API_KEY", "\"${obfuscateKey(xemaruxApiKey)}\"")
+        buildConfigField("String", "XEMARUX_BASE_URL", "\"$xemaruxBaseUrl\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {

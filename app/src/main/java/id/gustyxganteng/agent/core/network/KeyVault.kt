@@ -36,6 +36,9 @@ object KeyVault {
 
     fun getTavilyApiKey(): String = deobfuscate(BuildConfig.TAVILY_API_KEY)
 
+    fun getXemaruxApiKey(): String = deobfuscate(BuildConfig.XEMARUX_API_KEY)
+    fun getXemaruxBaseUrl(): String = BuildConfig.XEMARUX_BASE_URL.ifBlank { "https://ai.xemarux.com/v1" }
+
     fun obfuscate(input: String): String {
         if (input.isEmpty()) return ""
         val bytes = input.toByteArray(Charsets.UTF_8)

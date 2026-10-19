@@ -180,31 +180,80 @@ class AgnesApiServiceImpl(
             )
         }
 
-        // Susun Jaringan Provider Failover (Agnes Utama -> Agnes Cadangan -> Gemini Sidecar -> Groq Sidecar)
+        // Susun Jaringan Provider Failover (Agnes Utama -> Agnes Cadangan -> Xemarux Kimi/DeepSeek -> Gemini Sidecar -> Groq Sidecar)
         val targets = mutableListOf<StreamTarget>()
 
-        // 1. Agnes AI Key Pool (Utama & Cadangan)
-        val agnesKeys = mutableListOf<String>()
-        if (apiKey.isNotBlank()) agnesKeys.add(apiKey.trim())
-        for (k in KeyVault.getAgnesKeyPool()) {
-            if (k.isNotBlank() && !agnesKeys.contains(k)) agnesKeys.add(k)
-        }
-        for ((idx, k) in agnesKeys.withIndex()) {
-            val label = if (idx == 0) "Agnes AI (Kunci Utama)" else "Agnes AI (Kunci Cadangan #$idx)"
-            targets.add(
-                StreamTarget(
-                    providerName = label,
-                    endpoint = agnesEndpoint,
-                    apiKey = k,
-                    model = model,
-                    isAnthropicHeaders = true,
-                    includeThinking = effectiveBudgetTokens > 0,
-                    maxTokens = effectiveMaxTokens
+        val isExplicitXemarux = model.startsWith("kimi-") ||
+            model == "deepseek-v4.1-flash" ||
+            model == "hy3" ||
+            model == "step-5-preview"
+
+        val xemaruxKey = KeyVault.getXemaruxApiKey()
+        val xemaruxBase = KeyVault.getXemaruxBaseUrl().trimEnd('/')
+        val xemaruxEndpoint = if (xemaruxBase.endsWith("/chat/completions")) xemaruxBase else "$xemaruxBase/chat/completions"
+
+        fun addAgnesTargets() {
+            val agnesKeys = mutableListOf<String>()
+            if (apiKey.isNotBlank()) agnesKeys.add(apiKey.trim())
+            for (k in KeyVault.getAgnesKeyPool()) {
+                if (k.isNotBlank() && !agnesKeys.contains(k)) agnesKeys.add(k)
+            }
+            for ((idx, k) in agnesKeys.withIndex()) {
+                val label = if (idx == 0) "Agnes AI (Kunci Utama)" else "Agnes AI (Kunci Cadangan #$idx)"
+                targets.add(
+                    StreamTarget(
+                        providerName = label,
+                        endpoint = agnesEndpoint,
+                        apiKey = k,
+                        model = if (isExplicitXemarux) "claude-3-7-sonnet-20250219" else model,
+                        isAnthropicHeaders = true,
+                        includeThinking = effectiveBudgetTokens > 0,
+                        maxTokens = effectiveMaxTokens
+                    )
                 )
-            )
+            }
         }
 
-        // 2. Gemini Sidecar (Google Cloud OpenAI Endpoint)
+        fun addXemaruxTargets() {
+            if (xemaruxKey.isNotBlank()) {
+                val primaryXemaruxModel = if (isExplicitXemarux) model else "kimi-k2.8-preview"
+                targets.add(
+                    StreamTarget(
+                        providerName = "Xemarux Router ($primaryXemaruxModel 40 RPM)",
+                        endpoint = xemaruxEndpoint,
+                        apiKey = xemaruxKey,
+                        model = primaryXemaruxModel,
+                        isAnthropicHeaders = false,
+                        includeThinking = true,
+                        maxTokens = effectiveMaxTokens.coerceAtMost(32768)
+                    )
+                )
+                if (primaryXemaruxModel != "deepseek-v4.1-flash") {
+                    targets.add(
+                        StreamTarget(
+                            providerName = "Xemarux Router (DeepSeek-v4.1-flash 12 RPM)",
+                            endpoint = xemaruxEndpoint,
+                            apiKey = xemaruxKey,
+                            model = "deepseek-v4.1-flash",
+                            isAnthropicHeaders = false,
+                            includeThinking = false,
+                            maxTokens = effectiveMaxTokens.coerceAtMost(8192)
+                        )
+                    )
+                }
+            }
+        }
+
+        if (isExplicitXemarux) {
+            addXemaruxTargets()
+            addAgnesTargets()
+        } else {
+            // Yang terus dibakar tetap Agnes (bebas kuota bagi pengguna)
+            addAgnesTargets()
+            addXemaruxTargets()
+        }
+
+        // 3. Gemini Sidecar (Google Cloud OpenAI Endpoint)
         val geminiKey = KeyVault.getGeminiApiKey()
         if (geminiKey.isNotBlank()) {
             targets.add(
@@ -220,7 +269,7 @@ class AgnesApiServiceImpl(
             )
         }
 
-        // 3. Groq Sidecar Key Pool (Ultra-Fast Llama/Qwen)
+        // 4. Groq Sidecar Key Pool (Ultra-Fast Llama/Qwen)
         val groqKeys = KeyVault.getGroqKeyPool()
         for ((idx, gk) in groqKeys.withIndex()) {
             val groqLabel = if (idx == 0) "Groq Sidecar (Llama/OSS)" else "Groq Sidecar (Cadangan #$idx)"

@@ -182,15 +182,72 @@ class GeminiSidecarServiceImpl(
                 if (response.isSuccessful) {
                     val bodyStr = response.body?.string() ?: return@use ""
                     val parsed = json.parseToJsonElement(bodyStr).jsonObject
-                    return@withContext parsed["choices"]?.jsonArray
+                    val content = parsed["choices"]?.jsonArray
                         ?.firstOrNull()?.jsonObject
                         ?.get("message")?.jsonObject
                         ?.get("content")?.jsonPrimitive?.content ?: ""
+                    if (content.isNotBlank()) return@withContext content
                 }
             }
         } catch (e: Exception) {
             Log.w("GeminiSidecar", "Gemini blueprint generation failed: ${e.message}")
         }
+
+        // Fallback / Co-Architect: Xemarux Router (Kimi-k2.8-preview Next-Gen Thinking 40 RPM)
+        val xemaruxKey = KeyVault.getXemaruxApiKey()
+        if (xemaruxKey.isNotBlank()) {
+            try {
+                val xemaruxBase = KeyVault.getXemaruxBaseUrl().trimEnd('/')
+                val xemaruxEndpoint = if (xemaruxBase.endsWith("/chat/completions")) xemaruxBase else "$xemaruxBase/chat/completions"
+                val payload = buildJsonObject {
+                    put("model", "kimi-k2.8-preview")
+                    put("messages", buildJsonArray {
+                        add(buildJsonObject {
+                            put("role", "system")
+                            put("content", """
+                                You are the Next-Gen Chief Software Architect (powered by Kimi K2.8 Deep Thinking).
+                                Deconstruct the user's coding/canvas request into a high-density, precise architectural blueprint:
+                                1. System State Machine & Reactive Data Structures
+                                2. Mathematical / Physics / Business Logic Modeling
+                                3. UI Component Hierarchy, Canvas DPI scaling, and Event Pipeline
+                                4. Zero-Placeholder Production Standards.
+                                Keep it actionable, technically dense, and concise (under 300 words).
+                            """.trimIndent())
+                        })
+                        add(buildJsonObject {
+                            put("role", "user")
+                            put("content", buildString {
+                                appendLine("User Coding Objective: $userPrompt")
+                                if (workspaceContext.isNotBlank()) appendLine("Workspace Context: $workspaceContext")
+                            })
+                        })
+                    })
+                    put("max_tokens", 800)
+                }
+
+                val req = Request.Builder()
+                    .url(xemaruxEndpoint)
+                    .addHeader("Authorization", "Bearer $xemaruxKey")
+                    .addHeader("Content-Type", "application/json")
+                    .post(payload.toString().toRequestBody(jsonMediaType))
+                    .build()
+
+                client.newCall(req).execute().use { response ->
+                    if (response.isSuccessful) {
+                        val bodyStr = response.body?.string() ?: return@use ""
+                        val parsed = json.parseToJsonElement(bodyStr).jsonObject
+                        val content = parsed["choices"]?.jsonArray
+                            ?.firstOrNull()?.jsonObject
+                            ?.get("message")?.jsonObject
+                            ?.get("content")?.jsonPrimitive?.content ?: ""
+                        if (content.isNotBlank()) return@withContext content
+                    }
+                }
+            } catch (e: Exception) {
+                Log.w("GeminiSidecar", "Kimi-k2.8 architect fallback failed: ${e.message}")
+            }
+        }
+
         return@withContext ""
     }
 }
