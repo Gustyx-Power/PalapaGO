@@ -189,6 +189,8 @@ class AgentOrchestrator(
     ) {
         var continueLoop = true
         var turnCount = 0
+        var lastGeneratedImageUrl: String? = null
+        var lastGeneratedImagePrompt: String? = null
         val effectiveMode = if (claudeMaxMode && executionMode != AgentExecutionMode.MAX) {
             AgentExecutionMode.MAX
         } else {
@@ -527,17 +529,27 @@ class AgentOrchestrator(
                 )
             }
 
+            val contentWithImage = if (!lastGeneratedImageUrl.isNullOrBlank() && !finalContent.contains(lastGeneratedImageUrl!!)) {
+                "![$lastGeneratedImagePrompt]($lastGeneratedImageUrl)\n\n$finalContent"
+            } else {
+                finalContent
+            }
+
             // Simpan respon assistant
             val assistantMessage = Message(
                 sessionId = sessionId,
                 role = MessageRole.ASSISTANT,
-                content = finalContent,
+                content = contentWithImage,
                 reasoningContent = finalReasoning,
                 thinkingDurationMs = thinkingDuration,
                 toolCalls = accumulatedToolCalls,
                 tokenUsage = adjustedUsage
             )
             chatRepository.saveMessage(assistantMessage)
+            if (accumulatedToolCalls.isEmpty()) {
+                lastGeneratedImageUrl = null
+                lastGeneratedImagePrompt = null
+            }
             settingsRepository?.recordUsage(
                 promptTokens = adjustedUsage.promptTokens.toLong(),
                 completionTokens = adjustedUsage.completionTokens.toLong(),
@@ -690,6 +702,13 @@ class AgentOrchestrator(
                     tavilyDeepSearchEnabled = tavilyDeepSearchEnabled,
                     claudeMaxMode = effectiveMode == AgentExecutionMode.MAX
                 )
+                if (toolName == "generate_image" && result.isSuccess) {
+                    val urlMatch = Regex("""https?://[^\s)]+""").find(result.stdout)
+                    if (urlMatch != null) {
+                        lastGeneratedImageUrl = urlMatch.value
+                        lastGeneratedImagePrompt = parsedArgs["prompt"]?.jsonPrimitive?.content ?: "Visual Ilustrasi AI"
+                    }
+                }
                 saveToolResult(sessionId, toolCall.id, result)
             }
         }
@@ -740,7 +759,7 @@ class AgentOrchestrator(
                         ToolExecutionResult(
                             toolCallId = toolCallId,
                             toolName = toolName,
-                            stdout = "![$prompt]($url)\n\n*Gambar berhasil digenerate oleh Agnes Image 2.5 Flash ($size)*\n[Buka Resolusi Penuh]($url)",
+                            stdout = "![$prompt]($url)\n\nGambar berhasil digenerate oleh Agnes Image 2.5 Flash ($size) di URL: $url\n\n[INSTRUKSI]: Di respon akhirmu, kamu WAJIB menyertakan kode markdown gambar: ![$prompt]($url) agar tampil di chat.",
                             isSuccess = true
                         )
                     },

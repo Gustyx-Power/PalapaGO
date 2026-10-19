@@ -67,7 +67,13 @@ import androidx.compose.ui.text.withLink
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import id.gustyxganteng.agent.core.designsystem.M3OutlineVariant
 import id.gustyxganteng.agent.core.designsystem.M3Primary
@@ -232,12 +238,20 @@ object MarkdownParser {
                 continue
             }
 
-            // 7. Standalone image (![alt](url))
-            val imgMatch = Regex("^!\\[(.*?)\\]\\((https?://\\S+|data:image/\\S+)\\)$").find(trimmed)
+            // 7. Standalone or embedded image (![alt](url))
+            val imgMatch = Regex("""!\[(.*?)\]\(((?:https?://|data:image/)[^\s)]+)\)""").find(trimmed)
             if (imgMatch != null) {
+                val prefix = trimmed.substring(0, imgMatch.range.first).trim()
                 val alt = imgMatch.groupValues[1]
                 val url = imgMatch.groupValues[2]
+                val postfix = trimmed.substring(imgMatch.range.last + 1).trim()
+                if (prefix.isNotEmpty()) {
+                    nodes.add(MarkdownNode.Paragraph(prefix))
+                }
                 nodes.add(MarkdownNode.ImageBlock(alt, url))
+                if (postfix.isNotEmpty()) {
+                    nodes.add(MarkdownNode.Paragraph(postfix))
+                }
                 i++
                 continue
             }
@@ -1182,34 +1196,102 @@ fun MarkdownImageCard(
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
-    Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable {
-                try {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                    context.startActivity(intent)
-                } catch (_: Exception) {}
-            }
-    ) {
-        Column {
+    var showFullscreen by remember { mutableStateOf(false) }
+
+    if (showFullscreen) {
+        Dialog(
+            onDismissRequest = { showFullscreen = false },
+            properties = DialogProperties(usePlatformDefaultWidth = false)
+        ) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 180.dp, max = 380.dp)
-                    .background(MaterialTheme.colorScheme.surfaceContainerLowest),
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.95f))
+                    .clickable { showFullscreen = false },
                 contentAlignment = Alignment.Center
             ) {
-                AsyncImage(
+                SubcomposeAsyncImage(
                     model = ImageRequest.Builder(context)
                         .data(url)
                         .crossfade(true)
                         .build(),
                     contentDescription = alt,
                     contentScale = ContentScale.Fit,
+                    loading = {
+                        Box(contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(color = Color.White)
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                )
+                IconButton(
+                    onClick = { showFullscreen = false },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Close,
+                        contentDescription = "Tutup",
+                        tint = Color.White
+                    )
+                }
+            }
+        }
+    }
+
+    Surface(
+        shape = RoundedCornerShape(16.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Column {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 180.dp, max = 380.dp)
+                    .background(MaterialTheme.colorScheme.surfaceContainerLowest)
+                    .clickable { showFullscreen = true },
+                contentAlignment = Alignment.Center
+            ) {
+                SubcomposeAsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(url)
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = alt,
+                    contentScale = ContentScale.Fit,
+                    loading = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(220.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                strokeWidth = 2.dp,
+                                modifier = Modifier.size(28.dp),
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    },
+                    error = {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(160.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = "Gagal memuat visual dari server",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
@@ -1220,7 +1302,7 @@ fun MarkdownImageCard(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(MaterialTheme.colorScheme.surfaceContainer)
-                        .padding(horizontal = 14.dp, vertical = 8.dp),
+                        .padding(horizontal = 14.dp, vertical = 6.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
@@ -1233,12 +1315,22 @@ fun MarkdownImageCard(
                         modifier = Modifier.weight(1f)
                     )
                     Spacer(Modifier.width(8.dp))
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Rounded.OpenInNew,
-                        contentDescription = "Buka Gambar",
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp)
-                    )
+                    IconButton(
+                        onClick = {
+                            try {
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                context.startActivity(intent)
+                            } catch (_: Exception) {}
+                        },
+                        modifier = Modifier.size(28.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Rounded.OpenInNew,
+                            contentDescription = "Buka di Browser",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
                 }
             }
         }

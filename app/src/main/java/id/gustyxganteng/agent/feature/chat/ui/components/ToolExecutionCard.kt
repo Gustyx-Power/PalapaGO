@@ -25,7 +25,9 @@ import androidx.compose.material.icons.rounded.EditNote
 import androidx.compose.material.icons.rounded.Error
 import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.Language
+import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Terminal
+import id.gustyxganteng.agent.core.markdown.MarkdownImageCard
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -159,6 +161,15 @@ private fun parseToolDetails(toolName: String, rawArgs: String): ToolCardDetails
                     title = title
                 )
             }
+            "generate_image" -> {
+                val prompt = json.optString("prompt", "Ilustrasi Visual AI")
+                val aspect = json.optString("aspect_ratio", "1024x1024")
+                ToolCardDetails(
+                    badge = "IMAGE GEN",
+                    title = prompt,
+                    subtitle = "Agnes Image 2.5 Flash ($aspect)"
+                )
+            }
             else -> ToolCardDetails(
                 badge = toolName.uppercase(),
                 title = rawArgs.take(50)
@@ -170,6 +181,16 @@ private fun parseToolDetails(toolName: String, rawArgs: String): ToolCardDetails
             title = rawArgs.take(50)
         )
     }
+}
+
+private fun extractImageUrlFromOutput(output: String?): String? {
+    if (output.isNullOrBlank()) return null
+    val mdMatch = Regex("""!\[.*?\]\(((?:https?://|data:image/)[^\s)]+)\)""").find(output)
+    if (mdMatch != null) return mdMatch.groupValues[1]
+    val directMatch = Regex("""(https?://platform-outputs\.agnes-ai\.space/[^\s)]+)""").find(output)
+    if (directMatch != null) return directMatch.groupValues[1]
+    val anyImgMatch = Regex("""(https?://[^\s)]+\.(?:png|jpg|jpeg|webp))""").find(output)
+    return anyImgMatch?.groupValues?.get(1)
 }
 
 @Composable
@@ -214,6 +235,7 @@ fun ToolExecutionCard(
                     "read_file" -> Icons.Rounded.EditNote
                     "list_directory", "search_files" -> Icons.Rounded.FolderOpen
                     "web_search", "read_webpage" -> Icons.Rounded.Language
+                    "generate_image" -> Icons.Rounded.Palette
                     else -> Icons.Rounded.Code
                 }
 
@@ -303,6 +325,17 @@ fun ToolExecutionCard(
                 }
             }
 
+            val imageUrl = remember(outputContent) { extractImageUrlFromOutput(outputContent) }
+
+            // Tampilkan gambar visual langsung di dalam kartu (selalu terlihat saat selesai)
+            if (imageUrl != null) {
+                MarkdownImageCard(
+                    alt = details.title,
+                    url = imageUrl,
+                    modifier = Modifier.padding(top = 10.dp)
+                )
+            }
+
             // Expanded Visual Diff or Output Log
             AnimatedVisibility(visible = expanded && canExpand) {
                 Column(modifier = Modifier.padding(top = 10.dp)) {
@@ -376,26 +409,28 @@ fun ToolExecutionCard(
                         Spacer(Modifier.height(6.dp))
                     }
 
-                    // Raw output log
-                    outputContent?.let { output ->
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = M3SurfaceContainerLowest,
-                            border = BorderStroke(1.dp, M3OutlineVariant),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            val logScrollState = rememberScrollState()
-                            Text(
-                                text = output,
-                                style = MaterialTheme.typography.bodySmall,
-                                fontFamily = FontFamily.Monospace,
-                                fontSize = 11.5.sp,
-                                lineHeight = 16.sp,
-                                color = if (isError) M3Error else M3TextSecondary,
-                                modifier = Modifier
-                                    .padding(10.dp)
-                                    .horizontalScroll(logScrollState)
-                            )
+                    // Raw output log (hanya tampil jika bukan gambar visual)
+                    if (imageUrl == null) {
+                        outputContent?.let { output ->
+                            Surface(
+                                shape = RoundedCornerShape(10.dp),
+                                color = M3SurfaceContainerLowest,
+                                border = BorderStroke(1.dp, M3OutlineVariant),
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                val logScrollState = rememberScrollState()
+                                Text(
+                                    text = output,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontFamily = FontFamily.Monospace,
+                                    fontSize = 11.5.sp,
+                                    lineHeight = 16.sp,
+                                    color = if (isError) M3Error else M3TextSecondary,
+                                    modifier = Modifier
+                                        .padding(10.dp)
+                                        .horizontalScroll(logScrollState)
+                                )
+                            }
                         }
                     }
                 }

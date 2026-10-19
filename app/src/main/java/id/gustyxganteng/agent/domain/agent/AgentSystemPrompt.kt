@@ -282,7 +282,8 @@ Saat pengguna meminta referensi jurnal, paper ilmiah, skripsi, tinjauan pustaka,
 - Untuk Khalayak Umum (Mode CHAT):
   * Buat penjelasan langkah-demi-langkah intuitif dengan analogi visual dan diagram perbandingan yang mudah dipahami orang awam.
 - Untuk Ilustrasi Grafis & Desain (Agnes Multimodal Image Generation):
-  * Panggil tool pembuat gambar/visualisasi pendukung jika diperlukan representasi visual konkret, aset mockup, atau ilustrasi konsep realistis.
+  * Panggil tool `generate_image` jika diperlukan representasi visual konkret, aset mockup, diagram visual, atau ilustrasi konsep realistis.
+  * ATURAN KRUSIAL: Setelah tool `generate_image` selesai dan mengembalikan URL gambar, kamu WAJIB menyertakan kode markdown gambar `![Deskripsi](URL_GAMBAR)` di dalam respon akhirmu. DILARANG KERAS hanya menuliskan teks atau tautan biasa, karena sintaks `![alt](url)` inilah yang merender gambar secara visual langsung di chat.
 """)
         }
 
