@@ -57,8 +57,8 @@ enum class AgentExecutionMode(
         id = "max",
         badge = "MAX",
         maxTurns = 40,
-        budgetTokens = 65536,
-        maxTokens = 81920,
+        budgetTokens = 32768,
+        maxTokens = 65536,
         reasoningEffort = "high"
     );
 

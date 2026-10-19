@@ -68,6 +68,16 @@ class AgnesApiServiceImpl(
         .pingInterval(15, TimeUnit.SECONDS)
         .build()
 
+    private data class StreamTarget(
+        val providerName: String,
+        val endpoint: String,
+        val apiKey: String,
+        val model: String,
+        val isAnthropicHeaders: Boolean = false,
+        val includeThinking: Boolean = false,
+        val maxTokens: Int = 65536
+    )
+
     override fun streamChat(
         baseUrl: String,
         apiKey: String,
@@ -80,7 +90,11 @@ class AgnesApiServiceImpl(
     ): Flow<StreamEvent> {
         val cleanBase = baseUrl.trim().trimEnd('/')
         val baseWithV1 = if (cleanBase.endsWith("/v1")) cleanBase else "$cleanBase/v1"
-        val endpoint = "$baseWithV1/chat/completions"
+        val agnesEndpoint = "$baseWithV1/chat/completions"
+
+        // Batasi nilai max_tokens dan budget_tokens agar tidak melebihi batas keras provider (65536)
+        val effectiveMaxTokens = maxTokens.coerceIn(512, 65536)
+        val effectiveBudgetTokens = if (budgetTokens > 0) budgetTokens.coerceIn(1024, 32768) else 0
 
         val chatDtos = messages.map { msg ->
             val roleStr = when (msg.role) {
@@ -166,74 +180,133 @@ class AgnesApiServiceImpl(
             )
         }
 
-        val requestPayload = ChatCompletionRequest(
-            model = model,
-            messages = chatDtos,
-            tools = if (toolsDto.isNullOrEmpty()) null else toolsDto,
-            stream = true,
-            maxTokens = maxTokens,
-            thinking = if (budgetTokens > 0) id.gustyxganteng.agent.core.network.dto.ThinkingConfigDto(budgetTokens = budgetTokens) else null,
-            reasoningEffort = if (budgetTokens > 0) reasoningEffort else null
-        )
+        // Susun Jaringan Provider Failover (Agnes Utama -> Agnes Cadangan -> Gemini Sidecar -> Groq Sidecar)
+        val targets = mutableListOf<StreamTarget>()
 
-        val jsonBody = json.encodeToString(requestPayload)
-        val requestBody = jsonBody.toRequestBody("application/json; charset=utf-8".toMediaType())
-
-        val candidateKeys = mutableListOf<String>()
-        if (apiKey.isNotBlank()) candidateKeys.add(apiKey.trim())
+        // 1. Agnes AI Key Pool (Utama & Cadangan)
+        val agnesKeys = mutableListOf<String>()
+        if (apiKey.isNotBlank()) agnesKeys.add(apiKey.trim())
         for (k in KeyVault.getAgnesKeyPool()) {
-            if (k.isNotBlank() && !candidateKeys.contains(k)) {
-                candidateKeys.add(k)
-            }
+            if (k.isNotBlank() && !agnesKeys.contains(k)) agnesKeys.add(k)
+        }
+        for ((idx, k) in agnesKeys.withIndex()) {
+            val label = if (idx == 0) "Agnes AI (Kunci Utama)" else "Agnes AI (Kunci Cadangan #$idx)"
+            targets.add(
+                StreamTarget(
+                    providerName = label,
+                    endpoint = agnesEndpoint,
+                    apiKey = k,
+                    model = model,
+                    isAnthropicHeaders = true,
+                    includeThinking = effectiveBudgetTokens > 0,
+                    maxTokens = effectiveMaxTokens
+                )
+            )
         }
 
-        if (candidateKeys.isEmpty()) {
-            throw IOException("API Key belum terkonfigurasi. Pastikan API Key sudah diisi pada Pengaturan atau local.properties.")
+        // 2. Gemini Sidecar (Google Cloud OpenAI Endpoint)
+        val geminiKey = KeyVault.getGeminiApiKey()
+        if (geminiKey.isNotBlank()) {
+            targets.add(
+                StreamTarget(
+                    providerName = "Gemini Sidecar (Google Cloud)",
+                    endpoint = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+                    apiKey = geminiKey,
+                    model = "gemini-3.8-flash",
+                    isAnthropicHeaders = false,
+                    includeThinking = false,
+                    maxTokens = effectiveMaxTokens.coerceAtMost(8192)
+                )
+            )
+        }
+
+        // 3. Groq Sidecar Key Pool (Ultra-Fast Llama/Qwen)
+        val groqKeys = KeyVault.getGroqKeyPool()
+        for ((idx, gk) in groqKeys.withIndex()) {
+            val groqLabel = if (idx == 0) "Groq Sidecar (Llama/OSS)" else "Groq Sidecar (Cadangan #$idx)"
+            targets.add(
+                StreamTarget(
+                    providerName = groqLabel,
+                    endpoint = "https://api.groq.com/openai/v1/chat/completions",
+                    apiKey = gk,
+                    model = "openai/gpt-oss-120b",
+                    isAnthropicHeaders = false,
+                    includeThinking = false,
+                    maxTokens = effectiveMaxTokens.coerceAtMost(8192)
+                )
+            )
+        }
+
+        if (targets.isEmpty()) {
+            throw IOException("Tidak ada API Key yang terkonfigurasi pada Agnes, Gemini, maupun Groq. Periksa local.properties atau Pengaturan.")
         }
 
         var lastResponseCode = 0
         var lastErrBody = ""
+        var lastFailedProvider = ""
 
-        for ((index, currentKey) in candidateKeys.withIndex()) {
-            val request = Request.Builder()
-                .url(endpoint)
-                .addHeader("Authorization", "Bearer $currentKey")
-                .addHeader("x-api-key", currentKey)
-                .addHeader("anthropic-version", "2023-06-01")
-                .addHeader("Accept", "text/event-stream")
-                .addHeader("Cache-Control", "no-cache")
-                .addHeader("Connection", "keep-alive")
-                .addHeader("Accept-Encoding", "identity")
-                .addHeader("Content-Type", "application/json")
-                .post(requestBody)
-                .build()
+        for (target in targets) {
+            try {
+                val requestPayload = ChatCompletionRequest(
+                    model = target.model,
+                    messages = chatDtos,
+                    tools = if (toolsDto.isNullOrEmpty()) null else toolsDto,
+                    stream = true,
+                    maxTokens = target.maxTokens,
+                    thinking = if (target.includeThinking && effectiveBudgetTokens > 0) {
+                        id.gustyxganteng.agent.core.network.dto.ThinkingConfigDto(budgetTokens = effectiveBudgetTokens)
+                    } else null,
+                    reasoningEffort = if (target.includeThinking && effectiveBudgetTokens > 0) reasoningEffort else null
+                )
 
-            val call = client.newCall(request)
-            val response = call.execute()
+                val jsonBody = json.encodeToString(requestPayload)
+                val requestBody = jsonBody.toRequestBody("application/json; charset=utf-8".toMediaType())
 
-            if (response.isSuccessful) {
-                val body = response.body ?: throw IOException("Empty response body from API server")
-                return sseStreamParser.parseStream(body)
-            }
+                val reqBuilder = Request.Builder()
+                    .url(target.endpoint)
+                    .addHeader("Authorization", "Bearer ${target.apiKey}")
+                    .addHeader("Accept", "text/event-stream")
+                    .addHeader("Cache-Control", "no-cache")
+                    .addHeader("Connection", "keep-alive")
+                    .addHeader("Accept-Encoding", "identity")
+                    .addHeader("Content-Type", "application/json")
 
-            lastResponseCode = response.code
-            lastErrBody = response.body?.string() ?: "HTTP ${response.code}"
-            response.close()
+                if (target.isAnthropicHeaders) {
+                    reqBuilder.addHeader("x-api-key", target.apiKey)
+                    reqBuilder.addHeader("anthropic-version", "2023-06-01")
+                }
 
-            // Jika kena Rate Limit (429) atau Quota (403), coba failover ke key berikutnya jika ada
-            if ((lastResponseCode == 429 || lastResponseCode == 403) && index < candidateKeys.size - 1) {
-                android.util.Log.w("AgnesApiService", "Kunci Agnes #$index terkena limit ($lastResponseCode). Beralih ke kunci cadangan...")
+                val request = reqBuilder.post(requestBody).build()
+                val call = client.newCall(request)
+                val response = call.execute()
+
+                if (response.isSuccessful) {
+                    val body = response.body ?: throw IOException("Empty response body from ${target.providerName}")
+                    android.util.Log.i("AgnesApiService", "[Mesh Provider] Sukses terhubung ke ${target.providerName} (Model: ${target.model})")
+                    return sseStreamParser.parseStream(body)
+                }
+
+                lastResponseCode = response.code
+                lastErrBody = response.body?.string() ?: "HTTP ${response.code}"
+                lastFailedProvider = target.providerName
+                response.close()
+
+                android.util.Log.w("AgnesApiService", "[Mesh Failover] ${target.providerName} gagal ($lastResponseCode: $lastErrBody). Beralih ke provider berikutnya...")
+                continue
+            } catch (e: Exception) {
+                lastFailedProvider = target.providerName
+                lastErrBody = e.message ?: "Network error"
+                android.util.Log.w("AgnesApiService", "[Mesh Failover] ${target.providerName} exception: ${e.message}. Beralih ke provider berikutnya...")
                 continue
             }
-            break
         }
 
         val friendlyMsg = when (lastResponseCode) {
-            401 -> "Autentikasi gagal (HTTP 401): API Key tidak valid. Periksa konfigurasi API Key di Pengaturan."
-            403 -> "Akses ditolak (HTTP 403): Tidak memiliki izin akses atau kuota habis: $lastErrBody"
-            404 -> "Endpoint API tidak ditemukan (HTTP 404): $endpoint"
-            429 -> "Rate limit tercapai (HTTP 429): Terlalu banyak permintaan ke server API ($lastErrBody). Mohon tunggu sesaat."
-            else -> "Gagal memproses permintaan ($lastResponseCode): $lastErrBody"
+            401 -> "Autentikasi gagal (HTTP 401) pada seluruh provider cadangan ($lastFailedProvider): $lastErrBody"
+            403 -> "Akses ditolak atau kuota habis (HTTP 403) pada seluruh provider: $lastErrBody"
+            404 -> "Endpoint atau model tidak ditemukan (HTTP 404): $lastErrBody"
+            429 -> "Rate limit tercapai pada seluruh provider (HTTP 429): $lastErrBody"
+            else -> "Gagal memproses permintaan ($lastResponseCode pada $lastFailedProvider): $lastErrBody"
         }
         throw IOException(friendlyMsg)
     }
@@ -246,7 +319,7 @@ class AgnesApiServiceImpl(
         size: String
     ): Result<String> = kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
         val keyPool = mutableListOf<String>()
-        if (apiKey.isNotBlank()) keyPool.add(apiKey)
+        if (apiKey.isNotBlank()) keyPool.add(apiKey.trim())
         val vaultPool = KeyVault.getAgnesKeyPool()
         vaultPool.forEach { if (!keyPool.contains(it)) keyPool.add(it) }
         if (keyPool.isEmpty()) {
@@ -291,14 +364,14 @@ class AgnesApiServiceImpl(
                                 return@withContext Result.success("data:image/png;base64,$b64")
                             }
                         }
-                    } else if (response.code == 429 || response.code == 403) {
-                        lastException = IOException("Agnes Image API Key limit (${response.code}), failover...")
                     } else {
-                        val errStr = response.body?.string() ?: ""
+                        val errStr = response.body?.string() ?: "HTTP ${response.code}"
+                        android.util.Log.w("AgnesApiService", "[Image Failover] Kunci Agnes gagal (${response.code}: $errStr). Mencoba kunci cadangan...")
                         lastException = IOException("Agnes Image API Error ${response.code}: $errStr")
                     }
                 }
             } catch (e: Exception) {
+                android.util.Log.w("AgnesApiService", "[Image Failover] Exception: ${e.message}. Mencoba kunci cadangan...")
                 lastException = e
             }
         }
