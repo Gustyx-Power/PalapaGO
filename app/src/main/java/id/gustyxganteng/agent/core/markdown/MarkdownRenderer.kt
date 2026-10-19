@@ -37,6 +37,7 @@ import androidx.compose.material.icons.automirrored.rounded.Article
 import androidx.compose.material.icons.automirrored.rounded.OpenInNew
 import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.Functions
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,6 +46,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -1198,6 +1200,20 @@ fun MarkdownImageCard(
     val context = LocalContext.current
     var showFullscreen by remember { mutableStateOf(false) }
 
+    val imageModel: Any = remember(url) {
+        if (url.startsWith("data:image/") && url.contains("base64,")) {
+            try {
+                val cleanB64 = url.substringAfter("base64,")
+                android.util.Base64.decode(cleanB64, android.util.Base64.DEFAULT)
+            } catch (_: Exception) {
+                url
+            }
+        } else {
+            url
+        }
+    }
+    var retryTrigger by remember { mutableIntStateOf(0) }
+
     if (showFullscreen) {
         Dialog(
             onDismissRequest = { showFullscreen = false },
@@ -1212,8 +1228,9 @@ fun MarkdownImageCard(
             ) {
                 SubcomposeAsyncImage(
                     model = ImageRequest.Builder(context)
-                        .data(url)
+                        .data(imageModel)
                         .crossfade(true)
+                        .setHeader("User-Agent", "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36")
                         .build(),
                     contentDescription = alt,
                     contentScale = ContentScale.Fit,
@@ -1259,8 +1276,10 @@ fun MarkdownImageCard(
             ) {
                 SubcomposeAsyncImage(
                     model = ImageRequest.Builder(context)
-                        .data(url)
+                        .data(imageModel)
                         .crossfade(true)
+                        .setParameter("retry", retryTrigger, memoryCacheKey = null)
+                        .setHeader("User-Agent", "Mozilla/5.0 (Linux; Android 14; Mobile) AppleWebKit/537.36")
                         .build(),
                     contentDescription = alt,
                     contentScale = ContentScale.Fit,
@@ -1279,17 +1298,44 @@ fun MarkdownImageCard(
                         }
                     },
                     error = {
-                        Box(
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(160.dp),
-                            contentAlignment = Alignment.Center
+                                .height(160.dp)
+                                .padding(12.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
                         ) {
                             Text(
-                                text = "Gagal memuat visual dari server",
+                                text = "Gagal memuat visual",
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.error
                             )
+                            Spacer(Modifier.height(6.dp))
+                            Surface(
+                                shape = RoundedCornerShape(8.dp),
+                                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                                modifier = Modifier.clickable { retryTrigger++ }
+                            ) {
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Rounded.Refresh,
+                                        contentDescription = "Muat Ulang",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Spacer(Modifier.width(4.dp))
+                                    Text(
+                                        text = "Coba Lagi",
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                }
+                            }
                         }
                     },
                     modifier = Modifier

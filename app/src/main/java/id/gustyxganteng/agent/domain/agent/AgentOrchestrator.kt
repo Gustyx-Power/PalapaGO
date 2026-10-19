@@ -715,10 +715,13 @@ class AgentOrchestrator(
                     isFastMode = effectiveMode == AgentExecutionMode.FAST
                 )
                 if (toolName == "generate_image" && result.isSuccess) {
-                    val urlMatch = Regex("""https?://[^\s)]+""").find(result.stdout)
+                    val urlMatch = Regex("""(https?://[^\s)]+|file://[^\s)]+|data:image/[^\s)]+)""").find(result.stdout)
                     if (urlMatch != null) {
                         lastGeneratedImageUrl = urlMatch.value
                         lastGeneratedImagePrompt = parsedArgs["prompt"]?.jsonPrimitive?.content ?: "Visual Ilustrasi AI"
+                    }
+                    if (promptMode == PromptMode.IMAGE_GEN) {
+                        continueLoop = false
                     }
                 }
                 saveToolResult(sessionId, toolCall.id, result)
@@ -769,21 +772,23 @@ class AgentOrchestrator(
                         isSuccess = false
                     )
                 } else {
-                    val prompt = args["prompt"]?.jsonPrimitive?.content ?: ""
+                    val rawPrompt = args["prompt"]?.jsonPrimitive?.content ?: ""
                     val rawSize = args["aspect_ratio"]?.jsonPrimitive?.content
+                    val effectivePrompt = imageTool?.enhancePrompt(rawPrompt, isMaxMode = claudeMaxMode) ?: rawPrompt
                     val size = ImageTool.normalizeDimension(rawSize)
                     val res = agnesApiService.generateImage(
                         baseUrl = baseUrl,
                         apiKey = apiKey,
-                        prompt = prompt,
+                        prompt = effectivePrompt,
                         size = size
                     )
                     res.fold(
-                        onSuccess = { url ->
+                        onSuccess = { rawUrl ->
+                            val localUrl = imageTool?.persistImageLocally(rawUrl) ?: rawUrl
                             ToolExecutionResult(
                                 toolCallId = toolCallId,
                                 toolName = toolName,
-                                stdout = "![$prompt]($url)\n\nGambar berhasil digenerate oleh Agnes Image 2.5 Flash ($size) di URL: $url\n\n[INSTRUKSI]: Di respon akhirmu, kamu WAJIB menyertakan kode markdown gambar: ![$prompt]($url) agar tampil di chat.",
+                                stdout = "![$rawPrompt]($localUrl)\n\nGambar berhasil digenerate oleh Agnes Image 2.5 Flash ($size)",
                                 isSuccess = true
                             )
                         },

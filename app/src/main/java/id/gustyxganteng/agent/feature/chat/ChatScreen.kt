@@ -129,8 +129,10 @@ import id.gustyxganteng.agent.domain.agent.AgentState
 import id.gustyxganteng.agent.domain.tools.WorkspacePathResolver
 import id.gustyxganteng.agent.feature.canvas.CanvasModalSheet
 import id.gustyxganteng.agent.feature.chat.ui.components.CanvasPreviewCard
+import id.gustyxganteng.agent.feature.chat.ui.components.CleanImageShowcaseCard
 import id.gustyxganteng.agent.feature.chat.ui.components.GeminiBottomCapsule
 import id.gustyxganteng.agent.feature.chat.ui.components.GeminiTopBar
+import id.gustyxganteng.agent.feature.chat.ui.components.ImageGeneratingSilhouette
 import id.gustyxganteng.agent.feature.chat.ui.components.ImageGenStudioModalSheet
 import id.gustyxganteng.agent.feature.chat.ui.components.NeuralSpiderStatsCard
 import id.gustyxganteng.agent.feature.chat.ui.components.NeuralTelemetryModalSheet
@@ -507,7 +509,8 @@ fun ChatScreen(
                             onReloadMessage = { msg ->
                                 viewModel.regenerateResponse(msg)
                                 Toast.makeText(context, context.getString(R.string.reloading_response), Toast.LENGTH_SHORT).show()
-                            }
+                            },
+                            onOpenImageStudio = { showImageGenStudioSheet = true }
                         )
                     }
 
@@ -638,13 +641,15 @@ fun ChatScreen(
                     // Tool executing status
                     if (uiState.agentState is AgentState.ExecutingTool) {
                         val execState = uiState.agentState as AgentState.ExecutingTool
-                        item {
-                            ToolExecutionCard(
-                                toolName = execState.toolName,
-                                arguments = execState.description,
-                                isLoading = true,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
-                            )
+                        if (execState.toolName != "generate_image") {
+                            item {
+                                ToolExecutionCard(
+                                    toolName = execState.toolName,
+                                    arguments = execState.description,
+                                    isLoading = true,
+                                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                                )
+                            }
                         }
                     }
 
@@ -1031,7 +1036,8 @@ fun ChatMessageItem(
     allMessages: List<Message> = emptyList(),
     onOpenCanvas: (title: String, language: String, content: String, filePath: String?) -> Unit,
     onEditPrompt: (String) -> Unit = {},
-    onReloadMessage: (Message) -> Unit = {}
+    onReloadMessage: (Message) -> Unit = {},
+    onOpenImageStudio: (() -> Unit)? = null
 ) {
     val clipboard = LocalClipboardManager.current
     val context = LocalContext.current
@@ -1147,6 +1153,93 @@ fun ChatMessageItem(
             }
         }
     } else if (message.role == MessageRole.ASSISTANT) {
+        val imageToolCall = message.toolCalls.firstOrNull { it.function.name == "generate_image" }
+        val hasMarkdownImage = message.content.contains("![") && message.content.contains("](")
+
+        if (imageToolCall != null || hasMarkdownImage) {
+            val matchingToolMsg = allMessages.firstOrNull { it.role == MessageRole.TOOL && it.toolCallId == imageToolCall?.id }
+            val rawImageSource = matchingToolMsg?.content ?: message.content
+            val imageUrl = extractImageUrl(rawImageSource)
+
+            val promptFromArgs = try {
+                if (imageToolCall != null) {
+                    org.json.JSONObject(imageToolCall.function.arguments).optString("prompt", "")
+                } else ""
+            } catch (_: Exception) { "" }
+
+            val altFromMarkdown = Regex("""!\[(.*?)\]""").find(rawImageSource)?.groupValues?.getOrNull(1)
+            val displayPrompt = promptFromArgs.ifBlank { altFromMarkdown ?: "Ilustrasi Visual AI" }
+            val textWithoutImage = message.content.replace(Regex("""!\[.*?\]\(.*?\)"""), "").trim()
+
+            // Jika murni pesan visual atau dihasilkan oleh image tool
+            if (imageUrl != null && (textWithoutImage.isBlank() || imageToolCall != null)) {
+                SelectionContainer {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(bottom = 6.dp)
+                        ) {
+                            GeminiSparkleIcon(size = 15.dp, tint = M3Primary)
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                text = modelName,
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = M3Primary
+                            )
+                        }
+
+                        CleanImageShowcaseCard(
+                            prompt = displayPrompt,
+                            imageUrl = imageUrl,
+                            modifier = Modifier.padding(vertical = 4.dp),
+                            onOpenStudio = onOpenImageStudio
+                        )
+
+                        if (textWithoutImage.isNotBlank()) {
+                            Spacer(Modifier.height(8.dp))
+                            MarkdownContent(
+                                markdown = textWithoutImage,
+                                onOpenInCanvas = { t, l, c -> onOpenCanvas(t, l, c, null) }
+                            )
+                        }
+                    }
+                }
+                return
+            } else if (imageToolCall != null && imageUrl == null) {
+                // Sedang dalam proses pembuatan gambar
+                SelectionContainer {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(bottom = 6.dp)
+                        ) {
+                            GeminiSparkleIcon(size = 15.dp, tint = M3Primary)
+                            Spacer(Modifier.width(6.dp))
+                            Text(
+                                text = modelName,
+                                style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                                color = M3Primary
+                            )
+                        }
+
+                        ImageGeneratingSilhouette(
+                            statusText = "Membuat sketsa...",
+                            modifier = Modifier.padding(vertical = 4.dp)
+                        )
+                    }
+                }
+                return
+            }
+        }
+
         // AI response: Full-width elevated layout
         SelectionContainer {
             Column(
@@ -1369,6 +1462,11 @@ fun ChatMessageItem(
         val toolName = matchingToolCall?.function?.name ?: "Tool Result"
         val toolArgs = matchingToolCall?.function?.arguments ?: ""
 
+        // Sembunyikan kartu tool mentah untuk generate_image, karena Assistant message sudah merender CleanImageShowcaseCard
+        if (toolName == "generate_image") {
+            return
+        }
+
         ToolExecutionCard(
             toolName = toolName,
             arguments = toolArgs,
@@ -1376,6 +1474,13 @@ fun ChatMessageItem(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 3.dp)
         )
     }
+}
+
+private fun extractImageUrl(content: String): String? {
+    val mdMatch = Regex("""!\[.*?\]\((https?://[^\s)]+|file://[^\s)]+|data:image/[^\s)]+)\)""").find(content)
+    if (mdMatch != null) return mdMatch.groupValues[1]
+    val rawMatch = Regex("""(https?://[^\s)]+\.(?:png|jpg|jpeg|webp)|file://[^\s)]+\.(?:png|jpg|jpeg|webp)|data:image/[^\s)]+)""", RegexOption.IGNORE_CASE).find(content)
+    return rawMatch?.value
 }
 
 private fun extractCanvasContent(rawContent: String): String {

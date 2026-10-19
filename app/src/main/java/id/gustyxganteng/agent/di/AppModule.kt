@@ -75,7 +75,7 @@ val appModule = module {
     single { ShellTool() }
     single { WebTool() }
     single { AcademicTool() }
-    single { ImageTool(get(), get()) }
+    single { ImageTool(get(), get(), androidContext()) }
     single { ContextMeterManager(get(), get()) }
     single {
         AgentOrchestrator(
