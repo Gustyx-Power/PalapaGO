@@ -36,6 +36,7 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.DashboardCustomize
 import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.Language
+import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.PhotoCamera
 import androidx.compose.material.icons.rounded.School
 import androidx.compose.material.icons.rounded.Terminal
@@ -94,6 +95,7 @@ fun GeminiBottomCapsule(
     onOpenWorkspaceManager: () -> Unit,
     onToggleWebSearch: () -> Unit,
     onOpenCanvas: () -> Unit,
+    onOpenImageGen: () -> Unit = {},
     onAttachImage: () -> Unit,
     onCaptureCamera: () -> Unit = {},
     onSend: () -> Unit,
@@ -118,7 +120,7 @@ fun GeminiBottomCapsule(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 2.dp, vertical = 2.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 PromptModeSegment(
@@ -147,6 +149,17 @@ fun GeminiBottomCapsule(
                     label = stringResource(R.string.prompt_mode_academic),
                     isSelected = promptMode == PromptMode.ACADEMIC,
                     onClick = { onSelectPromptMode(PromptMode.ACADEMIC) },
+                    modifier = Modifier.weight(1f)
+                )
+
+                PromptModeSegment(
+                    icon = Icons.Rounded.Palette,
+                    label = stringResource(R.string.prompt_mode_image_gen),
+                    isSelected = promptMode == PromptMode.IMAGE_GEN,
+                    onClick = {
+                        onSelectPromptMode(PromptMode.IMAGE_GEN)
+                        onOpenImageGen()
+                    },
                     modifier = Modifier.weight(1f)
                 )
 
@@ -350,6 +363,7 @@ fun GeminiBottomCapsule(
                     PromptMode.CHAT -> stringResource(R.string.prompt_placeholder_chat)
                     PromptMode.AGENT -> stringResource(R.string.prompt_placeholder_agent)
                     PromptMode.ACADEMIC -> stringResource(R.string.prompt_placeholder_academic)
+                    PromptMode.IMAGE_GEN -> stringResource(R.string.image_gen_studio_title)
                     PromptMode.CANVAS -> stringResource(R.string.input_placeholder)
                 }
 
@@ -485,7 +499,7 @@ private fun PromptModeSegment(
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 2.dp),
+                .padding(horizontal = 1.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
@@ -493,14 +507,14 @@ private fun PromptModeSegment(
                 imageVector = icon,
                 contentDescription = null,
                 tint = contentColor,
-                modifier = Modifier.size(13.dp)
+                modifier = Modifier.size(12.dp)
             )
-            Spacer(Modifier.width(3.dp))
+            Spacer(Modifier.width(2.dp))
             Text(
                 text = label,
                 style = MaterialTheme.typography.labelSmall.copy(
                     fontWeight = fontWeight,
-                    fontSize = 11.sp
+                    fontSize = 9.sp
                 ),
                 color = contentColor,
                 maxLines = 1,

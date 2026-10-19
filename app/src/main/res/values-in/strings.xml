@@ -41,6 +41,10 @@
     <string name="prompt_mode_academic_desc">Riset jurnal ilmiah, sitasi terindeks, dan tugas sekolah/kuliah</string>
     <string name="prompt_mode_canvas">Canvas</string>
     <string name="prompt_mode_canvas_desc">Studio interaktif untuk dokumen, simulasi UI, dan kode</string>
+    <string name="prompt_mode_image_gen">Image Gen</string>
+    <string name="prompt_mode_image_gen_desc">Studio visual multimodal Agnes AI (agnes-image-2.5-flash)</string>
+    <string name="image_gen_studio_title">Image Gen Studio</string>
+    <string name="telemetry_neural_title">Telemetri Neural</string>
     <string name="prompt_mode_agent_requires_folder">Mode Agent mewajibkan pemilihan folder workspace terlebih dahulu.</string>
     <string name="prompt_placeholder_chat">Tanyakan apa saja...</string>
     <string name="prompt_placeholder_agent">Perintahkan agent untuk menulis file, coding, dsb...</string>

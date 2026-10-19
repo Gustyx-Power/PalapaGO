@@ -1,7 +1,6 @@
 package id.gustyxganteng.agent.feature.chat
 
 import android.Manifest
-import id.gustyxganteng.agent.core.model.AgentExecutionMode
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.widget.Toast
@@ -44,6 +43,7 @@ import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Code
 import androidx.compose.material.icons.rounded.FolderOpen
+import androidx.compose.material.icons.rounded.Hub
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.School
@@ -118,6 +118,7 @@ import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerLow
 import id.gustyxganteng.agent.core.designsystem.M3TextPrimary
 import id.gustyxganteng.agent.core.designsystem.M3TextSecondary
 import id.gustyxganteng.agent.core.markdown.MarkdownContent
+import id.gustyxganteng.agent.core.model.AgentExecutionMode
 import id.gustyxganteng.agent.core.model.CanvasArtifact
 import id.gustyxganteng.agent.core.model.Message
 import id.gustyxganteng.agent.core.model.MessageRole
@@ -130,7 +131,9 @@ import id.gustyxganteng.agent.feature.canvas.CanvasModalSheet
 import id.gustyxganteng.agent.feature.chat.ui.components.CanvasPreviewCard
 import id.gustyxganteng.agent.feature.chat.ui.components.GeminiBottomCapsule
 import id.gustyxganteng.agent.feature.chat.ui.components.GeminiTopBar
+import id.gustyxganteng.agent.feature.chat.ui.components.ImageGenStudioModalSheet
 import id.gustyxganteng.agent.feature.chat.ui.components.NeuralSpiderStatsCard
+import id.gustyxganteng.agent.feature.chat.ui.components.NeuralTelemetryModalSheet
 import id.gustyxganteng.agent.feature.chat.ui.components.ThinkingAccordion
 import id.gustyxganteng.agent.feature.chat.ui.components.ToolExecutionCard
 import id.gustyxganteng.agent.feature.workspace.DiffApprovalDialog
@@ -158,6 +161,8 @@ fun ChatScreen(
     var inputText by remember { mutableStateOf("") }
     val attachedImages = remember { mutableStateListOf<String>() }
     var showWorkspaceManager by remember { mutableStateOf(false) }
+    var showNeuralTelemetrySheet by remember { mutableStateOf(false) }
+    var showImageGenStudioSheet by remember { mutableStateOf(false) }
 
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents()
@@ -391,13 +396,32 @@ fun ChatScreen(
                     HorizontalDivider(color = M3OutlineVariant)
                     Spacer(Modifier.height(10.dp))
 
-                    // Permanent Telemetry Card
-                    NeuralSpiderStatsCard(
-                        stats = uiState.globalUsageStats,
-                        isDrawerOpen = drawerState.isOpen,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 8.dp)
+                    // Image Gen Studio Navigation Item
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Rounded.Palette, contentDescription = null, tint = M3Primary) },
+                        label = { Text(stringResource(R.string.image_gen_studio_title), color = M3TextPrimary, fontWeight = FontWeight.SemiBold) },
+                        selected = false,
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            showImageGenStudioSheet = true
+                        },
+                        colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = M3SurfaceContainerHigh),
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.padding(bottom = 6.dp)
+                    )
+
+                    // Telemetri Neural Navigation Item
+                    NavigationDrawerItem(
+                        icon = { Icon(Icons.Rounded.Hub, contentDescription = null, tint = M3Primary) },
+                        label = { Text(stringResource(R.string.telemetry_neural_title), color = M3TextPrimary, fontWeight = FontWeight.SemiBold) },
+                        selected = false,
+                        onClick = {
+                            scope.launch { drawerState.close() }
+                            showNeuralTelemetrySheet = true
+                        },
+                        colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = M3SurfaceContainerHigh),
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.padding(bottom = 6.dp)
                     )
 
                     // Settings Navigation Item
@@ -748,6 +772,9 @@ fun ChatScreen(
                             )
                         )
                     },
+                    onOpenImageGen = {
+                        showImageGenStudioSheet = true
+                    },
                     onAttachImage = { imagePicker.launch("image/*") },
                     onCaptureCamera = launchCamera,
                     onSend = {
@@ -823,6 +850,33 @@ fun ChatScreen(
             onSendInstructionToAgent = { instruction, currentContent ->
                 viewModel.sendMessage("Perbarui dokumen Canvas (${canvasArtifact.title}) dengan instruksi: $instruction\n\nIsi kode sekarang:\n```\n$currentContent\n```")
             }
+        )
+    }
+
+    // Modal Neural Telemetry Sheet
+    if (showNeuralTelemetrySheet) {
+        NeuralTelemetryModalSheet(
+            stats = uiState.globalUsageStats,
+            contextStatus = uiState.contextStatus,
+            activeModel = uiState.currentSession?.model ?: uiState.appSettings?.selectedModel ?: "agnes-3.0-flash",
+            executionMode = uiState.appSettings?.executionMode ?: AgentExecutionMode.STANDARD,
+            totalSessionsCount = uiState.sessions.size,
+            onDismiss = { showNeuralTelemetrySheet = false }
+        )
+    }
+
+    // Modal Image Gen Studio Sheet
+    if (showImageGenStudioSheet) {
+        ImageGenStudioModalSheet(
+            executionMode = uiState.appSettings?.executionMode ?: AgentExecutionMode.FAST,
+            onSelectExecutionMode = { viewModel.updateExecutionMode(it) },
+            onGenerateImage = { prompt, ratio ->
+                viewModel.generateImageDirect(prompt, ratio)
+            },
+            onSendImageToChat = { markdown ->
+                viewModel.insertAssistantMessage(markdown)
+            },
+            onDismiss = { showImageGenStudioSheet = false }
         )
     }
 }

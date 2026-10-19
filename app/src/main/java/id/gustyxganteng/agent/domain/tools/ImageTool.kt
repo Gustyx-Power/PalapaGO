@@ -27,14 +27,26 @@ class ImageTool(
                         ),
                         "aspect_ratio" to PropertySchema(
                             type = "string",
-                            description = "Dimensi gambar: '1024x1024' (persegi), '1024x1792' (potret), atau '1792x1024' (lanskap). Default 1024x1024.",
-                            enum = listOf("1024x1024", "1024x1792", "1792x1024")
+                            description = "Rasio aspek: '1:1' (1024x1024), '9:16' (1024x1792), '16:9' (1792x1024), '3:4' (768x1024), atau '4:3' (1024x768). Default 1:1.",
+                            enum = listOf("1:1", "9:16", "16:9", "3:4", "4:3", "1024x1024", "1024x1792", "1792x1024", "768x1024", "1024x768")
                         )
                     ),
                     required = listOf("prompt")
                 )
             )
         )
+
+        fun normalizeDimension(input: String?): String {
+            return when (input?.trim()?.lowercase()) {
+                "1:1", "square", "persegi" -> "1024x1024"
+                "9:16", "portrait", "story", "vertikal", "reel" -> "1024x1792"
+                "16:9", "landscape", "lanskap", "banner", "wallpaper" -> "1792x1024"
+                "3:4", "poster", "potret" -> "768x1024"
+                "4:3", "slide", "presentation", "presentasi" -> "1024x768"
+                "1024x1024", "1024x1792", "1792x1024", "768x1024", "1024x768" -> input.trim()
+                else -> "1024x1024"
+            }
+        }
     }
 
     suspend fun execute(
@@ -45,7 +57,8 @@ class ImageTool(
         return try {
             val root = json.parseToJsonElement(argsJson).jsonObject
             val prompt = root["prompt"]?.jsonPrimitive?.content ?: return "Error: Parameter 'prompt' wajib diisi."
-            val size = root["aspect_ratio"]?.jsonPrimitive?.content ?: "1024x1024"
+            val rawSize = root["aspect_ratio"]?.jsonPrimitive?.content
+            val size = normalizeDimension(rawSize)
 
             val result = agnesApiService.generateImage(
                 baseUrl = baseUrl,

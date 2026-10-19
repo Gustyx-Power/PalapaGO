@@ -41,6 +41,10 @@
     <string name="prompt_mode_academic_desc">Scientific journal research, indexed citations, and study tasks</string>
     <string name="prompt_mode_canvas">Canvas</string>
     <string name="prompt_mode_canvas_desc">Interactive studio for documents, UI simulations, and code</string>
+    <string name="prompt_mode_image_gen">Image Gen</string>
+    <string name="prompt_mode_image_gen_desc">Agnes AI Multimodal Visual Studio (agnes-image-2.5-flash)</string>
+    <string name="image_gen_studio_title">Image Gen Studio</string>
+    <string name="telemetry_neural_title">Telemetri Neural</string>
     <string name="prompt_mode_agent_requires_folder">Agent mode requires choosing a project workspace folder first.</string>
     <string name="prompt_placeholder_chat">Ask anything...</string>
     <string name="prompt_placeholder_agent">Instruct agent to inspect, code, or execute in workspace...</string>

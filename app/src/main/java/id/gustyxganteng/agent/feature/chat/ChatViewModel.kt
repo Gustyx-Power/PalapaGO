@@ -12,11 +12,13 @@ import id.gustyxganteng.agent.core.model.ChatSession
 import id.gustyxganteng.agent.core.model.Message
 import id.gustyxganteng.agent.core.model.MessageRole
 import id.gustyxganteng.agent.core.model.PromptMode
+import id.gustyxganteng.agent.core.network.AgnesApiService
 import id.gustyxganteng.agent.core.network.RateLimitStatus
 import id.gustyxganteng.agent.core.network.SmartRetryInterceptor
 import id.gustyxganteng.agent.core.network.GroqSidecarService
 import id.gustyxganteng.agent.core.service.AgentForegroundService
 import id.gustyxganteng.agent.domain.agent.AgentOrchestrator
+import id.gustyxganteng.agent.domain.tools.ImageTool
 import id.gustyxganteng.agent.domain.agent.AgentState
 import id.gustyxganteng.agent.domain.context.ContextMeterManager
 import id.gustyxganteng.agent.domain.context.ContextMeterStatus
@@ -31,6 +33,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import java.util.UUID
@@ -58,7 +61,8 @@ class ChatViewModel(
     private val orchestrator: AgentOrchestrator,
     private val contextMeterManager: ContextMeterManager,
     private val retryInterceptor: SmartRetryInterceptor,
-    private val groqSidecarService: GroqSidecarService? = null
+    private val groqSidecarService: GroqSidecarService? = null,
+    private val agnesApiService: AgnesApiService? = null
 ) : AndroidViewModel(application) {
 
     private val _currentSessionId = MutableStateFlow<String>("")
@@ -346,6 +350,32 @@ class ChatViewModel(
 
     fun closeCanvas() {
         _activeCanvas.value = null
+    }
+
+    suspend fun generateImageDirect(prompt: String, ratio: String): Result<String> {
+        val settings = settingsRepository.settings.first()
+        val apiService = agnesApiService ?: return Result.failure(IllegalStateException("Layanan Agnes API tidak tersedia."))
+        val dimension = ImageTool.normalizeDimension(ratio)
+        return apiService.generateImage(
+            baseUrl = settings.baseUrl,
+            apiKey = settings.apiKey,
+            prompt = prompt,
+            size = dimension
+        )
+    }
+
+    fun insertAssistantMessage(content: String) {
+        val current = uiState.value.currentSession ?: return
+        viewModelScope.launch {
+            val assistantMessage = Message(
+                id = UUID.randomUUID().toString(),
+                sessionId = current.id,
+                role = MessageRole.ASSISTANT,
+                content = content,
+                timestamp = System.currentTimeMillis()
+            )
+            chatRepository.saveMessage(assistantMessage)
+        }
     }
 
     fun updateSessionModel(model: String) {

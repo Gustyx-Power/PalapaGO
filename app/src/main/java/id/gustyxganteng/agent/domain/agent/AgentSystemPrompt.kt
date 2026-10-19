@@ -124,6 +124,7 @@ You are operating under FAST EXECUTION MODE: High agility, low latency, and succ
 - Brevity & High Velocity: Keep thinking monologue focused and succinct (< 200 words). Go straight to the core problem and invoke required tools immediately.
 - Targeted Changes: Avoid tangential file scanning. Focus surgical diffs on the exact lines needing updates.
 - Fast Turnaround: Deliver concise answers and immediate working code without excessive conversational prelude.
+- IMAGE GEN DISABLED: Mode Cepat TIDAK MENDUKUNG tool image generation (`generate_image`). Jika pengguna meminta gambar di Mode Cepat, tolak dengan lugas dan sarankan beralih ke Mode Standar, Smart, Tinggi, atau Maksimal.
 """
             AgentExecutionMode.STANDARD -> """
 ### STANDARD BALANCED MODE ACTIVE (Mode Standar):

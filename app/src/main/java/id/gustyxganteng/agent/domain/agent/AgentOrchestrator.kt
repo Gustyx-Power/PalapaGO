@@ -203,7 +203,9 @@ class AgentOrchestrator(
 
         // Kumpulkan definisi tool yang aktif berdasarkan promptMode
         val activeTools = mutableListOf<ToolDefinition>()
-        activeTools.add(ImageTool.DEFINITION)
+        if (effectiveMode != AgentExecutionMode.FAST) {
+            activeTools.add(ImageTool.DEFINITION)
+        }
         when (promptMode) {
             PromptMode.CHAT -> {
                 if (enableWebSearch) activeTools.addAll(WebTool.DEFINITIONS)
@@ -225,6 +227,13 @@ class AgentOrchestrator(
                 activeTools.add(ShellTool.DEFINITION)
                 if (enableWebSearch) activeTools.addAll(WebTool.DEFINITIONS)
                 activeTools.addAll(AcademicTool.DEFINITIONS)
+                activeTools.add(CanvasTool.DEFINITION)
+            }
+            PromptMode.IMAGE_GEN -> {
+                if (effectiveMode != AgentExecutionMode.FAST) {
+                    activeTools.add(ImageTool.DEFINITION)
+                }
+                if (enableWebSearch) activeTools.addAll(WebTool.DEFINITIONS)
                 activeTools.add(CanvasTool.DEFINITION)
             }
         }
@@ -700,7 +709,10 @@ class AgentOrchestrator(
                     workspacePath = workspacePath,
                     useTermuxEnv = useTermuxEnv,
                     tavilyDeepSearchEnabled = tavilyDeepSearchEnabled,
-                    claudeMaxMode = effectiveMode == AgentExecutionMode.MAX
+                    claudeMaxMode = effectiveMode == AgentExecutionMode.MAX,
+                    baseUrl = baseUrl,
+                    apiKey = apiKey,
+                    isFastMode = effectiveMode == AgentExecutionMode.FAST
                 )
                 if (toolName == "generate_image" && result.isSuccess) {
                     val urlMatch = Regex("""https?://[^\s)]+""").find(result.stdout)
@@ -721,7 +733,10 @@ class AgentOrchestrator(
         workspacePath: String?,
         useTermuxEnv: Boolean,
         tavilyDeepSearchEnabled: Boolean,
-        claudeMaxMode: Boolean = false
+        claudeMaxMode: Boolean = false,
+        baseUrl: String = "",
+        apiKey: String = "",
+        isFastMode: Boolean = false
     ): ToolExecutionResult {
         val root = workspacePath ?: "/storage/emulated/0"
         return when (toolName) {
@@ -746,32 +761,42 @@ class AgentOrchestrator(
             "download_paper_pdf" -> academicTool.downloadPaperPdf(toolCallId, root, args)
             "open_canvas" -> canvasTool.execute(toolCallId, args)
             "generate_image" -> {
-                val prompt = args["prompt"]?.jsonPrimitive?.content ?: ""
-                val size = args["aspect_ratio"]?.jsonPrimitive?.content ?: "1024x1024"
-                val res = agnesApiService.generateImage(
-                    baseUrl = "",
-                    apiKey = "",
-                    prompt = prompt,
-                    size = size
-                )
-                res.fold(
-                    onSuccess = { url ->
-                        ToolExecutionResult(
-                            toolCallId = toolCallId,
-                            toolName = toolName,
-                            stdout = "![$prompt]($url)\n\nGambar berhasil digenerate oleh Agnes Image 2.5 Flash ($size) di URL: $url\n\n[INSTRUKSI]: Di respon akhirmu, kamu WAJIB menyertakan kode markdown gambar: ![$prompt]($url) agar tampil di chat.",
-                            isSuccess = true
-                        )
-                    },
-                    onFailure = { err ->
-                        ToolExecutionResult(
-                            toolCallId = toolCallId,
-                            toolName = toolName,
-                            stderr = "Gagal menghasilkan gambar: ${err.message}",
-                            isSuccess = false
-                        )
-                    }
-                )
+                if (isFastMode) {
+                    ToolExecutionResult(
+                        toolCallId = toolCallId,
+                        toolName = toolName,
+                        stderr = "Image Gen dinonaktifkan di Mode Cepat. Silakan beralih ke Mode Standar, Tinggi, Smart, atau Maksimal untuk membuat gambar.",
+                        isSuccess = false
+                    )
+                } else {
+                    val prompt = args["prompt"]?.jsonPrimitive?.content ?: ""
+                    val rawSize = args["aspect_ratio"]?.jsonPrimitive?.content
+                    val size = ImageTool.normalizeDimension(rawSize)
+                    val res = agnesApiService.generateImage(
+                        baseUrl = baseUrl,
+                        apiKey = apiKey,
+                        prompt = prompt,
+                        size = size
+                    )
+                    res.fold(
+                        onSuccess = { url ->
+                            ToolExecutionResult(
+                                toolCallId = toolCallId,
+                                toolName = toolName,
+                                stdout = "![$prompt]($url)\n\nGambar berhasil digenerate oleh Agnes Image 2.5 Flash ($size) di URL: $url\n\n[INSTRUKSI]: Di respon akhirmu, kamu WAJIB menyertakan kode markdown gambar: ![$prompt]($url) agar tampil di chat.",
+                                isSuccess = true
+                            )
+                        },
+                        onFailure = { err ->
+                            ToolExecutionResult(
+                                toolCallId = toolCallId,
+                                toolName = toolName,
+                                stderr = "Gagal menghasilkan gambar: ${err.message}",
+                                isSuccess = false
+                            )
+                        }
+                    )
+                }
             }
             else -> ToolExecutionResult(toolCallId, toolName, stderr = "Tool tidak dikenal: $toolName", isSuccess = false)
         }

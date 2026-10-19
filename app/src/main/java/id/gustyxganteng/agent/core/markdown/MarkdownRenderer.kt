@@ -1314,22 +1314,51 @@ fun MarkdownImageCard(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f)
                     )
-                    Spacer(Modifier.width(8.dp))
-                    IconButton(
-                        onClick = {
-                            try {
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                context.startActivity(intent)
-                            } catch (_: Exception) {}
-                        },
-                        modifier = Modifier.size(28.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Rounded.OpenInNew,
-                            contentDescription = "Buka di Browser",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp)
-                        )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(
+                            onClick = {
+                                try {
+                                    val dm = context.getSystemService(Context.DOWNLOAD_SERVICE) as? DownloadManager
+                                    if (dm != null) {
+                                        val filename = "palapago_${System.currentTimeMillis()}.png"
+                                        val req = DownloadManager.Request(Uri.parse(url))
+                                            .setTitle("PalapaGO Image Gen")
+                                            .setDescription(alt.ifBlank { "Mengunduh gambar..." })
+                                            .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
+                                            .setDestinationInExternalPublicDir(Environment.DIRECTORY_PICTURES, "PalapaGO/$filename")
+                                        dm.enqueue(req)
+                                        Toast.makeText(context, "Mulai mengunduh ke Pictures/PalapaGO", Toast.LENGTH_SHORT).show()
+                                    }
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Gagal mengunduh: ${e.message}", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.FileDownload,
+                                contentDescription = "Unduh Gambar",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+                        Spacer(Modifier.width(4.dp))
+                        IconButton(
+                            onClick = {
+                                try {
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                    context.startActivity(intent)
+                                } catch (_: Exception) {}
+                            },
+                            modifier = Modifier.size(28.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Rounded.OpenInNew,
+                                contentDescription = "Buka di Browser",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
                 }
             }

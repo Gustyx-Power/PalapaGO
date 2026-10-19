@@ -27,6 +27,11 @@ enum class PromptMode(
         id = "canvas",
         titleRes = R.string.prompt_mode_canvas,
         descRes = R.string.prompt_mode_canvas_desc
+    ),
+    IMAGE_GEN(
+        id = "image_gen",
+        titleRes = R.string.prompt_mode_image_gen,
+        descRes = R.string.prompt_mode_image_gen_desc
     );
 
     companion object {

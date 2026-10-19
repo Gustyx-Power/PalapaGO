@@ -103,7 +103,8 @@ val appModule = module {
             orchestrator = get(),
             contextMeterManager = get(),
             retryInterceptor = get(),
-            groqSidecarService = getOrNull()
+            groqSidecarService = getOrNull(),
+            agnesApiService = getOrNull()
         )
     }
 }
