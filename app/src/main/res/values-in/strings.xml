@@ -17,8 +17,13 @@
     <string name="context_tokens_used">Token Terpakai</string>
     <string name="context_tokens_total">Total Kapasitas</string>
     <string name="context_tokens_remaining">Sisa Token</string>
-    <string name="context_compact_button">Padatkan Konteks</string>
+    <string name="context_compact_button">Padatkan Konteks Sesi Ini</string>
     <string name="context_compact_info">Memadatkan konteks akan merangkum riwayat percakapan sebelumnya agar model tetap responsif dan hemat token tanpa kehilangan inti instruksi.</string>
+    <string name="context_branch_button">Cabangkan ke Obrolan Baru</string>
+    <string name="context_branch_info">Membuat obrolan baru dengan context window segar (0 token). Rangkuman tujuan, file yang diubah, dan keputusan teknis dipindahkan otomatis tanpa menghapus sesi ini.</string>
+    <string name="branch_session_prefix">🌿 Cabang:</string>
+    <string name="session_branched_toast">Percakapan berhasil dicabangkan ke obrolan baru!</string>
+    <string name="branching_context_progress">Menyintesis konteks &amp; mencabangkan percakapan...</string>
 
     <!-- Drawer -->
     <string name="new_chat">Percakapan Baru</string>

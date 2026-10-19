@@ -14,6 +14,7 @@ import id.gustyxganteng.agent.core.model.MessageRole
 import id.gustyxganteng.agent.core.model.PromptMode
 import id.gustyxganteng.agent.core.network.RateLimitStatus
 import id.gustyxganteng.agent.core.network.SmartRetryInterceptor
+import id.gustyxganteng.agent.core.network.GroqSidecarService
 import id.gustyxganteng.agent.core.service.AgentForegroundService
 import id.gustyxganteng.agent.domain.agent.AgentOrchestrator
 import id.gustyxganteng.agent.domain.agent.AgentState
@@ -56,7 +57,8 @@ class ChatViewModel(
     private val workspaceDao: WorkspaceDao,
     private val orchestrator: AgentOrchestrator,
     private val contextMeterManager: ContextMeterManager,
-    private val retryInterceptor: SmartRetryInterceptor
+    private val retryInterceptor: SmartRetryInterceptor,
+    private val groqSidecarService: GroqSidecarService? = null
 ) : AndroidViewModel(application) {
 
     private val _currentSessionId = MutableStateFlow<String>("")
@@ -131,12 +133,13 @@ class ChatViewModel(
                 Pair(sessions, settings)
             }.collect { (sessions, settings) ->
                 if (_currentSessionId.value.isEmpty()) {
-                    val savedId = settings.activeSessionId
-                    val matchedSession = sessions.find { it.id == savedId }
-                    if (matchedSession != null) {
-                        selectSession(matchedSession.id, persist = false)
-                    } else if (sessions.isNotEmpty()) {
-                        selectSession(sessions.first().id, persist = true)
+                    // Cold start / App launch: Always open a fresh, clean chat session.
+                    // If an existing session is already empty (0 messages), select it to avoid accumulating empty sessions.
+                    val emptySession = sessions.firstOrNull { session ->
+                        chatRepository.getMessagesForSessionSync(session.id).isEmpty()
+                    }
+                    if (emptySession != null) {
+                        selectSession(emptySession.id, persist = true)
                     } else {
                         createNewSession()
                     }
@@ -163,6 +166,13 @@ class ChatViewModel(
 
     fun createNewSession() {
         viewModelScope.launch {
+            val currentId = _currentSessionId.value
+            if (currentId.isNotEmpty()) {
+                val currentMessages = chatRepository.getMessagesForSessionSync(currentId)
+                if (currentMessages.isEmpty()) {
+                    return@launch
+                }
+            }
             val settings = uiState.value.appSettings
             val newSession = ChatSession(
                 id = UUID.randomUUID().toString(),
@@ -211,6 +221,7 @@ class ChatViewModel(
                 antiAiSlopMode = settings.antiAiSlopMode,
                 tavilyDeepSearchEnabled = settings.tavilyDeepSearchEnabled,
                 academicMode = effectiveAcademic,
+                promptMode = pMode,
                 claudeMaxMode = settings.claudeMaxMode
             )
         }
@@ -247,6 +258,7 @@ class ChatViewModel(
                 antiAiSlopMode = settings.antiAiSlopMode,
                 tavilyDeepSearchEnabled = settings.tavilyDeepSearchEnabled,
                 academicMode = effectiveAcademic,
+                promptMode = pMode,
                 claudeMaxMode = settings.claudeMaxMode
             )
         }
@@ -289,6 +301,7 @@ class ChatViewModel(
                 antiAiSlopMode = settings.antiAiSlopMode,
                 tavilyDeepSearchEnabled = settings.tavilyDeepSearchEnabled,
                 academicMode = effectiveAcademic,
+                promptMode = pMode,
                 claudeMaxMode = settings.claudeMaxMode
             )
         }
@@ -393,6 +406,63 @@ class ChatViewModel(
                 apiKey = settings.apiKey,
                 model = session.model
             )
+        }
+    }
+
+    fun branchCurrentSession(onBranched: (newSessionId: String) -> Unit = {}) {
+        val currentSession = uiState.value.currentSession ?: return
+        val currentMessages = uiState.value.messages
+        if (currentMessages.isEmpty()) return
+
+        viewModelScope.launch {
+            val branchSummary = if (groqSidecarService != null) {
+                val snippet = currentMessages.takeLast(12).joinToString("\n---\n") { msg ->
+                    val roleStr = when (msg.role) {
+                        MessageRole.USER -> "USER"
+                        MessageRole.ASSISTANT -> "AGENT"
+                        MessageRole.TOOL -> "TOOL_RESULT"
+                        MessageRole.SYSTEM -> "SYSTEM"
+                    }
+                    "[$roleStr]: ${msg.content.take(800)}"
+                }
+                groqSidecarService.generateBranchSummary(
+                    sessionTitle = currentSession.title,
+                    conversationSnippet = snippet
+                )
+            } else {
+                buildString {
+                    appendLine("### 🌿 Konteks Cabang Percakapan")
+                    appendLine("*Dicabangkan dari sesi: **${currentSession.title}***\n")
+                    appendLine("- **🎯 Sesi Induk**: ${currentSession.title}")
+                    appendLine("- **⚡ Status**: Percakapan dicabangkan ke context window baru (0 token terpakai). Riwayat pengerjaan tetap tersimpan aman di sesi sebelumnya.")
+                }
+            }
+
+            val newSessionId = UUID.randomUUID().toString()
+            val branchPrefix = getApplication<Application>().getString(R.string.branch_session_prefix)
+            val cleanTitle = currentSession.title.removePrefix(branchPrefix).trim()
+            val newTitle = "$branchPrefix $cleanTitle"
+            val newSession = ChatSession(
+                id = newSessionId,
+                title = newTitle,
+                model = currentSession.model,
+                workspacePath = currentSession.workspacePath,
+                createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis()
+            )
+            chatRepository.saveSession(newSession)
+
+            val initialContextMessage = Message(
+                id = UUID.randomUUID().toString(),
+                sessionId = newSessionId,
+                role = MessageRole.ASSISTANT,
+                content = branchSummary,
+                timestamp = System.currentTimeMillis()
+            )
+            chatRepository.saveMessage(initialContextMessage)
+
+            selectSession(newSessionId, persist = true)
+            onBranched(newSessionId)
         }
     }
 }

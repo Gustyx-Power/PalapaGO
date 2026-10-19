@@ -17,8 +17,13 @@
     <string name="context_tokens_used">Used Tokens</string>
     <string name="context_tokens_total">Total Capacity</string>
     <string name="context_tokens_remaining">Remaining</string>
-    <string name="context_compact_button">Compact Context</string>
+    <string name="context_compact_button">Compact This Session</string>
     <string name="context_compact_info">Compacting the context summarizes earlier conversation history so the model stays fast and responsive without exceeding limits.</string>
+    <string name="context_branch_button">Branch to New Chat</string>
+    <string name="context_branch_info">Creates a fresh new chat with a 0-token context window. Core objectives, modified files, and technical decisions are seamlessly ported over without modifying this session.</string>
+    <string name="branch_session_prefix">🌿 Branch:</string>
+    <string name="session_branched_toast">Conversation branched to a fresh session!</string>
+    <string name="branching_context_progress">Synthesizing context and branching session...</string>
 
     <!-- Drawer -->
     <string name="new_chat">New Chat</string>

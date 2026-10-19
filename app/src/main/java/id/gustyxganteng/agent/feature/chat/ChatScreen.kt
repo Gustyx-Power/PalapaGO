@@ -431,6 +431,12 @@ fun ChatScreen(
                         viewModel.compactSession()
                         Toast.makeText(context, context.getString(R.string.compacting_context), Toast.LENGTH_SHORT).show()
                     },
+                    onBranchSession = {
+                        Toast.makeText(context, context.getString(R.string.branching_context_progress), Toast.LENGTH_SHORT).show()
+                        viewModel.branchCurrentSession {
+                            Toast.makeText(context, context.getString(R.string.session_branched_toast), Toast.LENGTH_SHORT).show()
+                        }
+                    },
                     isExecutionLocked = isExecutionLocked
                 )
             }

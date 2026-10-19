@@ -27,6 +27,7 @@ import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.Lock
 import androidx.compose.material.icons.rounded.Menu
+import androidx.compose.material.icons.automirrored.rounded.CallSplit
 import androidx.compose.material.icons.rounded.PieChart
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -39,6 +40,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -90,6 +92,7 @@ fun GeminiTopBar(
     onSelectModel: (String) -> Unit,
     onSelectExecutionMode: (AgentExecutionMode) -> Unit = {},
     onCompactContext: () -> Unit,
+    onBranchSession: () -> Unit = {},
     isExecutionLocked: Boolean = false,
     modifier: Modifier = Modifier
 ) {
@@ -330,6 +333,10 @@ fun GeminiTopBar(
                             onCompactContext = {
                                 showContextSheet = false
                                 onCompactContext()
+                            },
+                            onBranchSession = {
+                                showContextSheet = false
+                                onBranchSession()
                             }
                         )
                     }
@@ -348,7 +355,8 @@ fun ContextDetailsBottomSheet(
     status: ContextMeterStatus,
     modelName: String,
     onDismiss: () -> Unit,
-    onCompactContext: () -> Unit
+    onCompactContext: () -> Unit,
+    onBranchSession: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -529,7 +537,7 @@ fun ContextDetailsBottomSheet(
                     verticalAlignment = Alignment.Top
                 ) {
                     Icon(
-                        imageVector = Icons.Rounded.AutoAwesome,
+                        imageVector = Icons.AutoMirrored.Rounded.CallSplit,
                         contentDescription = null,
                         tint = M3Primary,
                         modifier = Modifier
@@ -538,7 +546,7 @@ fun ContextDetailsBottomSheet(
                     )
                     Spacer(Modifier.width(10.dp))
                     Text(
-                        text = stringResource(R.string.context_compact_info),
+                        text = stringResource(R.string.context_branch_info),
                         style = MaterialTheme.typography.bodySmall.copy(
                             fontSize = 12.sp,
                             lineHeight = 17.sp
@@ -548,11 +556,11 @@ fun ContextDetailsBottomSheet(
                 }
             }
 
-            Spacer(Modifier.height(20.dp))
+            Spacer(Modifier.height(18.dp))
 
-            // Action Button: Padatkan Konteks
+            // Action Button 1: Cabangkan ke Obrolan Baru (Fresh Context Window)
             Button(
-                onClick = onCompactContext,
+                onClick = onBranchSession,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(48.dp),
@@ -563,8 +571,35 @@ fun ContextDetailsBottomSheet(
                 )
             ) {
                 Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.CallSplit,
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp)
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = stringResource(R.string.context_branch_button),
+                    style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
+                )
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            // Action Button 2: Padatkan Konteks Sesi Ini
+            OutlinedButton(
+                onClick = onCompactContext,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(48.dp),
+                shape = RoundedCornerShape(14.dp),
+                border = BorderStroke(1.dp, M3OutlineVariant),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = M3TextPrimary
+                )
+            ) {
+                Icon(
                     imageVector = Icons.Rounded.AutoAwesome,
                     contentDescription = null,
+                    tint = M3Primary,
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(Modifier.width(8.dp))
