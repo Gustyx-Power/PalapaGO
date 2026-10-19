@@ -56,6 +56,7 @@ import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHigh
 import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerLowest
 import id.gustyxganteng.agent.core.designsystem.M3TextPrimary
 import id.gustyxganteng.agent.core.designsystem.M3TextSecondary
+import id.gustyxganteng.agent.core.util.JsonRepairUtil
 import org.json.JSONObject
 
 private data class ToolCardDetails(
@@ -68,7 +69,8 @@ private data class ToolCardDetails(
 )
 
 private fun parseToolDetails(toolName: String, rawArgs: String): ToolCardDetails {
-    if (!rawArgs.trim().startsWith("{")) {
+    val sanitized = JsonRepairUtil.repairOrSanitize(rawArgs)
+    if (!sanitized.trim().startsWith("{")) {
         return ToolCardDetails(
             badge = toolName.uppercase(),
             title = rawArgs
@@ -76,7 +78,7 @@ private fun parseToolDetails(toolName: String, rawArgs: String): ToolCardDetails
     }
 
     return try {
-        val json = JSONObject(rawArgs)
+        val json = JSONObject(sanitized)
         when (toolName) {
             "write_file" -> {
                 val path = json.optString("path", "file")

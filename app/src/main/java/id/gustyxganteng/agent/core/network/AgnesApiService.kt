@@ -10,6 +10,7 @@ import id.gustyxganteng.agent.core.network.dto.FunctionCallDto
 import id.gustyxganteng.agent.core.network.dto.FunctionDto
 import id.gustyxganteng.agent.core.network.dto.ToolCallDto
 import id.gustyxganteng.agent.core.network.dto.ToolDto
+import id.gustyxganteng.agent.core.util.JsonRepairUtil
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -86,7 +87,7 @@ class AgnesApiServiceImpl(
                         type = "function",
                         function = FunctionCallDto(
                             name = tc.function.name,
-                            arguments = tc.function.arguments
+                            arguments = JsonRepairUtil.repairOrSanitize(tc.function.arguments)
                         )
                     )
                 }
@@ -169,7 +170,7 @@ class AgnesApiServiceImpl(
         val requestBody = jsonBody.toRequestBody("application/json; charset=utf-8".toMediaType())
 
         if (apiKey.isBlank()) {
-            throw IOException("API Key Agnes belum terkonfigurasi. Pastikan AGNES_API_KEY sudah diisi pada local.properties.")
+            throw IOException("API Key belum terkonfigurasi. Pastikan API Key sudah diisi pada Pengaturan atau local.properties.")
         }
 
         val request = Request.Builder()
@@ -192,16 +193,16 @@ class AgnesApiServiceImpl(
             val errBody = response.body?.string() ?: "HTTP ${response.code}"
             response.close()
             val friendlyMsg = when (response.code) {
-                401 -> "Autentikasi gagal (HTTP 401): API Key Agnes tidak valid. Periksa konfigurasi AGNES_API_KEY di local.properties."
-                403 -> "Akses ditolak (HTTP 403): Tidak memiliki izin untuk model ini."
+                401 -> "Autentikasi gagal (HTTP 401): API Key tidak valid. Periksa konfigurasi API Key di Pengaturan."
+                403 -> "Akses ditolak (HTTP 403): Tidak memiliki izin akses."
                 404 -> "Endpoint API tidak ditemukan (HTTP 404): $endpoint"
-                429 -> "Rate limit tercapai (HTTP 429): Terlalu banyak permintaan ke Agnes API. Mohon tunggu sesaat."
+                429 -> "Rate limit tercapai (HTTP 429): Terlalu banyak permintaan ke server API. Mohon tunggu sesaat."
                 else -> "Gagal memproses permintaan (${response.code}): $errBody"
             }
             throw IOException(friendlyMsg)
         }
 
-        val body = response.body ?: throw IOException("Empty response body from Agnes API")
+        val body = response.body ?: throw IOException("Empty response body from API server")
         return sseStreamParser.parseStream(body)
     }
 }

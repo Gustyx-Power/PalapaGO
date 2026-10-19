@@ -312,7 +312,7 @@ class WebTool(
             if (isFallback) {
                 sb.appendLine("> *[Pencarian dialihkan ke Tavily Search (1 kredit basic) karena DuckDuckGo tidak mengembalikan data]*\n")
             } else if (isMaxMode) {
-                sb.appendLine("> *[Mode: Claude Code Max — Auto-Escalated Tavily Deep Search (1 kredit basic, $maxResults hasil)]*\n")
+                sb.appendLine("> *[Mode: Maksimal — Auto-Escalated Tavily Deep Search (1 kredit basic, $maxResults hasil)]*\n")
             } else {
                 sb.appendLine("> *[Mode: Tavily Deep Search (1 kredit basic)]*\n")
             }
