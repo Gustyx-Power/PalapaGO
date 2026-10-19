@@ -9,6 +9,8 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import id.gustyxganteng.agent.core.model.AgentExecutionMode
+import id.gustyxganteng.agent.core.model.PromptMode
 import id.gustyxganteng.agent.core.network.KeyVault
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -34,8 +36,10 @@ data class AppSettings(
     val activeWorkspacePath: String?,
     val webSearchEnabled: Boolean,
     val canvasEnabled: Boolean,
-    val claudeMaxMode: Boolean = true,
-    val activeSessionId: String? = null
+    val executionMode: AgentExecutionMode = AgentExecutionMode.FAST,
+    val claudeMaxMode: Boolean = executionMode == AgentExecutionMode.MAX,
+    val activeSessionId: String? = null,
+    val promptMode: PromptMode = PromptMode.CHAT
 )
 
 class AppSettingsRepository(private val context: Context) {
@@ -52,7 +56,9 @@ class AppSettingsRepository(private val context: Context) {
         val ACTIVE_WORKSPACE_PATH = stringPreferencesKey("active_workspace_path")
         val WEB_SEARCH_ENABLED = booleanPreferencesKey("web_search_enabled")
         val CANVAS_ENABLED = booleanPreferencesKey("canvas_enabled")
+        val AGENT_EXECUTION_MODE = stringPreferencesKey("agent_execution_mode")
         val CLAUDE_MAX_MODE = booleanPreferencesKey("claude_max_mode")
+        val PROMPT_MODE = stringPreferencesKey("prompt_mode")
         val ACTIVE_SESSION_ID = stringPreferencesKey("active_session_id")
         val GLOBAL_TOTAL_REQUESTS = longPreferencesKey("global_total_requests")
         val GLOBAL_PROMPT_TOKENS = longPreferencesKey("global_prompt_tokens")
@@ -69,6 +75,24 @@ class AppSettingsRepository(private val context: Context) {
         val storedBaseUrl = preferences[PreferencesKeys.BASE_URL] ?: ""
         val effectiveBaseUrl = embeddedBaseUrl.ifBlank { storedBaseUrl.ifBlank { "https://apihub.agnes-ai.com/v1" } }
 
+        val storedExecutionMode = preferences[PreferencesKeys.AGENT_EXECUTION_MODE]
+        val effectiveExecutionMode = if (storedExecutionMode != null) {
+            AgentExecutionMode.fromId(storedExecutionMode)
+        } else if (preferences.contains(PreferencesKeys.CLAUDE_MAX_MODE)) {
+            if (preferences[PreferencesKeys.CLAUDE_MAX_MODE] == true) AgentExecutionMode.MAX else AgentExecutionMode.STANDARD
+        } else {
+            AgentExecutionMode.FAST
+        }
+
+        val storedPromptMode = preferences[PreferencesKeys.PROMPT_MODE]
+        val effectivePromptMode = if (storedPromptMode != null) {
+            PromptMode.fromId(storedPromptMode)
+        } else if (preferences[PreferencesKeys.ACADEMIC_MODE] == true) {
+            PromptMode.ACADEMIC
+        } else {
+            PromptMode.CHAT
+        }
+
         AppSettings(
             apiKey = effectiveKey,
             baseUrl = effectiveBaseUrl,
@@ -81,8 +105,10 @@ class AppSettingsRepository(private val context: Context) {
             activeWorkspacePath = preferences[PreferencesKeys.ACTIVE_WORKSPACE_PATH],
             webSearchEnabled = preferences[PreferencesKeys.WEB_SEARCH_ENABLED] ?: true,
             canvasEnabled = preferences[PreferencesKeys.CANVAS_ENABLED] ?: true,
-            claudeMaxMode = preferences[PreferencesKeys.CLAUDE_MAX_MODE] ?: true,
-            activeSessionId = preferences[PreferencesKeys.ACTIVE_SESSION_ID]
+            executionMode = effectiveExecutionMode,
+            claudeMaxMode = effectiveExecutionMode == AgentExecutionMode.MAX,
+            activeSessionId = preferences[PreferencesKeys.ACTIVE_SESSION_ID],
+            promptMode = effectivePromptMode
         )
     }
 
@@ -136,8 +162,27 @@ class AppSettingsRepository(private val context: Context) {
         context.dataStore.edit { it[PreferencesKeys.CANVAS_ENABLED] = enabled }
     }
 
+    suspend fun updatePromptMode(mode: PromptMode) {
+        context.dataStore.edit {
+            it[PreferencesKeys.PROMPT_MODE] = mode.id
+            if (mode == PromptMode.ACADEMIC) {
+                it[PreferencesKeys.ACADEMIC_MODE] = true
+                it[PreferencesKeys.WEB_SEARCH_ENABLED] = true
+            } else {
+                it[PreferencesKeys.ACADEMIC_MODE] = false
+            }
+        }
+    }
+
+    suspend fun updateAgentExecutionMode(mode: AgentExecutionMode) {
+        context.dataStore.edit {
+            it[PreferencesKeys.AGENT_EXECUTION_MODE] = mode.id
+            it[PreferencesKeys.CLAUDE_MAX_MODE] = (mode == AgentExecutionMode.MAX)
+        }
+    }
+
     suspend fun updateClaudeMaxMode(enabled: Boolean) {
-        context.dataStore.edit { it[PreferencesKeys.CLAUDE_MAX_MODE] = enabled }
+        updateAgentExecutionMode(if (enabled) AgentExecutionMode.MAX else AgentExecutionMode.FAST)
     }
 
     suspend fun updateActiveSessionId(sessionId: String?) {
