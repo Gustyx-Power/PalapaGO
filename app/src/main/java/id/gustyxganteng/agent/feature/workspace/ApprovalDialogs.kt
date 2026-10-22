@@ -1,6 +1,5 @@
 package id.gustyxganteng.agent.feature.workspace
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Box
@@ -36,13 +35,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.gustyxganteng.agent.R
-import id.gustyxganteng.agent.core.designsystem.M3OutlineVariant
-import id.gustyxganteng.agent.core.designsystem.M3Primary
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHigh
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerLowest
-import id.gustyxganteng.agent.core.designsystem.M3Tertiary
-import id.gustyxganteng.agent.core.designsystem.M3TextPrimary
-import id.gustyxganteng.agent.core.designsystem.M3TextSecondary
+
 
 @Composable
 fun DiffApprovalDialog(
@@ -55,19 +48,19 @@ fun DiffApprovalDialog(
     AlertDialog(
         onDismissRequest = onReject,
         shape = RoundedCornerShape(28.dp),
-        containerColor = M3SurfaceContainerHigh,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         icon = {
             Icon(
                 imageVector = Icons.Default.Warning,
                 contentDescription = null,
-                tint = M3Tertiary
+                tint = MaterialTheme.colorScheme.tertiary
             )
         },
         title = {
             Text(
                 text = stringResource(R.string.approval_diff_title),
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = M3TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
         },
         text = {
@@ -79,21 +72,20 @@ fun DiffApprovalDialog(
                 Text(
                     text = stringResource(R.string.approval_action, toolName),
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = M3Primary
+                    color = MaterialTheme.colorScheme.primary
                 )
                 if (targetPath != null) {
                     Text(
                         text = stringResource(R.string.approval_target, targetPath),
                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                        color = M3TextPrimary,
+                        color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
                 }
 
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = M3SurfaceContainerLowest,
-                    border = BorderStroke(1.dp, M3OutlineVariant),
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerLowest,
                     modifier = Modifier
                         .fillMaxWidth()
                         .heightIn(max = 260.dp)
@@ -112,8 +104,11 @@ fun DiffApprovalDialog(
         confirmButton = {
             Button(
                 onClick = onApprove,
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E4624), contentColor = Color(0xFF81C995))
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
             ) {
                 Icon(Icons.Default.Check, contentDescription = null)
                 Spacer(Modifier.width(6.dp))
@@ -123,9 +118,7 @@ fun DiffApprovalDialog(
         dismissButton = {
             OutlinedButton(
                 onClick = onReject,
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, M3OutlineVariant),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = M3TextSecondary)
+                shape = RoundedCornerShape(20.dp)
             ) {
                 Icon(Icons.Default.Close, contentDescription = null)
                 Spacer(Modifier.width(6.dp))
@@ -145,19 +138,19 @@ fun ShellApprovalDialog(
     AlertDialog(
         onDismissRequest = onReject,
         shape = RoundedCornerShape(28.dp),
-        containerColor = M3SurfaceContainerHigh,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         icon = {
             Icon(
                 imageVector = Icons.Default.Terminal,
                 contentDescription = null,
-                tint = M3Primary
+                tint = MaterialTheme.colorScheme.primary
             )
         },
         title = {
             Text(
                 text = stringResource(R.string.approval_shell_title),
                 style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                color = M3TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
         },
         text = {
@@ -169,14 +162,13 @@ fun ShellApprovalDialog(
                 Text(
                     text = stringResource(R.string.approval_shell_desc),
                     style = MaterialTheme.typography.bodySmall,
-                    color = M3TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(Modifier.height(8.dp))
 
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = M3SurfaceContainerLowest,
-                    border = BorderStroke(1.dp, M3OutlineVariant),
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerLowest,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Box(
@@ -190,7 +182,7 @@ fun ShellApprovalDialog(
                             fontFamily = FontFamily.Monospace,
                             fontSize = 13.sp,
                             lineHeight = 18.sp,
-                            color = Color(0xFF81C995)
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -199,8 +191,11 @@ fun ShellApprovalDialog(
         confirmButton = {
             Button(
                 onClick = onApprove,
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = M3Primary, contentColor = Color(0xFF062E6F))
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
             ) {
                 Icon(Icons.Default.Check, contentDescription = null)
                 Spacer(Modifier.width(6.dp))
@@ -210,9 +205,7 @@ fun ShellApprovalDialog(
         dismissButton = {
             OutlinedButton(
                 onClick = onReject,
-                shape = RoundedCornerShape(16.dp),
-                border = BorderStroke(1.dp, M3OutlineVariant),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = M3TextSecondary)
+                shape = RoundedCornerShape(20.dp)
             ) {
                 Icon(Icons.Default.Close, contentDescription = null)
                 Spacer(Modifier.width(6.dp))
@@ -227,9 +220,9 @@ fun RenderDiffText(text: String) {
     Column {
         text.lines().forEach { line ->
             val (bgColor, textColor) = when {
-                line.startsWith("+") || line.contains("GANTI DENGAN") -> Color(0x334CAF50) to Color(0xFF81C995)
-                line.startsWith("-") -> Color(0x33F44336) to Color(0xFFFFB4AB)
-                else -> Color.Transparent to Color(0xFFD4D4D4)
+                line.startsWith("+") || line.contains("GANTI DENGAN") -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f) to Color(0xFF81C995)
+                line.startsWith("-") -> MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f) to MaterialTheme.colorScheme.error
+                else -> Color.Transparent to MaterialTheme.colorScheme.onSurfaceVariant
             }
 
             Box(

@@ -58,17 +58,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.gustyxganteng.agent.R
 import id.gustyxganteng.agent.core.database.entity.WorkspaceEntity
-import id.gustyxganteng.agent.core.designsystem.M3OnPrimary
-import id.gustyxganteng.agent.core.designsystem.M3OnPrimaryContainer
-import id.gustyxganteng.agent.core.designsystem.M3OutlineVariant
-import id.gustyxganteng.agent.core.designsystem.M3Primary
-import id.gustyxganteng.agent.core.designsystem.M3PrimaryContainer
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainer
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHigh
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHighest
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerLow
-import id.gustyxganteng.agent.core.designsystem.M3TextPrimary
-import id.gustyxganteng.agent.core.designsystem.M3TextSecondary
 import id.gustyxganteng.agent.domain.tools.WorkspacePathResolver
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -108,11 +97,11 @@ fun WorkspaceManagerBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
-        containerColor = M3SurfaceContainerHigh,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
         dragHandle = {
             Surface(
                 modifier = Modifier.padding(vertical = 12.dp),
-                color = M3OutlineVariant,
+                color = MaterialTheme.colorScheme.outlineVariant,
                 shape = CircleShape
             ) {
                 Box(modifier = Modifier.size(width = 36.dp, height = 4.dp))
@@ -133,15 +122,14 @@ fun WorkspaceManagerBottomSheet(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
                         shape = RoundedCornerShape(12.dp),
-                        color = M3PrimaryContainer.copy(alpha = 0.5f),
-                        border = BorderStroke(1.dp, M3Primary.copy(alpha = 0.35f)),
+                        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
                         modifier = Modifier.size(38.dp)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Icon(
                                 imageVector = Icons.Rounded.FolderOpen,
                                 contentDescription = null,
-                                tint = M3Primary,
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(20.dp)
                             )
                         }
@@ -150,21 +138,20 @@ fun WorkspaceManagerBottomSheet(
                     Text(
                         text = stringResource(R.string.workspace_manager_title),
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = M3TextPrimary
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
                 Surface(
                     shape = CircleShape,
-                    color = M3SurfaceContainer,
-                    border = BorderStroke(1.dp, M3OutlineVariant),
+                    color = MaterialTheme.colorScheme.surfaceContainer,
                     modifier = Modifier.size(36.dp)
                 ) {
                     IconButton(onClick = onDismiss) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = stringResource(R.string.cd_close),
-                            tint = M3TextSecondary,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -176,10 +163,10 @@ fun WorkspaceManagerBottomSheet(
             // Primary Action Button (M3 Expressive Filled)
             Button(
                 onClick = { folderPicker.launch(null) },
-                shape = RoundedCornerShape(20.dp),
+                shape = RoundedCornerShape(28.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = M3Primary,
-                    contentColor = M3OnPrimary
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 12.dp),
                 modifier = Modifier.fillMaxWidth()
@@ -199,8 +186,8 @@ fun WorkspaceManagerBottomSheet(
             OutlinedButton(
                 onClick = { showCreateDialog = true },
                 shape = RoundedCornerShape(20.dp),
-                colors = ButtonDefaults.outlinedButtonColors(contentColor = M3Primary),
-                border = BorderStroke(1.dp, M3Primary.copy(alpha = 0.5f)),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 12.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -219,7 +206,7 @@ fun WorkspaceManagerBottomSheet(
             Text(
                 text = stringResource(R.string.workspace_recent_title),
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                color = M3Primary
+                color = MaterialTheme.colorScheme.primary
             )
             Spacer(Modifier.height(10.dp))
 
@@ -228,9 +215,9 @@ fun WorkspaceManagerBottomSheet(
                     items(recentWorkspaces) { ws ->
                         val isSelected = ws.rootPath == currentWorkspacePath
                         Surface(
-                            shape = RoundedCornerShape(16.dp),
-                            color = if (isSelected) M3PrimaryContainer else M3SurfaceContainer,
-                            border = BorderStroke(1.dp, if (isSelected) M3Primary.copy(alpha = 0.6f) else M3OutlineVariant),
+                            shape = RoundedCornerShape(24.dp),
+                            color = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainer,
+                            border = if (isSelected) BorderStroke(1.dp, MaterialTheme.colorScheme.primary) else null,
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(vertical = 4.dp)
@@ -252,7 +239,7 @@ fun WorkspaceManagerBottomSheet(
                                 Icon(
                                     imageVector = Icons.Default.Folder,
                                     contentDescription = null,
-                                    tint = if (isSelected) M3OnPrimaryContainer else M3TextSecondary,
+                                    tint = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(22.dp)
                                 )
                                 Spacer(Modifier.width(12.dp))
@@ -260,14 +247,14 @@ fun WorkspaceManagerBottomSheet(
                                     Text(
                                         text = ws.name,
                                         style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.SemiBold),
-                                        color = if (isSelected) M3OnPrimaryContainer else M3TextPrimary,
+                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
                                     Text(
                                         text = ws.rootPath,
                                         style = MaterialTheme.typography.labelSmall,
-                                        color = if (isSelected) M3OnPrimaryContainer.copy(alpha = 0.8f) else M3TextSecondary,
+                                        color = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
@@ -277,7 +264,7 @@ fun WorkspaceManagerBottomSheet(
                                     Icon(
                                         imageVector = Icons.Default.Check,
                                         contentDescription = null,
-                                        tint = M3OnPrimaryContainer,
+                                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
                                         modifier = Modifier.size(18.dp)
                                     )
                                 }
@@ -288,14 +275,14 @@ fun WorkspaceManagerBottomSheet(
             } else {
                 Surface(
                     shape = RoundedCornerShape(14.dp),
-                    color = M3SurfaceContainerLow,
-                    border = BorderStroke(1.dp, M3OutlineVariant),
+                    color = MaterialTheme.colorScheme.surfaceContainerLow,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
                         text = stringResource(R.string.canvas_no_workspace),
                         style = MaterialTheme.typography.bodySmall,
-                        color = M3TextSecondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(16.dp)
                     )
                 }
@@ -309,11 +296,11 @@ fun WorkspaceManagerBottomSheet(
         AlertDialog(
             onDismissRequest = { showCreateDialog = false },
             shape = RoundedCornerShape(28.dp),
-            containerColor = M3SurfaceContainerHigh,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             title = {
                 Text(
                     text = stringResource(R.string.workspace_create_new),
-                    color = M3TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                 )
             },
@@ -322,7 +309,7 @@ fun WorkspaceManagerBottomSheet(
                     Text(
                         text = stringResource(R.string.workspace_folder_name_hint),
                         style = MaterialTheme.typography.bodySmall,
-                        color = M3TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(Modifier.height(12.dp))
                     OutlinedTextField(
@@ -333,10 +320,10 @@ fun WorkspaceManagerBottomSheet(
                         shape = RoundedCornerShape(14.dp),
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = M3Primary,
-                            unfocusedBorderColor = M3OutlineVariant,
-                            focusedLabelColor = M3Primary,
-                            unfocusedLabelColor = M3TextSecondary
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                            focusedLabelColor = MaterialTheme.colorScheme.primary,
+                            unfocusedLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     )
                 }
@@ -358,14 +345,14 @@ fun WorkspaceManagerBottomSheet(
                         }
                     },
                     shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = M3Primary, contentColor = M3OnPrimary)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
                 ) {
                     Text(stringResource(R.string.workspace_select_button), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showCreateDialog = false }) {
-                    Text(stringResource(R.string.cancel), color = M3TextSecondary)
+                    Text(stringResource(R.string.cancel), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         )
@@ -376,19 +363,19 @@ fun WorkspaceManagerBottomSheet(
         AlertDialog(
             onDismissRequest = { showPermissionDialog = false },
             shape = RoundedCornerShape(28.dp),
-            containerColor = M3SurfaceContainerHigh,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             icon = {
                 Icon(
                     imageVector = Icons.Default.Warning,
                     contentDescription = null,
-                    tint = M3Primary,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(32.dp)
                 )
             },
             title = {
                 Text(
                     text = stringResource(R.string.storage_permission_title),
-                    color = M3TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                 )
             },
@@ -396,7 +383,7 @@ fun WorkspaceManagerBottomSheet(
                 Text(
                     text = stringResource(R.string.storage_permission_desc),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = M3TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
             confirmButton = {
@@ -410,14 +397,14 @@ fun WorkspaceManagerBottomSheet(
                         }
                     },
                     shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = M3Primary, contentColor = M3OnPrimary)
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary, contentColor = MaterialTheme.colorScheme.onPrimary)
                 ) {
                     Text(stringResource(R.string.storage_permission_grant), fontWeight = FontWeight.Bold)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showPermissionDialog = false }) {
-                    Text(stringResource(R.string.cancel), color = M3TextSecondary)
+                    Text(stringResource(R.string.cancel), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         )
