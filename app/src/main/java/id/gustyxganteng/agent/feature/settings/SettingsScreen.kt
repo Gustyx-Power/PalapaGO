@@ -68,16 +68,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.gustyxganteng.agent.R
 import id.gustyxganteng.agent.core.database.AppSettingsRepository
-import id.gustyxganteng.agent.core.designsystem.M3OnPrimary
-import id.gustyxganteng.agent.core.designsystem.M3OnPrimaryContainer
-import id.gustyxganteng.agent.core.designsystem.M3OutlineVariant
-import id.gustyxganteng.agent.core.designsystem.M3Primary
-import id.gustyxganteng.agent.core.designsystem.M3PrimaryContainer
-import id.gustyxganteng.agent.core.designsystem.M3Surface
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainer
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHigh
-import id.gustyxganteng.agent.core.designsystem.M3TextPrimary
-import id.gustyxganteng.agent.core.designsystem.M3TextSecondary
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -108,10 +98,10 @@ fun SettingsScreen(
     }
 
     Scaffold(
-        containerColor = M3Surface,
+        containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
             Surface(
-                color = M3Surface,
+                color = MaterialTheme.colorScheme.surface,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column {
@@ -124,15 +114,15 @@ fun SettingsScreen(
                     ) {
                         Surface(
                             shape = CircleShape,
-                            color = M3SurfaceContainerHigh,
-                            border = BorderStroke(1.dp, M3OutlineVariant),
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                             modifier = Modifier.size(40.dp)
                         ) {
                             IconButton(onClick = onNavigateBack) {
                                 Icon(
                                     Icons.AutoMirrored.Filled.ArrowBack,
                                     contentDescription = stringResource(R.string.cd_close),
-                                    tint = M3TextPrimary,
+                                    tint = MaterialTheme.colorScheme.onSurface,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -144,10 +134,10 @@ fun SettingsScreen(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 18.sp
                             ),
-                            color = M3TextPrimary
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
-                    HorizontalDivider(color = M3OutlineVariant)
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                 }
             }
         }
@@ -202,8 +192,8 @@ fun SettingsScreen(
                 },
                 shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = M3Primary,
-                    contentColor = M3OnPrimary
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 14.dp),
                 modifier = Modifier.fillMaxWidth()
@@ -225,12 +215,12 @@ private fun SettingsCardHeader(
     Row(verticalAlignment = Alignment.CenterVertically) {
         Surface(
             shape = RoundedCornerShape(10.dp),
-            color = M3PrimaryContainer.copy(alpha = 0.5f),
-            border = BorderStroke(1.dp, M3Primary.copy(alpha = 0.35f)),
+            color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)),
             modifier = Modifier.size(32.dp)
         ) {
             Box(contentAlignment = Alignment.Center) {
-                Icon(icon, contentDescription = null, tint = M3Primary, modifier = Modifier.size(17.dp))
+                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(17.dp))
             }
         }
         Spacer(Modifier.width(10.dp))
@@ -238,7 +228,7 @@ private fun SettingsCardHeader(
             text = title,
             fontWeight = FontWeight.Bold,
             style = MaterialTheme.typography.titleSmall.copy(fontSize = 15.sp),
-            color = M3TextPrimary
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -248,12 +238,7 @@ private fun ModelSelectionCard(
     selectedModel: String,
     onSelectModel: (String) -> Unit
 ) {
-    Card(
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = M3SurfaceContainer),
-        border = BorderStroke(1.dp, M3OutlineVariant),
-        modifier = Modifier.fillMaxWidth()
-    ) {
+    id.gustyxganteng.agent.core.designsystem.PalapaSection {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             SettingsCardHeader(Icons.Default.Speed, stringResource(R.string.settings_model_header))
 
@@ -267,10 +252,10 @@ private fun ModelSelectionCard(
                     shape = RoundedCornerShape(14.dp),
                     label = { Text("Agnes AI Core (Utama)", fontWeight = FontWeight.SemiBold) },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = M3PrimaryContainer,
-                        selectedLabelColor = M3OnPrimaryContainer
+                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
                     ),
-                    border = BorderStroke(1.dp, M3Primary.copy(alpha = 0.5f))
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
                 )
                 FilterChip(
                     selected = selectedModel == "kimi-k2.8-preview",
@@ -278,10 +263,10 @@ private fun ModelSelectionCard(
                     shape = RoundedCornerShape(14.dp),
                     label = { Text("Kimi K2.8 (Thinking 40 RPM)", fontWeight = FontWeight.SemiBold) },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = M3PrimaryContainer,
-                        selectedLabelColor = M3OnPrimaryContainer
+                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
                     ),
-                    border = BorderStroke(1.dp, M3Primary.copy(alpha = 0.5f))
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
                 )
                 FilterChip(
                     selected = selectedModel == "deepseek-v4.1-flash",
@@ -289,17 +274,17 @@ private fun ModelSelectionCard(
                     shape = RoundedCornerShape(14.dp),
                     label = { Text("DeepSeek v4.1 Flash (12 RPM)", fontWeight = FontWeight.SemiBold) },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = M3PrimaryContainer,
-                        selectedLabelColor = M3OnPrimaryContainer
+                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
                     ),
-                    border = BorderStroke(1.dp, M3Primary.copy(alpha = 0.5f))
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
                 )
             }
 
             Text(
                 stringResource(R.string.settings_model_desc),
                 style = MaterialTheme.typography.bodySmall,
-                color = M3TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -312,12 +297,7 @@ private fun SecurityCard(
     maxRetries: Float,
     onMaxRetriesChange: (Float) -> Unit
 ) {
-    Card(
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = M3SurfaceContainer),
-        border = BorderStroke(1.dp, M3OutlineVariant),
-        modifier = Modifier.fillMaxWidth()
-    ) {
+    id.gustyxganteng.agent.core.designsystem.PalapaSection {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             SettingsCardHeader(Icons.Default.Security, stringResource(R.string.settings_security_header))
 
@@ -327,11 +307,11 @@ private fun SecurityCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.settings_yolo_title), fontWeight = FontWeight.SemiBold, color = M3TextPrimary)
+                    Text(stringResource(R.string.settings_yolo_title), fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
                     Text(
                         stringResource(R.string.settings_yolo_desc),
                         style = MaterialTheme.typography.bodySmall,
-                        color = M3TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 Spacer(Modifier.width(8.dp))
@@ -339,18 +319,18 @@ private fun SecurityCard(
                     checked = yoloMode,
                     onCheckedChange = onYoloModeChange,
                     colors = SwitchDefaults.colors(
-                        checkedThumbColor = M3Primary,
-                        checkedTrackColor = M3PrimaryContainer
+                        checkedThumbColor = MaterialTheme.colorScheme.primary,
+                        checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
                     )
                 )
             }
 
-            HorizontalDivider(color = M3OutlineVariant)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
             Text(
                 stringResource(R.string.settings_max_retries, maxRetries.toInt()),
                 style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Medium),
-                color = M3TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
             Slider(
                 value = maxRetries,
@@ -358,8 +338,8 @@ private fun SecurityCard(
                 valueRange = 1f..10f,
                 steps = 8,
                 colors = SliderDefaults.colors(
-                    thumbColor = M3Primary,
-                    activeTrackColor = M3Primary
+                    thumbColor = MaterialTheme.colorScheme.primary,
+                    activeTrackColor = MaterialTheme.colorScheme.primary
                 )
             )
         }
@@ -371,12 +351,7 @@ private fun AntiAiSlopCard(
     antiAiSlopMode: Boolean,
     onAntiAiSlopModeChange: (Boolean) -> Unit
 ) {
-    Card(
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = M3SurfaceContainer),
-        border = BorderStroke(1.dp, M3OutlineVariant),
-        modifier = Modifier.fillMaxWidth()
-    ) {
+    id.gustyxganteng.agent.core.designsystem.PalapaSection {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             SettingsCardHeader(Icons.Default.Shield, stringResource(R.string.settings_anti_slop_title))
 
@@ -386,11 +361,11 @@ private fun AntiAiSlopCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.settings_anti_slop_title), fontWeight = FontWeight.SemiBold, color = M3TextPrimary)
+                    Text(stringResource(R.string.settings_anti_slop_title), fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
                     Text(
                         stringResource(R.string.settings_anti_slop_desc),
                         style = MaterialTheme.typography.bodySmall,
-                        color = M3TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 Spacer(Modifier.width(8.dp))
@@ -398,8 +373,8 @@ private fun AntiAiSlopCard(
                     checked = antiAiSlopMode,
                     onCheckedChange = onAntiAiSlopModeChange,
                     colors = SwitchDefaults.colors(
-                        checkedThumbColor = M3Primary,
-                        checkedTrackColor = M3PrimaryContainer
+                        checkedThumbColor = MaterialTheme.colorScheme.primary,
+                        checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
                     )
                 )
             }
@@ -412,12 +387,7 @@ private fun WebSearchCard(
     tavilyDeepSearch: Boolean,
     onTavilyDeepSearchChange: (Boolean) -> Unit
 ) {
-    Card(
-        shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = M3SurfaceContainer),
-        border = BorderStroke(1.dp, M3OutlineVariant),
-        modifier = Modifier.fillMaxWidth()
-    ) {
+    id.gustyxganteng.agent.core.designsystem.PalapaSection {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             SettingsCardHeader(Icons.Default.Search, stringResource(R.string.settings_search_header))
 
@@ -427,11 +397,11 @@ private fun WebSearchCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.settings_tavily_title), fontWeight = FontWeight.SemiBold, color = M3TextPrimary)
+                    Text(stringResource(R.string.settings_tavily_title), fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
                     Text(
                         stringResource(R.string.settings_tavily_desc),
                         style = MaterialTheme.typography.bodySmall,
-                        color = M3TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 Spacer(Modifier.width(8.dp))
@@ -439,8 +409,8 @@ private fun WebSearchCard(
                     checked = tavilyDeepSearch,
                     onCheckedChange = onTavilyDeepSearchChange,
                     colors = SwitchDefaults.colors(
-                        checkedThumbColor = M3Primary,
-                        checkedTrackColor = M3PrimaryContainer
+                        checkedThumbColor = MaterialTheme.colorScheme.primary,
+                        checkedTrackColor = MaterialTheme.colorScheme.primaryContainer
                     )
                 )
             }
@@ -454,8 +424,8 @@ private fun OnboardingRevisitCard(
 ) {
     Card(
         shape = RoundedCornerShape(22.dp),
-        colors = CardDefaults.cardColors(containerColor = M3SurfaceContainer),
-        border = BorderStroke(1.dp, M3OutlineVariant),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick)
@@ -466,14 +436,14 @@ private fun OnboardingRevisitCard(
         ) {
             Surface(
                 shape = CircleShape,
-                color = M3Primary.copy(alpha = 0.12f),
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
                 modifier = Modifier.size(42.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Rounded.AutoAwesome,
                         contentDescription = null,
-                        tint = M3Primary,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(22.dp)
                     )
                 }
@@ -483,22 +453,21 @@ private fun OnboardingRevisitCard(
                 Text(
                     text = stringResource(R.string.onboarding_revisit_settings_title),
                     fontWeight = FontWeight.SemiBold,
-                    color = M3TextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
                     text = stringResource(R.string.onboarding_revisit_settings_desc),
                     style = MaterialTheme.typography.bodySmall,
-                    color = M3TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                 contentDescription = null,
-                tint = M3TextSecondary,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(18.dp)
             )
         }
     }
 }
-
