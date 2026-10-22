@@ -15,3 +15,7 @@ app/build/
 *.keystore
 app/keystore/
 .kotlin/
+
+# External repositories
+/PixelPlayer/
+/auriya/
