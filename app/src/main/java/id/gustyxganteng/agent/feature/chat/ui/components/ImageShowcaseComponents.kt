@@ -71,13 +71,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
-import id.gustyxganteng.agent.core.designsystem.M3OutlineVariant
-import id.gustyxganteng.agent.core.designsystem.M3Primary
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainer
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHigh
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerLowest
-import id.gustyxganteng.agent.core.designsystem.M3TextPrimary
-import id.gustyxganteng.agent.core.designsystem.M3TextSecondary
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -120,7 +113,7 @@ fun ImageGeneratingSilhouette(
     Surface(
         shape = RoundedCornerShape(18.dp),
         color = Color(0xFF090B10),
-        border = BorderStroke(1.dp, M3OutlineVariant),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
@@ -140,7 +133,7 @@ fun ImageGeneratingSilhouette(
                         modifier = Modifier
                             .size(8.dp)
                             .clip(CircleShape)
-                            .background(M3Primary)
+                            .background(MaterialTheme.colorScheme.primary)
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
@@ -148,21 +141,21 @@ fun ImageGeneratingSilhouette(
                         fontSize = 13.sp,
                         fontWeight = FontWeight.SemiBold,
                         fontFamily = FontFamily.SansSerif,
-                        color = M3TextPrimary
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
                 Surface(
                     shape = RoundedCornerShape(8.dp),
-                    color = M3Primary.copy(alpha = 0.15f),
-                    border = BorderStroke(1.dp, M3Primary.copy(alpha = 0.35f))
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f))
                 ) {
                     Text(
                         text = "$simulatedProgress%",
                         fontSize = 11.sp,
                         fontFamily = FontFamily.Monospace,
                         fontWeight = FontWeight.Bold,
-                        color = M3Primary,
+                        color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
                     )
                 }
@@ -230,7 +223,7 @@ fun ImageGeneratingSilhouette(
                         CircularProgressIndicator(
                             strokeWidth = 2.dp,
                             modifier = Modifier.size(14.dp),
-                            color = M3Primary
+                            color = MaterialTheme.colorScheme.primary
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
@@ -326,8 +319,8 @@ fun CleanImageShowcaseCard(
 
     Surface(
         shape = RoundedCornerShape(18.dp),
-        color = M3SurfaceContainer,
-        border = BorderStroke(1.dp, M3OutlineVariant),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(18.dp))
@@ -338,7 +331,7 @@ fun CleanImageShowcaseCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 200.dp, max = 420.dp)
-                    .background(M3SurfaceContainerLowest)
+                    .background(MaterialTheme.colorScheme.surfaceContainerLowest)
                     .clickable { showFullscreen = true },
                 contentAlignment = Alignment.Center
             ) {
@@ -360,7 +353,7 @@ fun CleanImageShowcaseCard(
                             CircularProgressIndicator(
                                 strokeWidth = 2.dp,
                                 modifier = Modifier.size(28.dp),
-                                color = M3Primary
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
                     },
@@ -388,7 +381,7 @@ fun CleanImageShowcaseCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(M3SurfaceContainerHigh)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                     .padding(horizontal = 12.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -396,7 +389,7 @@ fun CleanImageShowcaseCard(
                 Text(
                     text = prompt.ifBlank { "Ilustrasi Visual AI" },
                     style = MaterialTheme.typography.bodySmall,
-                    color = M3TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
@@ -424,12 +417,12 @@ fun CleanImageShowcaseCard(
                         modifier = Modifier.size(32.dp)
                     ) {
                         if (isSaving) {
-                            CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(16.dp), color = M3Primary)
+                            CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(16.dp), color = MaterialTheme.colorScheme.primary)
                         } else {
                             Icon(
                                 imageVector = Icons.Rounded.Download,
                                 contentDescription = "Unduh Gambar",
-                                tint = M3TextSecondary,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -443,7 +436,7 @@ fun CleanImageShowcaseCard(
                         Icon(
                             imageVector = Icons.Rounded.ZoomIn,
                             contentDescription = "Perbesar Gambar",
-                            tint = M3TextSecondary,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(18.dp)
                         )
                     }
@@ -459,7 +452,7 @@ fun CleanImageShowcaseCard(
                         Icon(
                             imageVector = Icons.Rounded.ContentCopy,
                             contentDescription = "Salin Prompt",
-                            tint = M3TextSecondary,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(16.dp)
                         )
                     }
@@ -473,7 +466,7 @@ fun CleanImageShowcaseCard(
                             Icon(
                                 imageVector = Icons.Rounded.Palette,
                                 contentDescription = "Buka di Studio",
-                                tint = M3Primary,
+                                tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(17.dp)
                             )
                         }

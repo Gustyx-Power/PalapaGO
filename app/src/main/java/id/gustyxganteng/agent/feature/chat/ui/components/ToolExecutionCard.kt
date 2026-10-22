@@ -49,15 +49,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.gustyxganteng.agent.R
-import id.gustyxganteng.agent.core.designsystem.M3Error
-import id.gustyxganteng.agent.core.designsystem.M3OutlineVariant
-import id.gustyxganteng.agent.core.designsystem.M3Primary
-import id.gustyxganteng.agent.core.designsystem.M3PrimaryContainer
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainer
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHigh
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerLowest
-import id.gustyxganteng.agent.core.designsystem.M3TextPrimary
-import id.gustyxganteng.agent.core.designsystem.M3TextSecondary
 import id.gustyxganteng.agent.core.util.JsonRepairUtil
 import org.json.JSONObject
 
@@ -214,12 +205,11 @@ fun ToolExecutionCard(
     val canExpand = outputContent != null || details.isDiff || !details.replaceBlock.isNullOrEmpty()
 
     Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = M3SurfaceContainer,
-        border = BorderStroke(1.dp, M3OutlineVariant),
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(24.dp))
             .clickable(enabled = canExpand) { expanded = !expanded }
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
@@ -239,58 +229,33 @@ fun ToolExecutionCard(
                     else -> Icons.Rounded.Code
                 }
 
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = M3PrimaryContainer.copy(alpha = 0.5f),
-                    border = BorderStroke(1.dp, M3Primary.copy(alpha = 0.3f)),
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = toolIcon,
-                            contentDescription = null,
-                            tint = M3Primary,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-                }
-
-                Spacer(Modifier.width(10.dp))
-
-                // Action Badge
-                Surface(
-                    shape = RoundedCornerShape(6.dp),
-                    color = M3SurfaceContainerHigh,
-                    border = BorderStroke(1.dp, M3OutlineVariant),
-                    modifier = Modifier.padding(end = 8.dp)
-                ) {
-                    Text(
-                        text = details.badge,
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 9.sp,
-                        color = M3Primary,
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
-                }
+                Icon(imageVector = toolIcon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(19.dp))
+                Spacer(Modifier.width(12.dp))
 
                 // Title & Subtitle
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = details.title,
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.bodySmall,
                         fontFamily = FontFamily.Monospace,
-                        fontWeight = FontWeight.SemiBold,
+                        fontWeight = FontWeight.Medium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        color = M3TextPrimary
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = details.badge.lowercase().replaceFirstChar { it.uppercase() },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                     details.subtitle?.let { sub ->
                         Text(
                             text = sub,
                             fontSize = 10.sp,
                             fontFamily = FontFamily.Monospace,
-                            color = if (sub.contains("-")) M3Error else M3TextSecondary
+                            color = if (sub.contains("-")) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -303,14 +268,14 @@ fun ToolExecutionCard(
                         CircularProgressIndicator(
                             strokeWidth = 2.dp,
                             modifier = Modifier.size(16.dp),
-                            color = M3Primary
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                     isError -> {
                         Icon(
                             imageVector = Icons.Rounded.Error,
                             contentDescription = stringResource(R.string.tool_execution_error, toolName),
-                            tint = M3Error,
+                            tint = MaterialTheme.colorScheme.error,
                             modifier = Modifier.size(16.dp)
                         )
                     }
@@ -318,7 +283,7 @@ fun ToolExecutionCard(
                         Icon(
                             imageVector = Icons.Rounded.CheckCircle,
                             contentDescription = stringResource(R.string.tool_execution_success),
-                            tint = M3Primary,
+                            tint = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(16.dp)
                         )
                     }
@@ -344,7 +309,7 @@ fun ToolExecutionCard(
                             text = "Perubahan Kode (Diff):",
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.SemiBold,
-                            color = M3TextSecondary,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 6.dp)
                         )
 
@@ -414,8 +379,8 @@ fun ToolExecutionCard(
                         outputContent?.let { output ->
                             Surface(
                                 shape = RoundedCornerShape(10.dp),
-                                color = M3SurfaceContainerLowest,
-                                border = BorderStroke(1.dp, M3OutlineVariant),
+                                color = MaterialTheme.colorScheme.surfaceContainerLowest,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                                 modifier = Modifier.fillMaxWidth()
                             ) {
                                 val logScrollState = rememberScrollState()
@@ -425,7 +390,7 @@ fun ToolExecutionCard(
                                     fontFamily = FontFamily.Monospace,
                                     fontSize = 11.5.sp,
                                     lineHeight = 16.sp,
-                                    color = if (isError) M3Error else M3TextSecondary,
+                                    color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier
                                         .padding(10.dp)
                                         .horizontalScroll(logScrollState)

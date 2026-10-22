@@ -64,23 +64,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.gustyxganteng.agent.R
 import id.gustyxganteng.agent.core.designsystem.GeminiSparkleIcon
-import id.gustyxganteng.agent.core.designsystem.M3OnPrimary
-import id.gustyxganteng.agent.core.designsystem.M3OutlineVariant
-import id.gustyxganteng.agent.core.designsystem.M3Primary
-import id.gustyxganteng.agent.core.designsystem.M3Surface
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainer
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHigh
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHighest
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerLow
-import id.gustyxganteng.agent.core.designsystem.M3Tertiary
-import id.gustyxganteng.agent.core.designsystem.M3TertiaryContainer
-import id.gustyxganteng.agent.core.designsystem.M3TextPrimary
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Psychology
 import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.material.icons.rounded.Tune
 import id.gustyxganteng.agent.core.model.AgentExecutionMode
-import id.gustyxganteng.agent.core.designsystem.M3TextSecondary
 import id.gustyxganteng.agent.domain.context.ContextMeterManager
 import id.gustyxganteng.agent.domain.context.ContextMeterStatus
 
@@ -109,15 +97,15 @@ fun GeminiTopBar(
     val currentMode = executionMode
 
     val (badgeBg, badgeFg) = when (currentMode) {
-        AgentExecutionMode.FAST -> Pair(M3SurfaceContainerHighest, M3TextSecondary)
-        AgentExecutionMode.STANDARD -> Pair(M3Primary.copy(alpha = 0.2f), M3Primary)
-        AgentExecutionMode.HIGH -> Pair(Color(0xFF2E4D27), Color(0xFFB7F397))
-        AgentExecutionMode.SMART -> Pair(Color(0xFF3B3366), Color(0xFFD0BCFF))
-        AgentExecutionMode.MAX -> Pair(M3TertiaryContainer, M3Tertiary)
+        AgentExecutionMode.FAST -> Pair(MaterialTheme.colorScheme.surfaceContainerHighest, MaterialTheme.colorScheme.onSurfaceVariant)
+        AgentExecutionMode.STANDARD -> Pair(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), MaterialTheme.colorScheme.primary)
+        AgentExecutionMode.HIGH -> Pair(MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.secondary)
+        AgentExecutionMode.SMART -> Pair(MaterialTheme.colorScheme.tertiaryContainer, MaterialTheme.colorScheme.tertiary)
+        AgentExecutionMode.MAX -> Pair(MaterialTheme.colorScheme.tertiaryContainer, MaterialTheme.colorScheme.tertiary)
     }
 
     Surface(
-        color = M3Surface,
+        color = MaterialTheme.colorScheme.surface,
         modifier = modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
@@ -132,15 +120,14 @@ fun GeminiTopBar(
                 // Navigation Drawer Toggle with Expressive Tonal Circle Button
                 Surface(
                     shape = CircleShape,
-                    color = M3SurfaceContainerHigh,
-                    border = BorderStroke(1.dp, M3OutlineVariant),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
                     modifier = Modifier.size(38.dp)
                 ) {
                     IconButton(onClick = onOpenDrawer) {
                         Icon(
                             imageVector = Icons.Rounded.Menu,
                             contentDescription = stringResource(R.string.topbar_menu),
-                            tint = M3TextPrimary,
+                            tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(19.dp)
                         )
                     }
@@ -150,11 +137,7 @@ fun GeminiTopBar(
                 Box {
                     Surface(
                         shape = RoundedCornerShape(24.dp),
-                        color = if (isExecutionLocked) M3SurfaceContainerHigh.copy(alpha = 0.6f) else M3SurfaceContainerHigh,
-                        border = BorderStroke(
-                            1.dp,
-                            if (isExecutionLocked) M3OutlineVariant.copy(alpha = 0.5f) else M3OutlineVariant
-                        ),
+                        color = if (isExecutionLocked) MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surfaceContainerHigh,
                         modifier = Modifier
                             .clip(RoundedCornerShape(24.dp))
                             .clickable {
@@ -173,41 +156,21 @@ fun GeminiTopBar(
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            GeminiSparkleIcon(
-                                size = 18.dp,
-                                tint = if (isExecutionLocked) M3Primary.copy(alpha = 0.5f) else M3Primary
-                            )
-                            Spacer(Modifier.width(6.dp))
                             Text(
-                                text = stringResource(R.string.app_name),
+                                text = selectedModel,
                                 style = MaterialTheme.typography.labelMedium.copy(
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 13.sp
                                 ),
-                                color = if (isExecutionLocked) M3TextPrimary.copy(alpha = 0.6f) else M3TextPrimary,
+                                color = if (isExecutionLocked) MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f) else MaterialTheme.colorScheme.onSurface,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
-                            Spacer(Modifier.width(6.dp))
-                            Surface(
-                                shape = RoundedCornerShape(6.dp),
-                                color = if (isExecutionLocked) badgeBg.copy(alpha = 0.5f) else badgeBg
-                            ) {
-                                Text(
-                                    text = currentMode.badge,
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontWeight = FontWeight.ExtraBold,
-                                        fontSize = 9.sp
-                                    ),
-                                    color = if (isExecutionLocked) badgeFg.copy(alpha = 0.6f) else badgeFg,
-                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp)
-                                )
-                            }
                             Spacer(Modifier.width(4.dp))
                             Icon(
                                 imageVector = if (isExecutionLocked) Icons.Rounded.Lock else Icons.Default.ArrowDropDown,
                                 contentDescription = null,
-                                tint = if (isExecutionLocked) M3TextSecondary.copy(alpha = 0.5f) else M3TextSecondary,
+                                tint = if (isExecutionLocked) MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f) else MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(if (isExecutionLocked) 14.dp else 18.dp)
                             )
                         }
@@ -217,8 +180,8 @@ fun GeminiTopBar(
                         expanded = showModelMenu,
                         onDismissRequest = { showModelMenu = false },
                         shape = RoundedCornerShape(18.dp),
-                        containerColor = M3SurfaceContainerHigh,
-                        border = BorderStroke(1.dp, M3OutlineVariant)
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                     ) {
                         val menuItems = listOf(
                             Triple(AgentExecutionMode.FAST, R.string.model_fast_desc, Icons.Rounded.Bolt),
@@ -231,11 +194,11 @@ fun GeminiTopBar(
                         menuItems.forEachIndexed { index, (mode, descRes, icon) ->
                             val isSelected = mode == currentMode
                             val itemTint = when (mode) {
-                                AgentExecutionMode.FAST -> M3TextSecondary
-                                AgentExecutionMode.STANDARD -> M3Primary
+                                AgentExecutionMode.FAST -> MaterialTheme.colorScheme.onSurfaceVariant
+                                AgentExecutionMode.STANDARD -> MaterialTheme.colorScheme.primary
                                 AgentExecutionMode.HIGH -> Color(0xFFB7F397)
                                 AgentExecutionMode.SMART -> Color(0xFFD0BCFF)
-                                AgentExecutionMode.MAX -> M3Tertiary
+                                AgentExecutionMode.MAX -> MaterialTheme.colorScheme.tertiary
                             }
 
                             DropdownMenuItem(
@@ -254,7 +217,7 @@ fun GeminiTopBar(
                                         Text(
                                             text = stringResource(descRes),
                                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                                            color = if (isSelected) M3Primary else M3TextPrimary,
+                                            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                                             modifier = Modifier.weight(1f)
                                         )
                                         if (isSelected) {
@@ -262,7 +225,7 @@ fun GeminiTopBar(
                                             Icon(
                                                 imageVector = Icons.Rounded.Check,
                                                 contentDescription = null,
-                                                tint = M3Primary,
+                                                tint = MaterialTheme.colorScheme.primary,
                                                 modifier = Modifier.size(16.dp)
                                             )
                                         }
@@ -276,7 +239,7 @@ fun GeminiTopBar(
                             )
 
                             if (index < menuItems.size - 1) {
-                                HorizontalDivider(color = M3OutlineVariant.copy(alpha = 0.5f))
+                                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                             }
                         }
                     }
@@ -288,8 +251,7 @@ fun GeminiTopBar(
 
                     Surface(
                         shape = RoundedCornerShape(24.dp),
-                        color = M3SurfaceContainerHigh,
-                        border = BorderStroke(1.dp, M3OutlineVariant),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
                         modifier = Modifier
                             .clip(RoundedCornerShape(24.dp))
                             .clickable { showContextSheet = true }
@@ -313,13 +275,13 @@ fun GeminiTopBar(
                             }
                             Spacer(Modifier.width(6.dp))
                             Text(
-                                text = "${ContextMeterManager.formatTokenNumber(contextStatus.usedTokens)} • ${String.format(java.util.Locale.US, "%.1f", contextStatus.percentage)}%",
+                                text = "${String.format(java.util.Locale.US, "%.0f", contextStatus.percentage)}%",
                                 style = MaterialTheme.typography.labelSmall.copy(
                                     fontWeight = FontWeight.SemiBold,
                                     fontSize = 11.sp,
                                     letterSpacing = 0.2.sp
                                 ),
-                                color = M3TextPrimary,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 maxLines = 1,
                                 softWrap = false
                             )
@@ -345,7 +307,7 @@ fun GeminiTopBar(
                     Box(modifier = Modifier.size(38.dp))
                 }
             }
-            HorizontalDivider(color = M3OutlineVariant, thickness = 1.dp)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f), thickness = 0.5.dp)
         }
     }
 }
@@ -364,7 +326,7 @@ fun ContextDetailsBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = M3SurfaceContainer,
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
         shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         dragHandle = {
             Box(
@@ -372,7 +334,7 @@ fun ContextDetailsBottomSheet(
                     .padding(top = 12.dp, bottom = 8.dp)
                     .size(width = 36.dp, height = 4.dp)
                     .clip(CircleShape)
-                    .background(M3OutlineVariant)
+                    .background(MaterialTheme.colorScheme.outlineVariant)
             )
         }
     ) {
@@ -415,12 +377,12 @@ fun ContextDetailsBottomSheet(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 17.sp
                             ),
-                            color = M3TextPrimary
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = stringResource(R.string.context_window_model, modelName),
                             style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
-                            color = M3TextSecondary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -428,7 +390,7 @@ fun ContextDetailsBottomSheet(
                     Icon(
                         imageVector = Icons.Rounded.Close,
                         contentDescription = stringResource(R.string.cd_close),
-                        tint = M3TextSecondary
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -438,8 +400,8 @@ fun ContextDetailsBottomSheet(
             // Main Metric & Progress Card
             Surface(
                 shape = RoundedCornerShape(20.dp),
-                color = M3SurfaceContainerHigh,
-                border = BorderStroke(1.dp, M3OutlineVariant),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(18.dp)) {
@@ -452,7 +414,7 @@ fun ContextDetailsBottomSheet(
                             Text(
                                 text = stringResource(R.string.context_tokens_used),
                                 style = MaterialTheme.typography.labelSmall,
-                                color = M3TextSecondary
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Spacer(Modifier.height(2.dp))
                             Text(
@@ -461,7 +423,7 @@ fun ContextDetailsBottomSheet(
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 20.sp
                                 ),
-                                color = M3TextPrimary
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                         Surface(
@@ -489,7 +451,7 @@ fun ContextDetailsBottomSheet(
                             .fillMaxWidth()
                             .height(8.dp)
                             .clip(RoundedCornerShape(4.dp))
-                            .background(M3SurfaceContainerHighest)
+                            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                     ) {
                         Box(
                             modifier = Modifier
@@ -509,7 +471,7 @@ fun ContextDetailsBottomSheet(
                         Text(
                             text = "${stringResource(R.string.context_tokens_total)}: ${ContextMeterManager.formatTokenNumber(status.maxCapacity)}",
                             style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp),
-                            color = M3TextSecondary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         val remaining = (status.maxCapacity - status.usedTokens).coerceAtLeast(0)
                         Text(
@@ -528,8 +490,8 @@ fun ContextDetailsBottomSheet(
                 Spacer(Modifier.height(14.dp))
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = M3SurfaceContainerHigh,
-                    border = BorderStroke(1.dp, M3OutlineVariant),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
@@ -544,7 +506,7 @@ fun ContextDetailsBottomSheet(
                                     fontWeight = FontWeight.Bold,
                                     letterSpacing = 0.5.sp
                                 ),
-                                color = M3Primary
+                                color = MaterialTheme.colorScheme.primary
                             )
                             Text(
                                 text = "${ContextMeterManager.formatFullNumber(status.sessionTotalTokens.toInt())} tokens",
@@ -552,7 +514,7 @@ fun ContextDetailsBottomSheet(
                                     fontWeight = FontWeight.Bold,
                                     fontFamily = FontFamily.Monospace
                                 ),
-                                color = M3TextPrimary
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                         Spacer(Modifier.height(8.dp))
@@ -561,7 +523,7 @@ fun ContextDetailsBottomSheet(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Column {
-                                Text("Input", fontSize = 10.sp, color = M3TextSecondary)
+                                Text("Input", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(
                                     text = ContextMeterManager.formatTokenNumber(status.sessionPromptTokens.toInt()),
                                     fontSize = 12.sp,
@@ -571,7 +533,7 @@ fun ContextDetailsBottomSheet(
                                 )
                             }
                             Column {
-                                Text("Penalaran", fontSize = 10.sp, color = M3TextSecondary)
+                                Text("Penalaran", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(
                                     text = ContextMeterManager.formatTokenNumber(status.sessionReasoningTokens.toInt()),
                                     fontSize = 12.sp,
@@ -581,7 +543,7 @@ fun ContextDetailsBottomSheet(
                                 )
                             }
                             Column(horizontalAlignment = Alignment.End) {
-                                Text("Output", fontSize = 10.sp, color = M3TextSecondary)
+                                Text("Output", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(
                                     text = ContextMeterManager.formatTokenNumber(status.sessionCompletionTokens.toInt()),
                                     fontSize = 12.sp,
@@ -600,8 +562,8 @@ fun ContextDetailsBottomSheet(
             // Information Card
             Surface(
                 shape = RoundedCornerShape(16.dp),
-                color = M3SurfaceContainerLow,
-                border = BorderStroke(1.dp, M3OutlineVariant),
+                color = MaterialTheme.colorScheme.surfaceContainerLow,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -611,7 +573,7 @@ fun ContextDetailsBottomSheet(
                     Icon(
                         imageVector = Icons.AutoMirrored.Rounded.CallSplit,
                         contentDescription = null,
-                        tint = M3Primary,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier
                             .size(18.dp)
                             .padding(top = 1.dp)
@@ -623,7 +585,7 @@ fun ContextDetailsBottomSheet(
                             fontSize = 12.sp,
                             lineHeight = 17.sp
                         ),
-                        color = M3TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -638,8 +600,8 @@ fun ContextDetailsBottomSheet(
                     .height(48.dp),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = M3Primary,
-                    contentColor = M3OnPrimary
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
                 )
             ) {
                 Icon(
@@ -663,15 +625,15 @@ fun ContextDetailsBottomSheet(
                     .fillMaxWidth()
                     .height(48.dp),
                 shape = RoundedCornerShape(14.dp),
-                border = BorderStroke(1.dp, M3OutlineVariant),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    contentColor = M3TextPrimary
+                    contentColor = MaterialTheme.colorScheme.onSurface
                 )
             ) {
                 Icon(
                     imageVector = Icons.Rounded.AutoAwesome,
                     contentDescription = null,
-                    tint = M3Primary,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(Modifier.width(8.dp))
@@ -685,4 +647,3 @@ fun ContextDetailsBottomSheet(
         }
     }
 }
-

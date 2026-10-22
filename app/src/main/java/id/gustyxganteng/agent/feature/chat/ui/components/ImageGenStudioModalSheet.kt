@@ -6,7 +6,6 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Environment
 import android.widget.Toast
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -78,15 +77,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
-import id.gustyxganteng.agent.core.designsystem.M3Error
-import id.gustyxganteng.agent.core.designsystem.M3OutlineVariant
-import id.gustyxganteng.agent.core.designsystem.M3Primary
-import id.gustyxganteng.agent.core.designsystem.M3PrimaryContainer
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainer
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHigh
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerLowest
-import id.gustyxganteng.agent.core.designsystem.M3TextPrimary
-import id.gustyxganteng.agent.core.designsystem.M3TextSecondary
+
 import id.gustyxganteng.agent.core.model.AgentExecutionMode
 import kotlinx.coroutines.launch
 
@@ -184,7 +175,8 @@ fun ImageGenStudioModalSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = M3SurfaceContainer,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         modifier = modifier
     ) {
         Column(
@@ -203,21 +195,12 @@ fun ImageGenStudioModalSheet(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = M3PrimaryContainer.copy(alpha = 0.5f),
-                        border = BorderStroke(1.dp, M3Primary.copy(alpha = 0.4f)),
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Rounded.Palette,
-                                contentDescription = null,
-                                tint = M3Primary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
+                    Icon(
+                        imageVector = Icons.Rounded.Palette,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
                     Spacer(Modifier.width(12.dp))
                     Column {
                         Text(
@@ -226,12 +209,12 @@ fun ImageGenStudioModalSheet(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 17.sp
                             ),
-                            color = M3TextPrimary
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = "Multimodal Engine • Agnes Image 2.5 Flash",
                             style = MaterialTheme.typography.labelSmall,
-                            color = M3TextSecondary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -243,7 +226,7 @@ fun ImageGenStudioModalSheet(
                     Icon(
                         imageVector = Icons.Rounded.Close,
                         contentDescription = "Tutup",
-                        tint = M3TextSecondary
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -251,43 +234,41 @@ fun ImageGenStudioModalSheet(
             // Mode Cepat Warning Banner
             if (isFastMode) {
                 Surface(
-                    shape = RoundedCornerShape(14.dp),
-                    color = Color(0xFF351214),
-                    border = BorderStroke(1.dp, Color(0xFF6E2327)),
+                    shape = RoundedCornerShape(20.dp),
+                    color = MaterialTheme.colorScheme.errorContainer,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 14.dp)
                 ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
+                    Column(modifier = Modifier.padding(16.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 imageVector = Icons.Rounded.Warning,
                                 contentDescription = null,
-                                tint = Color(0xFFFFB4AB),
+                                tint = MaterialTheme.colorScheme.onErrorContainer,
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(Modifier.width(8.dp))
                             Text(
                                 text = "Mode Cepat (FAST) Aktif",
                                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                                color = Color(0xFFFFB4AB)
+                                color = MaterialTheme.colorScheme.onErrorContainer
                             )
                         }
                         Spacer(Modifier.height(6.dp))
                         Text(
                             text = "Mode Cepat difokuskan untuk inferensi teks & kode kilat tanpa beban multimodal. Untuk membuat gambar, silakan beralih ke Mode Standar, Tinggi, Smart, atau Maksimal.",
                             style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp, lineHeight = 17.sp),
-                            color = Color(0xFFFFDAD6)
+                            color = MaterialTheme.colorScheme.onErrorContainer
                         )
                         Spacer(Modifier.height(10.dp))
                         Button(
                             onClick = { onSelectExecutionMode(AgentExecutionMode.STANDARD) },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = M3Primary,
-                                contentColor = Color.Black
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary
                             ),
-                            shape = RoundedCornerShape(10.dp),
-                            modifier = Modifier.height(34.dp)
+                            shape = RoundedCornerShape(14.dp)
                         ) {
                             Icon(Icons.Rounded.Tune, contentDescription = null, modifier = Modifier.size(15.dp))
                             Spacer(Modifier.width(6.dp))
@@ -301,7 +282,7 @@ fun ImageGenStudioModalSheet(
             Text(
                 text = "Deskripsi Visual (Prompt)",
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = M3TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 2.dp, bottom = 6.dp)
             )
 
@@ -312,27 +293,27 @@ fun ImageGenStudioModalSheet(
                     Text(
                         text = "Deskripsikan visual yang ingin dibuat (contoh: Diagram mitosis sel biologi dengan label jelas, flat vector modern)...",
                         style = MaterialTheme.typography.bodyMedium.copy(fontSize = 13.sp),
-                        color = M3TextSecondary.copy(alpha = 0.7f)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
                     )
                 },
                 trailingIcon = {
                     if (promptText.isNotBlank()) {
                         IconButton(onClick = { promptText = "" }) {
-                            Icon(Icons.Rounded.Close, contentDescription = "Hapus", tint = M3TextSecondary, modifier = Modifier.size(18.dp))
+                            Icon(Icons.Rounded.Close, contentDescription = "Hapus", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
                         }
                     }
                 },
                 minLines = 3,
                 maxLines = 5,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = M3SurfaceContainerLowest,
-                    unfocusedContainerColor = M3SurfaceContainerLowest,
-                    focusedBorderColor = M3Primary,
-                    unfocusedBorderColor = M3OutlineVariant,
-                    focusedTextColor = M3TextPrimary,
-                    unfocusedTextColor = M3TextPrimary
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerLowest,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outlineVariant,
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                 ),
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(20.dp),
                 modifier = Modifier.fillMaxWidth()
             )
 
@@ -342,7 +323,7 @@ fun ImageGenStudioModalSheet(
             Text(
                 text = "Inspirasi & Template Prompt",
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = M3TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 2.dp, bottom = 6.dp)
             )
 
@@ -354,17 +335,16 @@ fun ImageGenStudioModalSheet(
             ) {
                 QUICK_IDEAS.forEach { idea ->
                     Surface(
-                        shape = RoundedCornerShape(10.dp),
-                        color = M3SurfaceContainerHigh,
-                        border = BorderStroke(1.dp, M3OutlineVariant),
+                        shape = RoundedCornerShape(16.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
                         modifier = Modifier
-                            .clip(RoundedCornerShape(10.dp))
+                            .clip(RoundedCornerShape(16.dp))
                             .clickable { promptText = idea }
                     ) {
                         Text(
                             text = idea,
                             fontSize = 11.5.sp,
-                            color = M3TextPrimary,
+                            color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
@@ -379,7 +359,7 @@ fun ImageGenStudioModalSheet(
             Text(
                 text = "Pilihan Rasio Aspek",
                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                color = M3TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 2.dp, bottom = 6.dp)
             )
 
@@ -389,17 +369,15 @@ fun ImageGenStudioModalSheet(
             ) {
                 ASPECT_RATIO_OPTIONS.forEach { opt ->
                     val isSelected = selectedRatio.ratio == opt.ratio
-                    val cardBg = if (isSelected) M3PrimaryContainer else M3SurfaceContainerHigh
-                    val borderCol = if (isSelected) M3Primary else M3OutlineVariant
-                    val textColor = if (isSelected) M3Primary else M3TextPrimary
+                    val cardBg = if (isSelected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh
+                    val textColor = if (isSelected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface
 
                     Surface(
-                        shape = RoundedCornerShape(12.dp),
+                        shape = RoundedCornerShape(18.dp),
                         color = cardBg,
-                        border = BorderStroke(1.dp, borderCol),
                         modifier = Modifier
                             .weight(1f)
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(RoundedCornerShape(18.dp))
                             .clickable { selectedRatio = opt }
                     ) {
                         Column(
@@ -425,7 +403,7 @@ fun ImageGenStudioModalSheet(
                             Text(
                                 text = opt.label,
                                 fontSize = 9.sp,
-                                color = M3TextSecondary,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1
                             )
                         }
@@ -456,12 +434,12 @@ fun ImageGenStudioModalSheet(
                     }
                 },
                 enabled = promptText.isNotBlank() && !isFastMode && !isGenerating,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = M3Primary,
-                    contentColor = Color.Black,
-                    disabledContainerColor = M3SurfaceContainerHigh,
-                    disabledContentColor = M3TextSecondary
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -471,7 +449,7 @@ fun ImageGenStudioModalSheet(
                     CircularProgressIndicator(
                         strokeWidth = 2.dp,
                         modifier = Modifier.size(20.dp),
-                        color = Color.Black
+                        color = MaterialTheme.colorScheme.onPrimary
                     )
                     Spacer(Modifier.width(10.dp))
                     Text("Menghasilkan Gambar Agnes AI...", fontWeight = FontWeight.Bold, fontSize = 14.sp)
@@ -486,15 +464,14 @@ fun ImageGenStudioModalSheet(
             if (errorMessage != null) {
                 Spacer(Modifier.height(12.dp))
                 Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = Color(0xFF351214),
-                    border = BorderStroke(1.dp, Color(0xFF6E2327)),
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.errorContainer,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
                         text = errorMessage ?: "",
                         style = MaterialTheme.typography.bodySmall,
-                        color = M3Error,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
                         modifier = Modifier.padding(12.dp)
                     )
                 }
@@ -506,14 +483,13 @@ fun ImageGenStudioModalSheet(
                 Text(
                     text = "Hasil Visual (${selectedRatio.dimension})",
                     style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                    color = M3TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 2.dp, bottom = 6.dp)
                 )
 
                 Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = M3SurfaceContainerHigh,
-                    border = BorderStroke(1.dp, M3OutlineVariant),
+                    shape = RoundedCornerShape(24.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column {
@@ -521,7 +497,7 @@ fun ImageGenStudioModalSheet(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .heightIn(min = 200.dp, max = 360.dp)
-                                .background(M3SurfaceContainerLowest)
+                                .background(MaterialTheme.colorScheme.surfaceContainerLowest)
                                 .clickable { showFullscreenDialog = true },
                             contentAlignment = Alignment.Center
                         ) {
@@ -537,12 +513,12 @@ fun ImageGenStudioModalSheet(
                                         modifier = Modifier.fillMaxWidth().height(220.dp),
                                         contentAlignment = Alignment.Center
                                     ) {
-                                        CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(28.dp), color = M3Primary)
+                                        CircularProgressIndicator(strokeWidth = 2.dp, modifier = Modifier.size(28.dp), color = MaterialTheme.colorScheme.primary)
                                     }
                                 },
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                                    .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
                             )
                         }
 
@@ -550,7 +526,7 @@ fun ImageGenStudioModalSheet(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(M3SurfaceContainer)
+                                .background(MaterialTheme.colorScheme.surfaceContainer)
                                 .padding(horizontal = 12.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
@@ -574,9 +550,11 @@ fun ImageGenStudioModalSheet(
                                         Toast.makeText(context, "Gagal mengunduh: ${e.message}", Toast.LENGTH_SHORT).show()
                                     }
                                 },
-                                shape = RoundedCornerShape(10.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = M3PrimaryContainer, contentColor = M3Primary),
-                                modifier = Modifier.height(34.dp)
+                                shape = RoundedCornerShape(14.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                                )
                             ) {
                                 Icon(Icons.Rounded.FileDownload, contentDescription = null, modifier = Modifier.size(15.dp))
                                 Spacer(Modifier.width(5.dp))
@@ -594,7 +572,7 @@ fun ImageGenStudioModalSheet(
                                     },
                                     modifier = Modifier.size(32.dp)
                                 ) {
-                                    Icon(Icons.Default.ContentCopy, contentDescription = "Salin Tautan", tint = M3TextSecondary, modifier = Modifier.size(16.dp))
+                                    Icon(Icons.Default.ContentCopy, contentDescription = "Salin Tautan", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
                                 }
 
                                 // Send to Chat
@@ -609,7 +587,7 @@ fun ImageGenStudioModalSheet(
                                     },
                                     modifier = Modifier.size(32.dp)
                                 ) {
-                                    Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = "Kirim ke Chat", tint = M3Primary, modifier = Modifier.size(16.dp))
+                                    Icon(Icons.AutoMirrored.Rounded.Send, contentDescription = "Kirim ke Chat", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
                                 }
 
                                 // Browser
@@ -622,7 +600,7 @@ fun ImageGenStudioModalSheet(
                                     },
                                     modifier = Modifier.size(32.dp)
                                 ) {
-                                    Icon(Icons.AutoMirrored.Rounded.OpenInNew, contentDescription = "Buka Browser", tint = M3TextSecondary, modifier = Modifier.size(16.dp))
+                                    Icon(Icons.AutoMirrored.Rounded.OpenInNew, contentDescription = "Buka Browser", tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(16.dp))
                                 }
                             }
                         }

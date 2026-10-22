@@ -15,7 +15,6 @@ import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -51,13 +50,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.gustyxganteng.agent.R
 import id.gustyxganteng.agent.core.designsystem.GeminiSparkleIcon
-import id.gustyxganteng.agent.core.designsystem.M3OutlineVariant
-import id.gustyxganteng.agent.core.designsystem.M3Primary
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHigh
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHighest
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerLow
-import id.gustyxganteng.agent.core.designsystem.M3TextPrimary
-import id.gustyxganteng.agent.core.designsystem.M3TextSecondary
 import id.gustyxganteng.agent.core.markdown.MarkdownContent
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -126,12 +118,11 @@ fun ThinkingAccordion(
     }
 
     Surface(
-        shape = RoundedCornerShape(20.dp),
-        color = M3SurfaceContainerHigh,
-        border = BorderStroke(1.dp, M3OutlineVariant),
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(24.dp))
             .clickable { expanded = !expanded }
             .animateContentSize(spring(dampingRatio = Spring.DampingRatioLowBouncy))
     ) {
@@ -142,7 +133,7 @@ fun ThinkingAccordion(
             ) {
                 GeminiSparkleIcon(
                     size = 16.dp,
-                    tint = M3Primary,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = if (isCurrentlyStreaming) Modifier.rotate(rotation) else Modifier
                 )
                 Spacer(Modifier.width(8.dp))
@@ -159,17 +150,13 @@ fun ThinkingAccordion(
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 12.5.sp
                     ),
-                    color = M3Primary
+                    color = MaterialTheme.colorScheme.primary
                 )
 
                 Spacer(Modifier.width(8.dp))
 
                 // Expressive duration / token capsule pill
-                Surface(
-                    shape = RoundedCornerShape(12.dp),
-                    color = M3SurfaceContainerHighest,
-                    border = BorderStroke(1.dp, M3OutlineVariant)
-                ) {
+                run {
                     val badgeText = if (effectiveTokens > 0) {
                         "${durationSec}s • ${formatTokens(effectiveTokens)} tok"
                     } else {
@@ -179,8 +166,8 @@ fun ThinkingAccordion(
                         text = badgeText,
                         fontSize = 10.sp,
                         fontWeight = FontWeight.Bold,
-                        color = M3TextSecondary,
-                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 2.dp)
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 2.dp)
                     )
                 }
 
@@ -189,7 +176,7 @@ fun ThinkingAccordion(
                 Icon(
                     imageVector = Icons.Rounded.KeyboardArrowDown,
                     contentDescription = null,
-                    tint = M3TextSecondary,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier
                         .size(18.dp)
                         .rotate(arrowRotation)
@@ -204,24 +191,14 @@ fun ThinkingAccordion(
                 Column {
                     Spacer(Modifier.height(10.dp))
                     if (!reasoningContent.isNullOrBlank()) {
-                        Surface(
-                            color = M3SurfaceContainerLow,
-                            shape = RoundedCornerShape(14.dp),
-                            border = BorderStroke(1.dp, M3OutlineVariant),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Box(modifier = Modifier.padding(14.dp)) {
-                                MarkdownContent(
-                                    markdown = reasoningContent,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                            }
+                        Box(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 6.dp)) {
+                            MarkdownContent(markdown = reasoningContent, modifier = Modifier.fillMaxWidth())
                         }
                     } else if (isCurrentlyStreaming) {
                         Text(
                             text = stringResource(R.string.thinking_analyzing_placeholder),
                             style = MaterialTheme.typography.bodySmall.copy(fontStyle = FontStyle.Italic),
-                            color = M3TextSecondary,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             lineHeight = 18.sp,
                             modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)
                         )

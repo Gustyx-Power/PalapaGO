@@ -63,14 +63,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.gustyxganteng.agent.core.database.GlobalUsageStats
-import id.gustyxganteng.agent.core.designsystem.M3OutlineVariant
-import id.gustyxganteng.agent.core.designsystem.M3Primary
-import id.gustyxganteng.agent.core.designsystem.M3PrimaryContainer
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainer
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHigh
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerLowest
-import id.gustyxganteng.agent.core.designsystem.M3TextPrimary
-import id.gustyxganteng.agent.core.designsystem.M3TextSecondary
+
 import id.gustyxganteng.agent.core.model.AgentExecutionMode
 import id.gustyxganteng.agent.domain.context.ContextMeterManager
 import id.gustyxganteng.agent.domain.context.ContextMeterStatus
@@ -139,7 +132,8 @@ fun NeuralTelemetryModalSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = M3SurfaceContainer,
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
         modifier = modifier
     ) {
         Column(
@@ -158,21 +152,12 @@ fun NeuralTelemetryModalSheet(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = M3PrimaryContainer.copy(alpha = 0.5f),
-                        border = BorderStroke(1.dp, M3Primary.copy(alpha = 0.4f)),
-                        modifier = Modifier.size(36.dp)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Rounded.Hub,
-                                contentDescription = null,
-                                tint = M3Primary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
+                    Icon(
+                        imageVector = Icons.Rounded.Hub,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(24.dp)
+                    )
                     Spacer(Modifier.width(12.dp))
                     Column {
                         Text(
@@ -181,12 +166,12 @@ fun NeuralTelemetryModalSheet(
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 17.sp
                             ),
-                            color = M3TextPrimary
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = "Visualisasi 3D Kognitif & Kalkulasi Token Realtime",
                             style = MaterialTheme.typography.labelSmall,
-                            color = M3TextSecondary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -198,7 +183,7 @@ fun NeuralTelemetryModalSheet(
                     Icon(
                         imageVector = Icons.Rounded.Close,
                         contentDescription = "Tutup",
-                        tint = M3TextSecondary
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -221,14 +206,13 @@ fun NeuralTelemetryModalSheet(
             Text(
                 text = "Kalkulasi & Totalisasi Akumulasi Token",
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                color = M3Primary,
+                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(start = 2.dp, bottom = 8.dp)
             )
 
             Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = M3SurfaceContainerHigh,
-                border = BorderStroke(1.dp, M3OutlineVariant),
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(18.dp)) {
@@ -244,27 +228,18 @@ fun NeuralTelemetryModalSheet(
                                 fontWeight = FontWeight.Bold,
                                 letterSpacing = 1.2.sp
                             ),
-                            color = M3TextSecondary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
-                        Surface(
-                            shape = RoundedCornerShape(10.dp),
-                            color = M3Primary.copy(alpha = 0.12f),
-                            border = BorderStroke(1.dp, M3Primary.copy(alpha = 0.3f))
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp)
-                            ) {
-                                Icon(Icons.Rounded.Calculate, contentDescription = null, tint = M3Primary, modifier = Modifier.size(14.dp))
-                                Spacer(Modifier.width(5.dp))
-                                Text(
-                                    text = "$totalRequests Request",
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 11.5.sp,
-                                    color = M3Primary
-                                )
-                            }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Rounded.Calculate, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
+                            Spacer(Modifier.width(5.dp))
+                            Text(
+                                text = "$totalRequests Request",
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 11.5.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
                     }
 
@@ -282,7 +257,7 @@ fun NeuralTelemetryModalSheet(
                                 fontSize = 28.sp,
                                 letterSpacing = (-0.5).sp
                             ),
-                            color = M3TextPrimary
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
@@ -291,7 +266,7 @@ fun NeuralTelemetryModalSheet(
                                 fontWeight = FontWeight.Medium,
                                 fontSize = 13.sp
                             ),
-                            color = M3TextSecondary,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 4.dp)
                         )
                     }
@@ -307,7 +282,7 @@ fun NeuralTelemetryModalSheet(
                             .fillMaxWidth()
                             .height(8.dp)
                             .clip(RoundedCornerShape(4.dp))
-                            .background(M3SurfaceContainerLowest)
+                            .background(MaterialTheme.colorScheme.surfaceContainerLowest)
                     ) {
                         Box(
                             modifier = Modifier
@@ -335,9 +310,8 @@ fun NeuralTelemetryModalSheet(
 
                     // Structured Breakdown Ledger
                     Surface(
-                        shape = RoundedCornerShape(14.dp),
-                        color = M3SurfaceContainerLowest,
-                        border = BorderStroke(1.dp, M3OutlineVariant.copy(alpha = 0.5f)),
+                        shape = RoundedCornerShape(18.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerLowest,
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column {
@@ -348,7 +322,7 @@ fun NeuralTelemetryModalSheet(
                                 percentage = promptPct,
                                 color = Color(0xFF64FFDA)
                             )
-                            HorizontalDivider(color = M3OutlineVariant.copy(alpha = 0.4f), modifier = Modifier.padding(horizontal = 12.dp))
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f), modifier = Modifier.padding(horizontal = 12.dp))
                             TokenLedgerRow(
                                 label = "Penalaran (Thinking)",
                                 sublabel = "Monolog kognitif & rantai pemikiran internal",
@@ -356,7 +330,7 @@ fun NeuralTelemetryModalSheet(
                                 percentage = thinkPct,
                                 color = Color(0xFFFFD180)
                             )
-                            HorizontalDivider(color = M3OutlineVariant.copy(alpha = 0.4f), modifier = Modifier.padding(horizontal = 12.dp))
+                            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f), modifier = Modifier.padding(horizontal = 12.dp))
                             TokenLedgerRow(
                                 label = "Sintesis (Output)",
                                 sublabel = "Hasil respons teks, kode & parameter tool",
@@ -375,12 +349,11 @@ fun NeuralTelemetryModalSheet(
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = M3SurfaceContainerLowest,
-                            border = BorderStroke(1.dp, M3OutlineVariant.copy(alpha = 0.5f)),
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerLowest,
                             modifier = Modifier.weight(1f)
                         ) {
-                            Column(modifier = Modifier.padding(11.dp)) {
+                            Column(modifier = Modifier.padding(12.dp)) {
                                 Text(
                                     text = "RATA-RATA / REQ",
                                     style = MaterialTheme.typography.labelSmall.copy(
@@ -388,7 +361,7 @@ fun NeuralTelemetryModalSheet(
                                         fontWeight = FontWeight.Bold,
                                         letterSpacing = 0.5.sp
                                     ),
-                                    color = M3TextSecondary
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Spacer(Modifier.height(4.dp))
                                 Text(
@@ -398,18 +371,17 @@ fun NeuralTelemetryModalSheet(
                                         fontFamily = FontFamily.Monospace,
                                         fontSize = 13.5.sp
                                     ),
-                                    color = M3TextPrimary
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
                         }
 
                         Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = M3SurfaceContainerLowest,
-                            border = BorderStroke(1.dp, M3OutlineVariant.copy(alpha = 0.5f)),
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerLowest,
                             modifier = Modifier.weight(1f)
                         ) {
-                            Column(modifier = Modifier.padding(11.dp)) {
+                            Column(modifier = Modifier.padding(12.dp)) {
                                 Text(
                                     text = "RASIO INPUT : OUTPUT",
                                     style = MaterialTheme.typography.labelSmall.copy(
@@ -417,7 +389,7 @@ fun NeuralTelemetryModalSheet(
                                         fontWeight = FontWeight.Bold,
                                         letterSpacing = 0.5.sp
                                     ),
-                                    color = M3TextSecondary
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                                 Spacer(Modifier.height(4.dp))
                                 Text(
@@ -427,7 +399,7 @@ fun NeuralTelemetryModalSheet(
                                         fontFamily = FontFamily.Monospace,
                                         fontSize = 13.5.sp
                                     ),
-                                    color = M3Primary
+                                    color = MaterialTheme.colorScheme.primary
                                 )
                             }
                         }
@@ -441,14 +413,13 @@ fun NeuralTelemetryModalSheet(
             Text(
                 text = "Kapasitas & Kesehatan Context Window",
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                color = M3Primary,
+                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(start = 2.dp, bottom = 8.dp)
             )
 
             Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = M3SurfaceContainerHigh,
-                border = BorderStroke(1.dp, M3OutlineVariant),
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
@@ -471,7 +442,7 @@ fun NeuralTelemetryModalSheet(
                                 text = "Sesi Aktif Saat Ini",
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = M3TextPrimary
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
 
@@ -489,7 +460,7 @@ fun NeuralTelemetryModalSheet(
                     LinearProgressIndicator(
                         progress = { progressFraction },
                         color = progressColor,
-                        trackColor = M3SurfaceContainerLowest,
+                        trackColor = MaterialTheme.colorScheme.surfaceContainerLowest,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(8.dp)
@@ -503,18 +474,18 @@ fun NeuralTelemetryModalSheet(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Column {
-                            Text("Terpakai", fontSize = 10.sp, color = M3TextSecondary)
+                            Text("Terpakai", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(
                                 text = "${String.format(Locale.US, "%,d", currentUsed)} token",
                                 fontSize = 12.sp,
                                 fontFamily = FontFamily.Monospace,
                                 fontWeight = FontWeight.Bold,
-                                color = M3TextPrimary
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
 
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("Sisa Bebas", fontSize = 10.sp, color = M3TextSecondary)
+                            Text("Sisa Bebas", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(
                                 text = "${String.format(Locale.US, "%,d", currentRemaining)} token",
                                 fontSize = 12.sp,
@@ -525,13 +496,13 @@ fun NeuralTelemetryModalSheet(
                         }
 
                         Column(horizontalAlignment = Alignment.End) {
-                            Text("Maksimal", fontSize = 10.sp, color = M3TextSecondary)
+                            Text("Maksimal", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             Text(
                                 text = "${String.format(Locale.US, "%,d", currentMax)} token",
                                 fontSize = 12.sp,
                                 fontFamily = FontFamily.Monospace,
                                 fontWeight = FontWeight.Bold,
-                                color = M3TextPrimary
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
@@ -539,9 +510,8 @@ fun NeuralTelemetryModalSheet(
                     if (contextStatus != null && contextStatus.sessionTotalTokens > 0L) {
                         Spacer(Modifier.height(14.dp))
                         Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = M3SurfaceContainerLowest,
-                            border = BorderStroke(1.dp, M3OutlineVariant.copy(alpha = 0.5f)),
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerLowest,
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(modifier = Modifier.padding(12.dp)) {
@@ -556,7 +526,7 @@ fun NeuralTelemetryModalSheet(
                                             fontWeight = FontWeight.Bold,
                                             letterSpacing = 0.5.sp
                                         ),
-                                        color = M3Primary
+                                        color = MaterialTheme.colorScheme.primary
                                     )
                                     Text(
                                         text = "${String.format(Locale.US, "%,d", contextStatus.sessionTotalTokens)} token",
@@ -564,7 +534,7 @@ fun NeuralTelemetryModalSheet(
                                             fontWeight = FontWeight.Bold,
                                             fontFamily = FontFamily.Monospace
                                         ),
-                                        color = M3TextPrimary
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                 }
                                 Spacer(Modifier.height(6.dp))
@@ -603,14 +573,13 @@ fun NeuralTelemetryModalSheet(
             Text(
                 text = "Pipeline Ensemble Kolaboratif (Koding Bersama)",
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                color = M3Primary,
+                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(start = 2.dp, bottom = 8.dp)
             )
 
             Surface(
-                shape = RoundedCornerShape(18.dp),
-                color = M3SurfaceContainerHigh,
-                border = BorderStroke(1.dp, M3OutlineVariant),
+                shape = RoundedCornerShape(24.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(modifier = Modifier.padding(14.dp)) {
@@ -620,40 +589,40 @@ fun NeuralTelemetryModalSheet(
                         status = "AKTIF (Planner)",
                         statusColor = Color(0xFF64FFDA)
                     )
-                    HorizontalDivider(color = M3OutlineVariant.copy(alpha = 0.5f), modifier = Modifier.padding(vertical = 8.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), modifier = Modifier.padding(vertical = 8.dp))
                     EngineStatusRow(
                         name = "Agnes AI (Lead Fullstack Synthesizer)",
                         detail = "Role: Sintesis Kode Produksi, Canvas Artifacts & Tool Loop ($activeModel)",
                         status = "AKTIF (Coder)",
                         statusColor = Color(0xFF64FFDA)
                     )
-                    HorizontalDivider(color = M3OutlineVariant.copy(alpha = 0.5f), modifier = Modifier.padding(vertical = 8.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), modifier = Modifier.padding(vertical = 8.dp))
                     EngineStatusRow(
                         name = "Xemarux Router (Next-Gen Deep Thinking)",
                         detail = "Role: Kimi-k2.8-preview (40 RPM) & DeepSeek-v4.1-flash (12 RPM)",
                         status = "AKTIF (Co-Reasoner)",
                         statusColor = Color(0xFF64FFDA)
                     )
-                    HorizontalDivider(color = M3OutlineVariant.copy(alpha = 0.5f), modifier = Modifier.padding(vertical = 8.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), modifier = Modifier.padding(vertical = 8.dp))
                     EngineStatusRow(
                         name = "Groq LPU Sidecar (Fast Quality Auditor)",
                         detail = "Role: Pre-Flight Linting (<250ms), Anti-Placeholder & Syntax Guard",
                         status = "AKTIF (Auditor)",
                         statusColor = Color(0xFF64FFDA)
                     )
-                    HorizontalDivider(color = M3OutlineVariant.copy(alpha = 0.5f), modifier = Modifier.padding(vertical = 8.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), modifier = Modifier.padding(vertical = 8.dp))
                     EngineStatusRow(
                         name = "Agnes Image 2.5 Flash (Visual Studio)",
                         detail = "Role: Generasi Aset Visual & Komposisi Sinematik (5 Rasio)",
                         status = if (executionMode == AgentExecutionMode.FAST) "OFF (Mode Cepat)" else "SIAP",
                         statusColor = if (executionMode == AgentExecutionMode.FAST) Color(0xFFFFB4AB) else Color(0xFF64FFDA)
                     )
-                    HorizontalDivider(color = M3OutlineVariant.copy(alpha = 0.5f), modifier = Modifier.padding(vertical = 8.dp))
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), modifier = Modifier.padding(vertical = 8.dp))
                     EngineStatusRow(
                         name = "Resilient Mesh Failover Router",
                         detail = "Role: Kaskade Otomatis (Agnes 1-2 → Xemarux Kimi/DeepSeek → Gemini → Groq)",
                         status = "STANDBY",
-                        statusColor = M3Primary
+                        statusColor = MaterialTheme.colorScheme.primary
                     )
                 }
             }
@@ -777,9 +746,8 @@ private fun SphericalNeuralGlobeCard(
     }
 
     Surface(
-        shape = RoundedCornerShape(22.dp),
-        color = Color(0xFF07090E),
-        border = BorderStroke(1.dp, M3OutlineVariant),
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.surfaceContainerLowest,
         modifier = modifier
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -916,15 +884,14 @@ private fun SphericalNeuralGlobeCard(
                             fontSize = 10.sp,
                             fontFamily = FontFamily.Monospace
                         ),
-                        color = M3TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
                 // Tombol Reset Rotasi
                 Surface(
                     shape = CircleShape,
-                    color = Color(0xFF131722).copy(alpha = 0.9f),
-                    border = BorderStroke(1.dp, M3OutlineVariant),
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest.copy(alpha = 0.9f),
                     modifier = Modifier.size(32.dp)
                 ) {
                     IconButton(
@@ -934,7 +901,7 @@ private fun SphericalNeuralGlobeCard(
                         Icon(
                             imageVector = Icons.Rounded.Refresh,
                             contentDescription = "Reset Rotasi",
-                            tint = M3TextPrimary,
+                            tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(16.dp)
                         )
                     }
@@ -1025,12 +992,12 @@ private fun TokenLedgerRow(
                         fontWeight = FontWeight.SemiBold,
                         fontSize = 13.sp
                     ),
-                    color = M3TextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = sublabel,
                     style = MaterialTheme.typography.labelSmall.copy(fontSize = 10.5.sp),
-                    color = M3TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -1046,7 +1013,7 @@ private fun TokenLedgerRow(
                     fontFamily = FontFamily.Monospace,
                     fontSize = 14.sp
                 ),
-                color = M3TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(Modifier.width(10.dp))
             Surface(
@@ -1083,12 +1050,12 @@ private fun EngineStatusRow(
             Text(
                 text = name,
                 style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
-                color = M3TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = detail,
                 style = MaterialTheme.typography.labelSmall,
-                color = M3TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         Spacer(Modifier.width(8.dp))

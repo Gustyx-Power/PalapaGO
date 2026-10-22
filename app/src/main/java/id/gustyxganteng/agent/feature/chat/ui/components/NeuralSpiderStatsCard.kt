@@ -43,13 +43,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import id.gustyxganteng.agent.core.database.GlobalUsageStats
-import id.gustyxganteng.agent.core.designsystem.M3OutlineVariant
-import id.gustyxganteng.agent.core.designsystem.M3Primary
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainer
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHigh
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerLowest
-import id.gustyxganteng.agent.core.designsystem.M3TextPrimary
-import id.gustyxganteng.agent.core.designsystem.M3TextSecondary
 import java.util.Locale
 import kotlin.math.sqrt
 import kotlin.random.Random
@@ -73,8 +66,8 @@ fun NeuralSpiderStatsCard(
     Card(
         onClick = { showDialog = true },
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = M3SurfaceContainer),
-        border = BorderStroke(1.dp, M3OutlineVariant),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainer),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = modifier
     ) {
         Column(
@@ -92,7 +85,7 @@ fun NeuralSpiderStatsCard(
                     Icon(
                         imageVector = Icons.Rounded.Hub,
                         contentDescription = null,
-                        tint = M3Primary,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(17.dp)
                     )
                     Spacer(Modifier.width(8.dp))
@@ -102,7 +95,7 @@ fun NeuralSpiderStatsCard(
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 0.5.sp
                         ),
-                        color = M3TextPrimary
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
@@ -139,8 +132,8 @@ fun NeuralSpiderStatsCard(
                     .fillMaxWidth()
                     .height(84.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(M3SurfaceContainerLowest)
-                    .border(1.dp, M3OutlineVariant, RoundedCornerShape(12.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainerLowest)
+                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
             )
 
             Spacer(Modifier.height(12.dp))
@@ -172,7 +165,7 @@ fun NeuralSpiderStatsCard(
             Text(
                 text = "Akumulatif permanen sistem • Ketuk untuk detail",
                 fontSize = 9.5.sp,
-                color = M3TextSecondary.copy(alpha = 0.7f),
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             )
         }
@@ -182,20 +175,20 @@ fun NeuralSpiderStatsCard(
         AlertDialog(
             onDismissRequest = { showDialog = false },
             shape = RoundedCornerShape(28.dp),
-            containerColor = M3SurfaceContainerHigh,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Rounded.Hub,
                         contentDescription = null,
-                        tint = M3Primary,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(22.dp)
                     )
                     Spacer(Modifier.width(10.dp))
                     Text(
                         text = "Detail Telemetri Sistem",
                         style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-                        color = M3TextPrimary
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             },
@@ -204,9 +197,9 @@ fun NeuralSpiderStatsCard(
                     Text(
                         text = "Data telemetri di bawah ini dicatat secara permanen di DataStore lokal dan tidak akan terhapus meskipun sesi percakapan dihapus.",
                         style = MaterialTheme.typography.bodySmall,
-                        color = M3TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    HorizontalDivider(color = M3OutlineVariant)
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     TelemetryDetailRow("Total Eksekusi Request", "${stats.totalRequests} kali")
                     TelemetryDetailRow("Prompt Tokens (Konteks Masuk)", String.format(Locale.US, "%,d token", stats.promptTokens))
                     TelemetryDetailRow("Penalaran (Thinking Tokens)", String.format(Locale.US, "%,d token", stats.reasoningTokens))
@@ -216,7 +209,7 @@ fun NeuralSpiderStatsCard(
             },
             confirmButton = {
                 TextButton(onClick = { showDialog = false }) {
-                    Text("Tutup", color = M3Primary, fontWeight = FontWeight.Bold)
+                    Text("Tutup", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                 }
             }
         )
@@ -233,12 +226,12 @@ private fun TelemetryDetailRow(label: String, value: String) {
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
-            color = M3TextSecondary
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
             text = value,
             style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold),
-            color = M3TextPrimary
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -259,7 +252,7 @@ private fun TelemetryMetricItem(
                 fontWeight = FontWeight.Bold,
                 fontSize = 13.5.sp
             ),
-            color = M3Primary
+            color = MaterialTheme.colorScheme.primary
         )
         Text(
             text = title,
@@ -267,7 +260,7 @@ private fun TelemetryMetricItem(
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Medium
             ),
-            color = M3TextSecondary
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -288,6 +281,7 @@ private fun NeuralSpiderCanvas(
         }
     }
 
+    val spiderAccent = MaterialTheme.colorScheme.primary
     val nodeCount = 18
     val particles = remember {
         val rng = Random(42)
@@ -343,7 +337,7 @@ private fun NeuralSpiderCanvas(
                     val dist = sqrt(distSq)
                     val alpha = (1f - dist / connectDist).coerceIn(0f, 1f) * 0.45f
                     drawLine(
-                        color = M3Primary.copy(alpha = alpha),
+                        color = spiderAccent.copy(alpha = alpha),
                         start = Offset(p1.x, p1.y),
                         end = Offset(p2.x, p2.y),
                         strokeWidth = 1.2.dp.toPx()
@@ -354,12 +348,12 @@ private fun NeuralSpiderCanvas(
 
         particles.forEach { p ->
             drawCircle(
-                color = M3Primary.copy(alpha = 0.25f),
+                color = spiderAccent.copy(alpha = 0.25f),
                 radius = p.radius * 2f,
                 center = Offset(p.x, p.y)
             )
             drawCircle(
-                color = M3Primary,
+                color = spiderAccent,
                 radius = p.radius,
                 center = Offset(p.x, p.y)
             )
