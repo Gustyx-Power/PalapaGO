@@ -25,6 +25,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -73,11 +75,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -101,22 +103,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import id.gustyxganteng.agent.R
 import id.gustyxganteng.agent.core.designsystem.GeminiSparkleIcon
-import id.gustyxganteng.agent.core.designsystem.M3Error
-import id.gustyxganteng.agent.core.designsystem.M3ErrorContainer
 import id.gustyxganteng.agent.core.designsystem.M3ExpressiveUserBubbleShape
-import id.gustyxganteng.agent.core.designsystem.M3OnError
-import id.gustyxganteng.agent.core.designsystem.M3OnPrimary
-import id.gustyxganteng.agent.core.designsystem.M3OnPrimaryContainer
-import id.gustyxganteng.agent.core.designsystem.M3OutlineVariant
-import id.gustyxganteng.agent.core.designsystem.M3Primary
-import id.gustyxganteng.agent.core.designsystem.M3PrimaryContainer
-import id.gustyxganteng.agent.core.designsystem.M3Surface
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainer
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHigh
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHighest
-import id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerLow
-import id.gustyxganteng.agent.core.designsystem.M3TextPrimary
-import id.gustyxganteng.agent.core.designsystem.M3TextSecondary
 import id.gustyxganteng.agent.core.markdown.MarkdownContent
 import id.gustyxganteng.agent.core.model.AgentExecutionMode
 import id.gustyxganteng.agent.core.model.CanvasArtifact
@@ -141,8 +128,6 @@ import id.gustyxganteng.agent.feature.chat.ui.components.ToolExecutionCard
 import id.gustyxganteng.agent.feature.workspace.DiffApprovalDialog
 import id.gustyxganteng.agent.feature.workspace.ShellApprovalDialog
 import id.gustyxganteng.agent.feature.workspace.WorkspaceManagerBottomSheet
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -156,6 +141,7 @@ fun ChatScreen(
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
+    var shouldFollowOutput by remember { mutableStateOf(true) }
     val context = LocalContext.current
     val density = LocalDensity.current
     var bottomBarHeightDp by remember { mutableStateOf(88.dp) }
@@ -257,23 +243,34 @@ fun ChatScreen(
         }
     }
 
+    // A user drag disables auto-follow; touching the bottom re-enables it.
+    LaunchedEffect(listState) {
+        listState.interactionSource.interactions.collect { interaction ->
+            if (interaction is DragInteraction.Start) shouldFollowOutput = false
+        }
+    }
+    LaunchedEffect(listState) {
+        snapshotFlow { !listState.canScrollForward }.collect { atBottom ->
+            if (atBottom) shouldFollowOutput = true
+        }
+    }
+    LaunchedEffect(uiState.currentSession?.id) {
+        shouldFollowOutput = true
+    }
+
+    // New message event: snap to it instantly so the list never flashes the top.
     LaunchedEffect(uiState.messages.size) {
-        if (uiState.messages.isNotEmpty()) {
-            listState.animateScrollToItem(uiState.messages.size - 1)
+        if (shouldFollowOutput && uiState.messages.isNotEmpty()) {
+            listState.scrollToItem(listState.layoutInfo.totalItemsCount - 1)
         }
     }
 
-    val streamingLength = (uiState.agentState as? AgentState.Streaming)?.content?.length ?: 0
-    val reasoningLength = (uiState.agentState as? AgentState.Streaming)?.reasoning?.length ?: 0
-    LaunchedEffect(uiState.agentState, streamingLength, reasoningLength) {
-        when (uiState.agentState) {
-            is AgentState.Streaming,
-            is AgentState.ExecutingTool,
-            is AgentState.Error -> {
-                listState.scrollToItem(uiState.messages.size)
-            }
-            else -> {}
-        }
+    // While the response grows, keep the bottom in view by scrolling only forward.
+    val streamingState = uiState.agentState as? AgentState.Streaming
+    val streamingContentLen = streamingState?.content?.length ?: 0
+    val streamingReasoningLen = streamingState?.reasoning?.length ?: 0
+    LaunchedEffect(streamingContentLen, streamingReasoningLen) {
+        if (shouldFollowOutput) listState.scrollBy(Float.MAX_VALUE)
     }
 
     ModalNavigationDrawer(
@@ -282,7 +279,7 @@ fun ChatScreen(
             ModalDrawerSheet(
                 modifier = Modifier.width(310.dp),
                 drawerShape = RoundedCornerShape(topEnd = 32.dp, bottomEnd = 32.dp),
-                drawerContainerColor = M3SurfaceContainer
+                drawerContainerColor = MaterialTheme.colorScheme.surfaceContainer
             ) {
                 Column(
                     modifier = Modifier
@@ -296,8 +293,8 @@ fun ChatScreen(
                     ) {
                         Surface(
                             shape = RoundedCornerShape(12.dp),
-                            color = M3SurfaceContainerHigh,
-                            border = BorderStroke(1.dp, M3OutlineVariant),
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                             modifier = Modifier.size(38.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
@@ -309,12 +306,12 @@ fun ChatScreen(
                             Text(
                                 text = stringResource(R.string.app_name),
                                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold),
-                                color = M3TextPrimary
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
                                 text = stringResource(R.string.app_subtitle),
                                 style = MaterialTheme.typography.bodySmall,
-                                color = M3TextSecondary,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
@@ -330,13 +327,13 @@ fun ChatScreen(
                             scope.launch { drawerState.close() }
                         },
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = M3PrimaryContainer,
-                            contentColor = M3OnPrimaryContainer
+                            containerColor = MaterialTheme.colorScheme.primaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onPrimaryContainer
                         ),
                         shape = RoundedCornerShape(20.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Icon(Icons.Rounded.Add, contentDescription = null, tint = M3OnPrimaryContainer)
+                        Icon(Icons.Rounded.Add, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimaryContainer)
                         Spacer(Modifier.width(8.dp))
                         Text(stringResource(R.string.new_chat), fontWeight = FontWeight.Bold)
                     }
@@ -345,7 +342,7 @@ fun ChatScreen(
                     Text(
                         text = stringResource(R.string.chat_history),
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                        color = M3Primary
+                        color = MaterialTheme.colorScheme.primary
                     )
 
                     // Sessions List
@@ -363,7 +360,7 @@ fun ChatScreen(
                                         text = session.title,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis,
-                                        color = if (isSelected) M3Primary else M3TextPrimary,
+                                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                     )
                                 },
@@ -380,13 +377,13 @@ fun ChatScreen(
                                         Icon(
                                             Icons.Default.Delete,
                                             contentDescription = stringResource(R.string.delete),
-                                            tint = M3TextSecondary,
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                             modifier = Modifier.size(16.dp)
                                         )
                                     }
                                 },
                                 colors = NavigationDrawerItemDefaults.colors(
-                                    selectedContainerColor = M3SurfaceContainerHighest,
+                                    selectedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                                     unselectedContainerColor = Color.Transparent
                                 ),
                                 shape = RoundedCornerShape(16.dp),
@@ -395,47 +392,47 @@ fun ChatScreen(
                         }
                     }
 
-                    HorizontalDivider(color = M3OutlineVariant)
+                    HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                     Spacer(Modifier.height(10.dp))
 
                     // Image Gen Studio Navigation Item
                     NavigationDrawerItem(
-                        icon = { Icon(Icons.Rounded.Palette, contentDescription = null, tint = M3Primary) },
-                        label = { Text(stringResource(R.string.image_gen_studio_title), color = M3TextPrimary, fontWeight = FontWeight.SemiBold) },
+                        icon = { Icon(Icons.Rounded.Palette, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                        label = { Text(stringResource(R.string.image_gen_studio_title), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold) },
                         selected = false,
                         onClick = {
                             scope.launch { drawerState.close() }
                             showImageGenStudioSheet = true
                         },
-                        colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = M3SurfaceContainerHigh),
+                        colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.padding(bottom = 6.dp)
                     )
 
                     // Telemetri Neural Navigation Item
                     NavigationDrawerItem(
-                        icon = { Icon(Icons.Rounded.Hub, contentDescription = null, tint = M3Primary) },
-                        label = { Text(stringResource(R.string.telemetry_neural_title), color = M3TextPrimary, fontWeight = FontWeight.SemiBold) },
+                        icon = { Icon(Icons.Rounded.Hub, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                        label = { Text(stringResource(R.string.telemetry_neural_title), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold) },
                         selected = false,
                         onClick = {
                             scope.launch { drawerState.close() }
                             showNeuralTelemetrySheet = true
                         },
-                        colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = M3SurfaceContainerHigh),
+                        colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                         shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.padding(bottom = 6.dp)
                     )
 
                     // Settings Navigation Item
                     NavigationDrawerItem(
-                        icon = { Icon(Icons.Rounded.Settings, contentDescription = null, tint = M3Primary) },
-                        label = { Text(stringResource(R.string.settings_title), color = M3TextPrimary, fontWeight = FontWeight.SemiBold) },
+                        icon = { Icon(Icons.Rounded.Settings, contentDescription = null, tint = MaterialTheme.colorScheme.primary) },
+                        label = { Text(stringResource(R.string.settings_title), color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold) },
                         selected = false,
                         onClick = {
                             scope.launch { drawerState.close() }
                             onNavigateToSettings()
                         },
-                        colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = M3SurfaceContainerHigh),
+                        colors = NavigationDrawerItemDefaults.colors(unselectedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                         shape = RoundedCornerShape(16.dp)
                     )
                 }
@@ -443,7 +440,7 @@ fun ChatScreen(
         }
     ) {
         Scaffold(
-            containerColor = M3Surface,
+            containerColor = MaterialTheme.colorScheme.surface,
             topBar = {
                 val isExecutionLocked = uiState.agentState !is AgentState.Idle && uiState.agentState !is AgentState.Error
                 GeminiTopBar(
@@ -479,7 +476,7 @@ fun ChatScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(
                         top = 12.dp,
-                        bottom = bottomBarHeightDp + 20.dp
+                        bottom = bottomBarHeightDp + 16.dp
                     )
                 ) {
                     // Expressive Welcome Hero when chat is fresh/empty
@@ -519,17 +516,6 @@ fun ChatScreen(
                     if (uiState.agentState is AgentState.Streaming) {
                         val streaming = uiState.agentState as AgentState.Streaming
                         item {
-                            var liveTypingSec by remember { mutableFloatStateOf(0.1f) }
-                            LaunchedEffect(streaming.isThinking) {
-                                if (!streaming.isThinking) {
-                                    val start = System.currentTimeMillis()
-                                    while (isActive) {
-                                        delay(100)
-                                        liveTypingSec = ((System.currentTimeMillis() - start) / 1000f).coerceAtLeast(0.1f)
-                                    }
-                                }
-                            }
-
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -539,66 +525,29 @@ fun ChatScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     modifier = Modifier.padding(bottom = 6.dp)
                                 ) {
-                                    GeminiSparkleIcon(size = 15.dp, tint = M3Primary)
+                                    GeminiSparkleIcon(size = 15.dp, tint = MaterialTheme.colorScheme.primary)
                                     Spacer(Modifier.width(7.dp))
                                     Text(
                                         text = stringResource(R.string.app_name),
                                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
-                                        color = M3Primary
+                                        color = MaterialTheme.colorScheme.primary
                                     )
-                                    Spacer(Modifier.width(8.dp))
-                                    Surface(
-                                        shape = RoundedCornerShape(8.dp),
-                                        color = M3SurfaceContainerHigh,
-                                        border = BorderStroke(1.dp, M3Primary.copy(alpha = 0.35f))
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Box(
-                                                modifier = Modifier
-                                                    .size(6.dp)
-                                                    .background(Color(0xFF81C995), CircleShape)
-                                            )
-                                            Spacer(Modifier.width(6.dp))
-                                            val activityText = if (streaming.isThinking) {
-                                                streaming.currentActivity
-                                            } else {
-                                                val durStr = String.format(java.util.Locale.US, "%.1fs", liveTypingSec)
-                                                val baseActivity = streaming.currentActivity.substringBefore(" (")
-                                                "$baseActivity ($durStr)"
-                                            }
-                                            Text(
-                                                text = activityText,
-                                                fontSize = 11.sp,
-                                                color = M3TextPrimary,
-                                                fontWeight = FontWeight.Medium
-                                            )
-                                        }
-                                    }
+                                    Text(
+                                        text = streaming.currentActivity.substringBefore(" ("),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
                                 }
 
                                 if (streaming.content.isBlank() && streaming.reasoning.isNullOrBlank()) {
-                                    Surface(
-                                        color = M3SurfaceContainerLow,
-                                        shape = RoundedCornerShape(12.dp),
-                                        border = BorderStroke(1.dp, M3OutlineVariant),
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(vertical = 4.dp)
-                                    ) {
-                                        Row(
-                                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                                            verticalAlignment = Alignment.CenterVertically
-                                        ) {
-                                            Text(
-                                                text = streaming.currentActivity,
-                                                style = MaterialTheme.typography.bodySmall,
-                                                color = M3TextSecondary
-                                            )
-                                        }
-                                    }
+                                    Text(
+                                        text = streaming.currentActivity,
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(start = 22.dp, top = 2.dp, bottom = 8.dp)
+                                    )
                                 }
 
                                 if (streaming.isThinking || !streaming.reasoning.isNullOrBlank()) {
@@ -614,27 +563,6 @@ fun ChatScreen(
                                     MarkdownContent(markdown = streaming.content)
                                 }
 
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(top = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    val outTokens = (streaming.content.length / 4).coerceAtLeast(1)
-                                    val typingSpeed = (outTokens / liveTypingSec).coerceAtLeast(0f)
-                                    val statusText = if (streaming.isThinking) {
-                                        stringResource(R.string.streaming_thinking_meta, streaming.thinkingTokens)
-                                    } else {
-                                        val durStr = String.format(java.util.Locale.US, "%.1fs", liveTypingSec)
-                                        val speedStr = String.format(java.util.Locale.US, "%.0f tok/s", typingSpeed)
-                                        "Nalar: ${streaming.thinkingTokens} tok • Mengetik: $durStr ($outTokens tok • $speedStr)"
-                                    }
-                                    Text(
-                                        text = statusText,
-                                        fontSize = 11.sp,
-                                        color = M3TextSecondary
-                                    )
-                                }
                             }
                         }
                     }
@@ -659,9 +587,9 @@ fun ChatScreen(
                         val errorState = uiState.agentState as AgentState.Error
                         item {
                             Surface(
-                                color = M3ErrorContainer,
+                                color = MaterialTheme.colorScheme.errorContainer,
                                 shape = RoundedCornerShape(18.dp),
-                                border = BorderStroke(1.dp, M3Error.copy(alpha = 0.5f)),
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(horizontal = 16.dp, vertical = 8.dp)
@@ -671,7 +599,7 @@ fun ChatScreen(
                                         Icon(
                                             imageVector = Icons.Default.Warning,
                                             contentDescription = null,
-                                            tint = M3Error,
+                                            tint = MaterialTheme.colorScheme.error,
                                             modifier = Modifier.size(20.dp)
                                         )
                                         Spacer(Modifier.width(10.dp))
@@ -679,14 +607,14 @@ fun ChatScreen(
                                             text = stringResource(R.string.error_occurred),
                                             style = MaterialTheme.typography.titleSmall,
                                             fontWeight = FontWeight.Bold,
-                                            color = M3Error
+                                            color = MaterialTheme.colorScheme.error
                                         )
                                     }
                                     Spacer(Modifier.height(8.dp))
                                     Text(
                                         text = errorState.message,
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = M3TextPrimary
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Spacer(Modifier.height(12.dp))
                                     Row(
@@ -694,13 +622,13 @@ fun ChatScreen(
                                         horizontalArrangement = Arrangement.End
                                     ) {
                                         TextButton(onClick = { viewModel.dismissError() }) {
-                                            Text(stringResource(R.string.dismiss), color = M3TextSecondary)
+                                            Text(stringResource(R.string.dismiss), color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
                                         Spacer(Modifier.width(8.dp))
                                         Button(
                                             onClick = { viewModel.retryLastTurn() },
                                             shape = RoundedCornerShape(14.dp),
-                                            colors = ButtonDefaults.buttonColors(containerColor = M3Error, contentColor = M3OnError)
+                                            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error, contentColor = MaterialTheme.colorScheme.onError)
                                         ) {
                                             Text(stringResource(R.string.retry), fontWeight = FontWeight.Bold)
                                         }
@@ -714,9 +642,9 @@ fun ChatScreen(
                 // Sticky Rate Limit Banner
                 uiState.rateLimitStatus?.let { rateLimit ->
                     Surface(
-                        color = M3ErrorContainer,
+                        color = MaterialTheme.colorScheme.errorContainer,
                         shape = RoundedCornerShape(18.dp),
-                        border = BorderStroke(1.dp, M3Error.copy(alpha = 0.5f)),
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)),
                         modifier = Modifier
                             .align(Alignment.BottomCenter)
                             .padding(bottom = bottomBarHeightDp + 10.dp, start = 16.dp, end = 16.dp)
@@ -728,16 +656,16 @@ fun ChatScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-                                Icon(Icons.Default.Warning, contentDescription = null, tint = M3Error)
+                                Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                                 Spacer(Modifier.width(10.dp))
                                 Text(
                                     text = rateLimit.message,
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = M3Error
+                                    color = MaterialTheme.colorScheme.error
                                 )
                             }
                             TextButton(onClick = { viewModel.stopStreaming() }) {
-                                Text(stringResource(R.string.cancel), color = M3Error, fontWeight = FontWeight.Bold)
+                                Text(stringResource(R.string.cancel), color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold)
                             }
                         }
                     }
@@ -784,6 +712,7 @@ fun ChatScreen(
                     onAttachImage = { imagePicker.launch("image/*") },
                     onCaptureCamera = launchCamera,
                     onSend = {
+                        shouldFollowOutput = true
                         val activeWs = uiState.currentSession?.workspacePath ?: uiState.appSettings?.activeWorkspacePath
                         val currentMode = uiState.appSettings?.promptMode ?: PromptMode.CHAT
                         if (currentMode == PromptMode.AGENT && activeWs.isNullOrBlank()) {
@@ -900,8 +829,8 @@ private fun WelcomeHeroSection(
     ) {
         Surface(
             shape = RoundedCornerShape(22.dp),
-            color = M3SurfaceContainerHigh,
-            border = BorderStroke(1.dp, M3OutlineVariant),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             modifier = Modifier.size(68.dp)
         ) {
             Box(contentAlignment = Alignment.Center) {
@@ -917,7 +846,7 @@ private fun WelcomeHeroSection(
                 fontWeight = FontWeight.Bold,
                 fontSize = 21.sp
             ),
-            color = M3TextPrimary,
+            color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center
         )
 
@@ -926,7 +855,7 @@ private fun WelcomeHeroSection(
         Text(
             text = stringResource(R.string.welcome_hero_subtitle),
             style = MaterialTheme.typography.bodyMedium,
-            color = M3TextSecondary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
 
@@ -989,8 +918,8 @@ private fun HeroSuggestionCard(
 ) {
     Surface(
         shape = RoundedCornerShape(18.dp),
-        color = M3SurfaceContainer,
-        border = BorderStroke(1.dp, M3OutlineVariant),
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = modifier
             .clip(RoundedCornerShape(18.dp))
             .clickable { onSelect(prompt) }
@@ -998,14 +927,14 @@ private fun HeroSuggestionCard(
         Column(modifier = Modifier.padding(14.dp)) {
             Surface(
                 shape = RoundedCornerShape(10.dp),
-                color = M3PrimaryContainer.copy(alpha = 0.5f),
+                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
                 modifier = Modifier.size(32.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = icon,
                         contentDescription = null,
-                        tint = M3Primary,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(17.dp)
                     )
                 }
@@ -1014,7 +943,7 @@ private fun HeroSuggestionCard(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, fontSize = 13.5.sp),
-                color = M3TextPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -1022,7 +951,7 @@ private fun HeroSuggestionCard(
             Text(
                 text = prompt,
                 style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, lineHeight = 15.sp),
-                color = M3TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
@@ -1049,14 +978,13 @@ fun ChatMessageItem(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp),
+                .padding(horizontal = 16.dp, vertical = 8.dp),
             contentAlignment = Alignment.CenterEnd
         ) {
             Column(horizontalAlignment = Alignment.End) {
                 Surface(
                     shape = M3ExpressiveUserBubbleShape,
-                    color = M3SurfaceContainerHighest,
-                    border = BorderStroke(1.dp, M3OutlineVariant),
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
                     modifier = Modifier.widthIn(max = 310.dp)
                 ) {
                     Column(modifier = Modifier.padding(14.dp)) {
@@ -1083,7 +1011,7 @@ fun ChatMessageItem(
                                                 .fillMaxWidth()
                                                 .heightIn(max = 240.dp)
                                                 .clip(RoundedCornerShape(14.dp))
-                                                .border(1.dp, M3OutlineVariant, RoundedCornerShape(14.dp)),
+                                                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(14.dp)),
                                             contentScale = ContentScale.Crop
                                         )
                                     }
@@ -1095,7 +1023,7 @@ fun ChatMessageItem(
                                 Text(
                                     text = message.content,
                                     style = MaterialTheme.typography.bodyLarge.copy(
-                                        color = M3TextPrimary,
+                                        color = MaterialTheme.colorScheme.onSurface,
                                         fontSize = 15.sp,
                                         lineHeight = 22.sp
                                     )
@@ -1113,8 +1041,8 @@ fun ChatMessageItem(
                 ) {
                     Surface(
                         shape = CircleShape,
-                        color = M3SurfaceContainerHigh,
-                        border = BorderStroke(1.dp, M3OutlineVariant),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                         modifier = Modifier.size(28.dp)
                     ) {
                         IconButton(
@@ -1127,7 +1055,7 @@ fun ChatMessageItem(
                             Icon(
                                 imageVector = Icons.Default.ContentCopy,
                                 contentDescription = stringResource(R.string.cd_copy),
-                                tint = M3TextSecondary,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(13.dp)
                             )
                         }
@@ -1135,8 +1063,8 @@ fun ChatMessageItem(
 
                     Surface(
                         shape = CircleShape,
-                        color = M3SurfaceContainerHigh,
-                        border = BorderStroke(1.dp, M3OutlineVariant),
+                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                         modifier = Modifier.size(28.dp)
                     ) {
                         IconButton(
@@ -1146,7 +1074,7 @@ fun ChatMessageItem(
                             Icon(
                                 imageVector = Icons.Default.Edit,
                                 contentDescription = stringResource(R.string.cd_edit),
-                                tint = M3TextSecondary,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(13.dp)
                             )
                         }
@@ -1185,12 +1113,12 @@ fun ChatMessageItem(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.padding(bottom = 6.dp)
                         ) {
-                            GeminiSparkleIcon(size = 15.dp, tint = M3Primary)
+                            GeminiSparkleIcon(size = 15.dp, tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(6.dp))
                             Text(
                                 text = modelName,
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = M3Primary
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
 
@@ -1222,12 +1150,12 @@ fun ChatMessageItem(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.padding(bottom = 6.dp)
                         ) {
-                            GeminiSparkleIcon(size = 15.dp, tint = M3Primary)
+                            GeminiSparkleIcon(size = 15.dp, tint = MaterialTheme.colorScheme.primary)
                             Spacer(Modifier.width(6.dp))
                             Text(
                                 text = modelName,
                                 style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                                color = M3Primary
+                                color = MaterialTheme.colorScheme.primary
                             )
                         }
 
@@ -1239,8 +1167,8 @@ fun ChatMessageItem(
                         } else {
                             Surface(
                                 shape = RoundedCornerShape(14.dp),
-                                color = M3SurfaceContainer,
-                                border = BorderStroke(1.dp, M3OutlineVariant),
+                                color = MaterialTheme.colorScheme.surfaceContainer,
+                                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .padding(vertical = 4.dp)
@@ -1259,11 +1187,11 @@ fun ChatMessageItem(
                                     Text(
                                         text = "Generasi gambar terputus atau gagal dimuat.",
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = M3TextSecondary,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                                         modifier = Modifier.weight(1f)
                                     )
                                     TextButton(onClick = { onReloadMessage(message) }) {
-                                        Text("Coba Lagi", color = M3Primary, fontWeight = FontWeight.SemiBold)
+                                        Text("Coba Lagi", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
                                     }
                                 }
                             }
@@ -1286,12 +1214,12 @@ fun ChatMessageItem(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(bottom = 6.dp)
                 ) {
-                    GeminiSparkleIcon(size = 15.dp, tint = M3Primary)
+                    GeminiSparkleIcon(size = 15.dp, tint = MaterialTheme.colorScheme.primary)
                     Spacer(Modifier.width(6.dp))
                     Text(
                         text = modelName,
                         style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
-                        color = M3Primary
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
 
@@ -1400,14 +1328,14 @@ fun ChatMessageItem(
                     if (effectiveUsage != null) {
                         Surface(
                             shape = RoundedCornerShape(8.dp),
-                            color = M3SurfaceContainerLow,
-                            border = BorderStroke(1.dp, M3OutlineVariant)
+                            color = MaterialTheme.colorScheme.surfaceContainerLow,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant)
                         ) {
                             Text(
                                 text = effectiveUsage.toCompactString(),
                                 fontSize = 10.5.sp,
                                 fontWeight = FontWeight.Medium,
-                                color = M3TextSecondary,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
                             )
                         }
@@ -1421,8 +1349,8 @@ fun ChatMessageItem(
                     ) {
                         Surface(
                             shape = CircleShape,
-                            color = M3SurfaceContainerHigh,
-                            border = BorderStroke(1.dp, M3OutlineVariant),
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                             modifier = Modifier.size(32.dp)
                         ) {
                             IconButton(
@@ -1435,7 +1363,7 @@ fun ChatMessageItem(
                                 Icon(
                                     imageVector = Icons.Default.ContentCopy,
                                     contentDescription = stringResource(R.string.cd_copy),
-                                    tint = M3TextSecondary,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(15.dp)
                                 )
                             }
@@ -1443,8 +1371,8 @@ fun ChatMessageItem(
 
                         Surface(
                             shape = CircleShape,
-                            color = M3SurfaceContainerHigh,
-                            border = BorderStroke(1.dp, M3OutlineVariant),
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                             modifier = Modifier.size(32.dp)
                         ) {
                             IconButton(
@@ -1454,7 +1382,7 @@ fun ChatMessageItem(
                                 Icon(
                                     imageVector = Icons.Rounded.Refresh,
                                     contentDescription = stringResource(R.string.cd_reload),
-                                    tint = M3TextSecondary,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(15.dp)
                                 )
                             }
@@ -1462,8 +1390,8 @@ fun ChatMessageItem(
 
                         Surface(
                             shape = CircleShape,
-                            color = M3SurfaceContainerHigh,
-                            border = BorderStroke(1.dp, M3OutlineVariant),
+                            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                             modifier = Modifier.size(32.dp)
                         ) {
                             IconButton(
@@ -1480,7 +1408,7 @@ fun ChatMessageItem(
                                 Icon(
                                     imageVector = Icons.Rounded.Palette,
                                     contentDescription = stringResource(R.string.cd_open_in_canvas),
-                                    tint = M3TextSecondary,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.size(15.dp)
                                 )
                             }
