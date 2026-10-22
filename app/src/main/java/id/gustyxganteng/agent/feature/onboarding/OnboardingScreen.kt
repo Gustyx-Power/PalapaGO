@@ -17,7 +17,6 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -60,7 +59,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -89,20 +87,17 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import id.gustyxganteng.agent.R
 import id.gustyxganteng.agent.core.database.AppSettingsRepository
-import id.gustyxganteng.agent.core.designsystem.M3OutlineVariant
-import id.gustyxganteng.agent.core.designsystem.M3TextSecondary
 import id.gustyxganteng.agent.core.model.PromptMode
 import kotlinx.coroutines.launch
 import kotlin.math.cos
 import kotlin.math.sin
 
-private val PixelBackgroundDark = Color(0xFF111216)
-private val PixelSolidCardColor = Color(0xFF1B1D22)
-private val PixelPillButtonColor = Color(0xFFA8C7FA)
-private val PixelPillButtonText = Color(0xFF041C35)
-private val PixelStrokeLavender = Color(0xFFC4B5FD)
-private val PixelStrokeRose = Color(0xFFF48FB1)
 private val PixelSuccessGreen = Color(0xFF81C784)
+private val PixelAmber = Color(0xFFFFB74D)
+private val PixelTeal = Color(0xFF64FFDA)
+private val PixelAmberSoft = Color(0xFFFFE0B2)
+private val PixelLavender = Color(0xFFD0BCFF)
+private val PixelSky = Color(0xFF82B1FF)
 
 @Composable
 fun OnboardingScreen(
@@ -180,7 +175,7 @@ fun OnboardingScreen(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .background(PixelBackgroundDark)
+            .background(MaterialTheme.colorScheme.background)
     ) {
         ExpressivePixelOrganicBackground()
 
@@ -248,13 +243,13 @@ fun OnboardingScreen(
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                             contentDescription = null,
-                            tint = M3TextSecondary,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(Modifier.width(6.dp))
                         Text(
                             text = stringResource(R.string.onboarding_btn_back),
-                            color = M3TextSecondary,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Medium,
                             fontSize = 15.sp
                         )
@@ -299,10 +294,10 @@ fun OnboardingScreen(
                     enabled = isNextEnabled,
                     shape = CircleShape,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = PixelPillButtonColor,
-                        contentColor = PixelPillButtonText,
-                        disabledContainerColor = Color(0xFF262A33),
-                        disabledContentColor = Color(0xFF6B7280)
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        disabledContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        disabledContentColor = MaterialTheme.colorScheme.onSurfaceVariant
                     ),
                     contentPadding = PaddingValues(horizontal = 28.dp, vertical = 14.dp)
                 ) {
@@ -332,8 +327,7 @@ private fun PixelWelcomePage() {
             contentDescription = stringResource(R.string.app_name),
             modifier = Modifier
                 .size(76.dp)
-                .clip(RoundedCornerShape(22.dp))
-                .border(1.dp, M3OutlineVariant.copy(alpha = 0.5f), RoundedCornerShape(22.dp))
+                .clip(RoundedCornerShape(24.dp))
         )
 
         Spacer(Modifier.weight(1f))
@@ -346,7 +340,7 @@ private fun PixelWelcomePage() {
                 fontWeight = FontWeight.Normal,
                 lineHeight = 44.sp
             ),
-            color = Color(0xFFF2F0F4)
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         Text(
@@ -356,7 +350,7 @@ private fun PixelWelcomePage() {
                 fontWeight = FontWeight.SemiBold,
                 lineHeight = 54.sp
             ),
-            color = Color(0xFFF2F0F4)
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         Spacer(Modifier.height(28.dp))
@@ -371,7 +365,7 @@ private fun PixelWelcomePage() {
             Icon(
                 imageVector = Icons.Rounded.Language,
                 contentDescription = null,
-                tint = Color(0xFFD0BCFF),
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(Modifier.width(16.dp))
@@ -381,7 +375,7 @@ private fun PixelWelcomePage() {
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Normal
                 ),
-                color = Color(0xFFE2E1E6)
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
 
@@ -394,7 +388,7 @@ private fun PixelWelcomePage() {
             Icon(
                 imageVector = Icons.Rounded.Terminal,
                 contentDescription = null,
-                tint = Color(0xFFD0BCFF),
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(Modifier.width(16.dp))
@@ -404,7 +398,7 @@ private fun PixelWelcomePage() {
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Normal
                 ),
-                color = Color(0xFFE2E1E6)
+                color = MaterialTheme.colorScheme.onBackground
             )
         }
 
@@ -436,7 +430,7 @@ private fun PixelPermissionsPage(
                 fontWeight = FontWeight.Bold,
                 lineHeight = 36.sp
             ),
-            color = Color(0xFFF2F0F4)
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         Spacer(Modifier.height(6.dp))
@@ -444,7 +438,7 @@ private fun PixelPermissionsPage(
         Text(
             text = stringResource(R.string.onboarding_step_permissions_subtitle),
             style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 20.sp),
-            color = M3TextSecondary
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(Modifier.height(18.dp))
@@ -488,9 +482,8 @@ private fun PixelPermissionsPage(
         // Mandatory Permission Warning Banner
         if (!hasStorage || !hasNotification) {
             Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = Color(0xFF241C15),
-                border = BorderStroke(1.dp, Color(0xFFFFB74D).copy(alpha = 0.4f)),
+                shape = RoundedCornerShape(20.dp),
+                color = MaterialTheme.colorScheme.surfaceContainerLow,
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Row(
@@ -500,14 +493,14 @@ private fun PixelPermissionsPage(
                     Icon(
                         imageVector = Icons.Rounded.Lock,
                         contentDescription = null,
-                        tint = Color(0xFFFFB74D),
+                        tint = PixelAmber,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(Modifier.width(12.dp))
                     Text(
                         text = stringResource(R.string.onboarding_perm_mandatory_notice),
                         style = MaterialTheme.typography.bodySmall.copy(lineHeight = 18.sp),
-                        color = Color(0xFFFFE0B2)
+                        color = PixelAmberSoft
                     )
                 }
             }
@@ -539,7 +532,7 @@ private fun PixelPreferencesPage(
                 fontWeight = FontWeight.Bold,
                 lineHeight = 38.sp
             ),
-            color = Color(0xFFF2F0F4)
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         Spacer(Modifier.height(8.dp))
@@ -547,15 +540,15 @@ private fun PixelPreferencesPage(
         Text(
             text = stringResource(R.string.onboarding_step_preferences_subtitle),
             style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
-            color = M3TextSecondary
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(Modifier.height(22.dp))
 
         Text(
             text = stringResource(R.string.onboarding_pref_section_mode),
-            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp),
-            color = Color(0xFFD0BCFF)
+            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold, letterSpacing = 1.sp),
+            color = MaterialTheme.colorScheme.primary
         )
 
         Spacer(Modifier.height(10.dp))
@@ -580,15 +573,14 @@ private fun PixelPreferencesPage(
 
         // Diff Approval Safeguard
         Surface(
-            shape = RoundedCornerShape(18.dp),
-            color = PixelSolidCardColor,
-            border = BorderStroke(1.dp, M3OutlineVariant),
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(horizontal = 18.dp, vertical = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
@@ -599,23 +591,19 @@ private fun PixelPreferencesPage(
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 15.sp
                         ),
-                        color = Color(0xFFF2F0F4)
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
                         text = stringResource(R.string.onboarding_pref_diff_desc),
                         style = MaterialTheme.typography.bodySmall.copy(lineHeight = 17.sp),
-                        color = M3TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
                 Switch(
                     checked = requireDiffApproval,
-                    onCheckedChange = onToggleDiffApproval,
-                    colors = SwitchDefaults.colors(
-                        checkedThumbColor = PixelPillButtonText,
-                        checkedTrackColor = PixelPillButtonColor
-                    )
+                    onCheckedChange = onToggleDiffApproval
                 )
             }
         }
@@ -624,29 +612,20 @@ private fun PixelPreferencesPage(
 
         // 150K Token Calibration Notice Card
         Surface(
-            shape = RoundedCornerShape(18.dp),
-            color = PixelSolidCardColor,
-            border = BorderStroke(1.dp, Color(0xFF64FFDA).copy(alpha = 0.35f)),
+            shape = RoundedCornerShape(24.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
-                modifier = Modifier.padding(16.dp),
+                modifier = Modifier.padding(18.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Surface(
-                    shape = CircleShape,
-                    color = Color(0xFF64FFDA).copy(alpha = 0.12f),
-                    modifier = Modifier.size(42.dp)
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = Icons.Rounded.Memory,
-                            contentDescription = null,
-                            tint = Color(0xFF64FFDA),
-                            modifier = Modifier.size(22.dp)
-                        )
-                    }
-                }
+                Icon(
+                    imageVector = Icons.Rounded.Memory,
+                    contentDescription = null,
+                    tint = PixelTeal,
+                    modifier = Modifier.size(24.dp)
+                )
 
                 Spacer(Modifier.width(14.dp))
 
@@ -654,13 +633,13 @@ private fun PixelPreferencesPage(
                     Text(
                         text = stringResource(R.string.onboarding_pref_context_title),
                         style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold),
-                        color = Color(0xFF64FFDA)
+                        color = PixelTeal
                     )
                     Spacer(Modifier.height(2.dp))
                     Text(
                         text = stringResource(R.string.onboarding_pref_context_desc),
                         style = MaterialTheme.typography.bodySmall.copy(lineHeight = 17.sp),
-                        color = M3TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -687,7 +666,6 @@ private fun PixelReadyPage(
         Surface(
             shape = CircleShape,
             color = PixelSuccessGreen.copy(alpha = 0.15f),
-            border = BorderStroke(1.dp, PixelSuccessGreen.copy(alpha = 0.4f)),
             modifier = Modifier.size(64.dp)
         ) {
             Box(contentAlignment = Alignment.Center) {
@@ -709,7 +687,7 @@ private fun PixelReadyPage(
                 fontWeight = FontWeight.Bold,
                 lineHeight = 40.sp
             ),
-            color = Color(0xFFF2F0F4)
+            color = MaterialTheme.colorScheme.onBackground
         )
 
         Spacer(Modifier.height(8.dp))
@@ -717,25 +695,24 @@ private fun PixelReadyPage(
         Text(
             text = stringResource(R.string.onboarding_step_ready_subtitle),
             style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 22.sp),
-            color = M3TextSecondary
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
 
         Spacer(Modifier.height(24.dp))
 
         Surface(
-            shape = RoundedCornerShape(20.dp),
-            color = PixelSolidCardColor,
-            border = BorderStroke(1.dp, M3OutlineVariant),
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(modifier = Modifier.padding(18.dp)) {
                 Text(
                     text = stringResource(R.string.onboarding_ready_summary_title),
-                    style = MaterialTheme.typography.labelSmall.copy(
+                    style = MaterialTheme.typography.labelMedium.copy(
                         fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.2.sp
+                        letterSpacing = 1.sp
                     ),
-                    color = Color(0xFFD0BCFF)
+                    color = MaterialTheme.colorScheme.primary
                 )
 
                 Spacer(Modifier.height(14.dp))
@@ -746,28 +723,28 @@ private fun PixelReadyPage(
                     statusColor = PixelSuccessGreen
                 )
 
-                HorizontalDivider(color = M3OutlineVariant.copy(alpha = 0.4f), modifier = Modifier.padding(vertical = 10.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f), modifier = Modifier.padding(vertical = 10.dp))
 
                 PixelSummaryRow(
                     label = stringResource(R.string.onboarding_ready_summary_mode),
                     value = if (selectedMode == PromptMode.AGENT) "Agent Coding Otonom" else "Chat Cepat",
-                    statusColor = Color(0xFFF2F0F4)
+                    statusColor = MaterialTheme.colorScheme.onSurface
                 )
 
-                HorizontalDivider(color = M3OutlineVariant.copy(alpha = 0.4f), modifier = Modifier.padding(vertical = 10.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f), modifier = Modifier.padding(vertical = 10.dp))
 
                 PixelSummaryRow(
                     label = stringResource(R.string.onboarding_ready_summary_diff),
                     value = if (requireDiffApproval) "Human-in-the-Loop" else "Auto-Approve",
-                    statusColor = if (requireDiffApproval) Color(0xFF64FFDA) else Color(0xFFFFD180)
+                    statusColor = if (requireDiffApproval) PixelTeal else PixelAmber
                 )
 
-                HorizontalDivider(color = M3OutlineVariant.copy(alpha = 0.4f), modifier = Modifier.padding(vertical = 10.dp))
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f), modifier = Modifier.padding(vertical = 10.dp))
 
                 PixelSummaryRow(
                     label = stringResource(R.string.onboarding_ready_summary_context),
                     value = "150.000 Token (150K)",
-                    statusColor = Color(0xFF82B1FF)
+                    statusColor = PixelSky
                 )
             }
         }
@@ -785,39 +762,30 @@ private fun PixelPermissionM3Card(
     isMandatory: Boolean,
     onRequest: () -> Unit
 ) {
-    val borderColor by animateColorAsState(
-        targetValue = if (isGranted) PixelSuccessGreen.copy(alpha = 0.5f) else M3OutlineVariant,
-        label = "permBorderColor"
+    val cardColor by animateColorAsState(
+        targetValue = if (isGranted) MaterialTheme.colorScheme.surfaceContainerLow else MaterialTheme.colorScheme.surfaceContainer,
+        label = "permCardColor"
     )
 
     Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = PixelSolidCardColor,
-        border = BorderStroke(1.dp, borderColor),
+        shape = RoundedCornerShape(24.dp),
+        color = cardColor,
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Surface(
-                shape = RoundedCornerShape(10.dp),
-                color = if (isGranted) PixelSuccessGreen.copy(alpha = 0.15f) else Color(0xFF262A33),
-                modifier = Modifier.size(38.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = if (isGranted) PixelSuccessGreen else Color(0xFFD0BCFF),
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-            }
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = if (isGranted) PixelSuccessGreen else MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp)
+            )
 
-            Spacer(Modifier.width(12.dp))
+            Spacer(Modifier.width(14.dp))
 
             Column(
                 modifier = Modifier
@@ -834,24 +802,17 @@ private fun PixelPermissionM3Card(
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 14.sp
                         ),
-                        color = Color(0xFFF2F0F4),
+                        color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false)
                     )
                     if (isMandatory) {
-                        Surface(
-                            shape = RoundedCornerShape(4.dp),
-                            color = Color(0xFFFFB4AB).copy(alpha = 0.18f)
-                        ) {
-                            Text(
-                                text = stringResource(R.string.onboarding_perm_mandatory_badge),
-                                fontSize = 9.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color(0xFFFFB4AB),
-                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
-                            )
-                        }
+                        Text(
+                            text = stringResource(R.string.onboarding_perm_mandatory_badge),
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold, fontSize = 10.sp),
+                            color = MaterialTheme.colorScheme.error
+                        )
                     }
                 }
 
@@ -863,54 +824,33 @@ private fun PixelPermissionM3Card(
                         fontSize = 12.sp,
                         lineHeight = 16.sp
                     ),
-                    color = M3TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
             }
 
             if (isGranted) {
-                Surface(
-                    shape = CircleShape,
-                    color = PixelSuccessGreen.copy(alpha = 0.14f),
-                    border = BorderStroke(1.dp, PixelSuccessGreen.copy(alpha = 0.35f))
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Check,
-                            contentDescription = null,
-                            tint = PixelSuccessGreen,
-                            modifier = Modifier.size(14.dp)
-                        )
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            text = stringResource(R.string.onboarding_perm_granted),
-                            style = MaterialTheme.typography.labelSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 11.sp
-                            ),
-                            color = PixelSuccessGreen
-                        )
-                    }
-                }
+                Icon(
+                    imageVector = Icons.Rounded.Check,
+                    contentDescription = null,
+                    tint = PixelSuccessGreen,
+                    modifier = Modifier.size(22.dp)
+                )
             } else {
                 Button(
                     onClick = onRequest,
                     shape = CircleShape,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = PixelPillButtonColor,
-                        contentColor = PixelPillButtonText
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
                     ),
-                    contentPadding = PaddingValues(horizontal = 14.dp, vertical = 4.dp),
-                    modifier = Modifier.height(34.dp)
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 6.dp)
                 ) {
                     Text(
                         text = stringResource(R.string.onboarding_perm_grant_btn),
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold
                     )
                 }
             }
@@ -925,21 +865,21 @@ private fun PixelSelectableOptionCard(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    val borderColor by animateColorAsState(
-        targetValue = if (isSelected) PixelPillButtonColor else M3OutlineVariant,
-        label = "optionBorderColor"
+    val cardColor by animateColorAsState(
+        targetValue = if (isSelected) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainerLow,
+        label = "optionCardColor"
     )
 
     Surface(
-        shape = RoundedCornerShape(18.dp),
-        color = PixelSolidCardColor,
-        border = BorderStroke(if (isSelected) 1.5.dp else 1.dp, borderColor),
+        shape = RoundedCornerShape(24.dp),
+        color = cardColor,
         modifier = Modifier
             .fillMaxWidth()
+            .clip(RoundedCornerShape(24.dp))
             .clickable(onClick = onClick)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
@@ -948,7 +888,7 @@ private fun PixelSelectableOptionCard(
                     .clip(CircleShape)
                     .border(
                         width = 2.dp,
-                        color = if (isSelected) PixelPillButtonColor else M3OutlineVariant,
+                        color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
                         shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center
@@ -958,7 +898,7 @@ private fun PixelSelectableOptionCard(
                         modifier = Modifier
                             .size(10.dp)
                             .clip(CircleShape)
-                            .background(PixelPillButtonColor)
+                            .background(MaterialTheme.colorScheme.primary)
                     )
                 }
             }
@@ -969,13 +909,13 @@ private fun PixelSelectableOptionCard(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                    color = Color(0xFFF2F0F4)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(Modifier.height(3.dp))
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodyMedium.copy(lineHeight = 19.sp),
-                    color = M3TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -996,7 +936,7 @@ private fun PixelSummaryRow(
         Text(
             text = label,
             style = MaterialTheme.typography.bodySmall,
-            color = M3TextSecondary
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
             text = value,
@@ -1024,6 +964,8 @@ private fun ExpressivePixelOrganicBackground() {
         ),
         label = "scallopRotation"
     )
+
+    val primaryStroke = MaterialTheme.colorScheme.primary
 
     Canvas(modifier = Modifier.fillMaxSize()) {
         val width = size.width
@@ -1055,8 +997,8 @@ private fun ExpressivePixelOrganicBackground() {
 
         drawPath(
             path = scallopPath,
-            color = PixelStrokeLavender.copy(alpha = 0.55f),
-            style = Stroke(width = 1.8.dp.toPx())
+            color = PixelLavender.copy(alpha = 0.3f),
+            style = Stroke(width = 1.4.dp.toPx())
         )
 
         // 2. Large Sweeping Elliptical Arc
@@ -1071,8 +1013,8 @@ private fun ExpressivePixelOrganicBackground() {
 
         drawPath(
             path = arcPath,
-            color = PixelStrokeRose.copy(alpha = 0.45f),
-            style = Stroke(width = 1.6.dp.toPx())
+            color = primaryStroke.copy(alpha = 0.22f),
+            style = Stroke(width = 1.3.dp.toPx())
         )
 
         // 3. Subtle Secondary Sweeping Arc at bottom left
@@ -1087,8 +1029,8 @@ private fun ExpressivePixelOrganicBackground() {
 
         drawPath(
             path = bottomArc,
-            color = PixelStrokeRose.copy(alpha = 0.35f),
-            style = Stroke(width = 1.4.dp.toPx())
+            color = primaryStroke.copy(alpha = 0.16f),
+            style = Stroke(width = 1.2.dp.toPx())
         )
     }
 }
