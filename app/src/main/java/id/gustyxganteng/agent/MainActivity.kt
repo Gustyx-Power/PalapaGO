@@ -6,6 +6,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -15,7 +16,6 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import id.gustyxganteng.agent.core.database.AppSettingsRepository
 import id.gustyxganteng.agent.core.designsystem.GGAgentTheme
-import id.gustyxganteng.agent.core.designsystem.M3Surface
 import id.gustyxganteng.agent.feature.chat.ChatScreen
 import id.gustyxganteng.agent.feature.chat.ChatViewModel
 import id.gustyxganteng.agent.feature.onboarding.OnboardingScreen
@@ -80,7 +80,7 @@ class MainActivity : ComponentActivity() {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .background(M3Surface)
+                            .background(MaterialTheme.colorScheme.surface)
                     )
                 }
             }
