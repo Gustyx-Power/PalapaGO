@@ -77,9 +77,6 @@ import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
-import id.gustyxganteng.agent.core.designsystem.M3OutlineVariant
-import id.gustyxganteng.agent.core.designsystem.M3Primary
-import id.gustyxganteng.agent.core.designsystem.M3TextSecondary
 import java.io.File
 
 sealed interface MarkdownNode {
@@ -87,8 +84,9 @@ sealed interface MarkdownNode {
     data class Paragraph(val text: String) : MarkdownNode
     data class CodeBlock(val language: String, val code: String) : MarkdownNode
     data class BlockQuote(val text: String) : MarkdownNode
-    data class BulletItem(val text: String) : MarkdownNode
-    data class NumberedItem(val number: String, val text: String) : MarkdownNode
+    data class BulletItem(val text: String, val depth: Int = 0) : MarkdownNode
+    data class NumberedItem(val number: String, val text: String, val depth: Int = 0) : MarkdownNode
+    data object Divider : MarkdownNode
     data class Table(val headers: List<String>, val rows: List<List<String>>) : MarkdownNode
     data class MathBlock(val formula: String) : MarkdownNode
     data class ImageBlock(val alt: String, val url: String) : MarkdownNode
@@ -158,18 +156,21 @@ object MarkdownParser {
             }
 
             // 3. Code blocks ```lang (including math/latex/tex)
-            if (line.trim().startsWith("```")) {
-                val lang = line.trim().removePrefix("```").trim()
+            val fence = Regex("^ {0,3}(`{3,}|~{3,})(.*)$").matchEntire(line)
+            if (fence != null) {
+                val marker = fence.groupValues[1]
+                val lang = fence.groupValues[2].trim().substringBefore(' ')
+                val closing = Regex("^ {0,3}${marker.first()}{${marker.length},}\\s*$")
                 val codeBuilder = StringBuilder()
                 i++
-                while (i < lines.size && !lines[i].trim().startsWith("```")) {
+                while (i < lines.size && !closing.matches(lines[i])) {
                     codeBuilder.appendLine(lines[i])
                     i++
                 }
                 if (lang.lowercase() in listOf("math", "latex", "tex")) {
                     nodes.add(MarkdownNode.MathBlock(codeBuilder.toString().trimEnd()))
                 } else {
-                    nodes.add(MarkdownNode.CodeBlock(lang, codeBuilder.toString().trimEnd()))
+                    nodes.add(MarkdownNode.CodeBlock(lang, codeBuilder.toString().removeSuffix("\n")))
                 }
                 i++
                 continue
@@ -206,9 +207,14 @@ object MarkdownParser {
 
             // 3. Headings (# H1, ## H2, etc.)
             val trimmed = line.trim()
-            if (trimmed.startsWith("#")) {
+            if (Regex("^(?:\\*\\s*){3,}$|^(?:-\\s*){3,}$|^(?:_\\s*){3,}$").matches(trimmed)) {
+                nodes.add(MarkdownNode.Divider)
+                i++
+                continue
+            }
+            if (Regex("^#{1,6}\\s+.*").matches(trimmed)) {
                 val level = trimmed.takeWhile { it == '#' }.length
-                val text = trimmed.drop(level).trim()
+                val text = trimmed.drop(level).trim().replace(Regex("\\s+#+\\s*$"), "")
                 nodes.add(MarkdownNode.Header(level, text))
                 i++
                 continue
@@ -223,19 +229,19 @@ object MarkdownParser {
             }
 
             // 5. Bullet item (* or -)
-            if (trimmed.startsWith("* ") || trimmed.startsWith("- ")) {
+            if (trimmed.startsWith("* ") || trimmed.startsWith("- ") || trimmed.startsWith("+ ")) {
                 val text = trimmed.drop(2).trim()
-                nodes.add(MarkdownNode.BulletItem(text))
+                nodes.add(MarkdownNode.BulletItem(text, line.takeWhile { it == ' ' }.length / 2))
                 i++
                 continue
             }
 
             // 6. Numbered item (1. item)
-            val numberedMatch = Regex("^(\\d+)\\.\\s+(.*)").find(trimmed)
+            val numberedMatch = Regex("^(\\d+)[.)]\\s+(.*)").find(trimmed)
             if (numberedMatch != null) {
                 val num = numberedMatch.groupValues[1]
                 val text = numberedMatch.groupValues[2]
-                nodes.add(MarkdownNode.NumberedItem(num, text))
+                nodes.add(MarkdownNode.NumberedItem(num, text, line.takeWhile { it == ' ' }.length / 2))
                 i++
                 continue
             }
@@ -260,7 +266,14 @@ object MarkdownParser {
 
             // 8. Regular paragraph / empty line
             if (trimmed.isNotEmpty()) {
-                nodes.add(MarkdownNode.Paragraph(trimmed))
+                val previous = nodes.lastOrNull()
+                val continuesParagraph = i > 0 && lines[i - 1].isNotBlank() && previous is MarkdownNode.Paragraph
+                if (continuesParagraph) {
+                    val separator = if (lines[i - 1].endsWith("  ") || lines[i - 1].endsWith("\\")) "\n" else " "
+                    nodes[nodes.lastIndex] = MarkdownNode.Paragraph((previous as MarkdownNode.Paragraph).text.removeSuffix("\\") + separator + trimmed)
+                } else {
+                    nodes.add(MarkdownNode.Paragraph(trimmed))
+                }
             }
             i++
         }
@@ -290,7 +303,7 @@ object MarkdownParser {
     private fun isTableRow(line: String): Boolean {
         val t = line.trim()
         if (t.isEmpty() || t.startsWith("```") || t.startsWith("#")) return false
-        return (t.startsWith("|") && t.endsWith("|")) || (t.count { it == '|' } >= 2)
+        return t.contains('|')
     }
 
     private fun isTableSeparator(line: String): Boolean {
@@ -299,7 +312,7 @@ object MarkdownParser {
         val cells = parseRowCells(t)
         return cells.isNotEmpty() && cells.all { cell ->
             val inner = cell.trim()
-            inner.matches(Regex("^:?-+:?$"))
+            inner.matches(Regex("^:?-{3,}:?$"))
         }
     }
 
@@ -307,7 +320,7 @@ object MarkdownParser {
         var t = line.trim()
         if (t.startsWith("|")) t = t.substring(1)
         if (t.endsWith("|")) t = t.substring(0, t.length - 1)
-        return t.split("|").map { it.trim() }
+        return t.split(Regex("(?<!\\\\)\\|")).map { it.trim().replace("\\|", "|") }
     }
 }
 
@@ -317,7 +330,7 @@ fun MarkdownContent(
     modifier: Modifier = Modifier,
     onOpenInCanvas: ((title: String, language: String, content: String) -> Unit)? = null
 ) {
-    val nodes = MarkdownParser.parse(markdown)
+    val nodes = remember(markdown) { MarkdownParser.parse(markdown) }
 
     SelectionContainer {
         Column(
@@ -326,6 +339,7 @@ fun MarkdownContent(
         ) {
             nodes.forEach { node ->
                 when (node) {
+                    MarkdownNode.Divider -> HorizontalDivider(Modifier.padding(vertical = 8.dp), color = MaterialTheme.colorScheme.outlineVariant)
                     is MarkdownNode.Header -> {
                         val (style, topPad, botPad) = when (node.level) {
                             1 -> Triple(
@@ -378,8 +392,8 @@ fun MarkdownContent(
                             Text(
                                 text = formatInlineMarkdown(node.text),
                                 style = MaterialTheme.typography.bodyLarge.copy(
-                                    fontSize = 14.5.sp,
-                                    lineHeight = 23.sp,
+                                    fontSize = 16.sp,
+                                    lineHeight = 25.sp,
                                     letterSpacing = 0.15.sp
                                 ),
                                 color = MaterialTheme.colorScheme.onSurface
@@ -440,7 +454,7 @@ fun MarkdownContent(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(start = 4.dp, top = 2.dp, bottom = 2.dp),
+                                    .padding(start = (4 + node.depth.coerceAtMost(8) * 16).dp, top = 2.dp, bottom = 2.dp),
                                 verticalAlignment = Alignment.Top
                             ) {
                                 Text(
@@ -454,8 +468,8 @@ fun MarkdownContent(
                                 Text(
                                     text = formatInlineMarkdown(node.text),
                                     style = MaterialTheme.typography.bodyMedium.copy(
-                                        fontSize = 14.5.sp,
-                                        lineHeight = 22.sp
+                                        fontSize = 16.sp,
+                                        lineHeight = 25.sp
                                     ),
                                     color = MaterialTheme.colorScheme.onSurface
                                 )
@@ -471,7 +485,7 @@ fun MarkdownContent(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(start = 4.dp, top = 2.dp, bottom = 2.dp),
+                                .padding(start = (4 + node.depth.coerceAtMost(8) * 16).dp, top = 2.dp, bottom = 2.dp),
                             verticalAlignment = Alignment.Top
                         ) {
                             Text(
@@ -485,8 +499,8 @@ fun MarkdownContent(
                             Text(
                                 text = formatInlineMarkdown(node.text),
                                 style = MaterialTheme.typography.bodyMedium.copy(
-                                    fontSize = 14.5.sp,
-                                    lineHeight = 22.sp
+                                    fontSize = 16.sp,
+                                    lineHeight = 25.sp
                                 ),
                                 color = MaterialTheme.colorScheme.onSurface
                             )
@@ -512,8 +526,8 @@ fun MathBlockCard(formula: String) {
 
     Surface(
         shape = RoundedCornerShape(18.dp),
-        color = Color(0xFF171A1F), // M3SurfaceContainerLow
-        border = BorderStroke(1.dp, M3OutlineVariant),
+        color = Color(0xFF171A1F), // MaterialTheme.colorScheme.surfaceContainerLow
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp)
@@ -530,7 +544,7 @@ fun MathBlockCard(formula: String) {
                     Icon(
                         imageVector = Icons.Rounded.Functions,
                         contentDescription = null,
-                        tint = M3Primary,
+                        tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(Modifier.width(6.dp))
@@ -541,7 +555,7 @@ fun MathBlockCard(formula: String) {
                             fontSize = 11.sp,
                             letterSpacing = 0.3.sp
                         ),
-                        color = M3Primary
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
 
@@ -561,7 +575,7 @@ fun MathBlockCard(formula: String) {
                         Icon(
                             imageVector = if (isCopied) Icons.Default.Check else Icons.Default.ContentCopy,
                             contentDescription = "Copy formula",
-                            tint = if (isCopied) Color(0xFF7BE598) else M3TextSecondary,
+                            tint = if (isCopied) Color(0xFF7BE598) else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(14.dp)
                         )
                         Spacer(Modifier.width(4.dp))
@@ -571,13 +585,13 @@ fun MathBlockCard(formula: String) {
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Medium
                             ),
-                            color = if (isCopied) Color(0xFF7BE598) else M3TextSecondary
+                            color = if (isCopied) Color(0xFF7BE598) else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
             }
 
-            HorizontalDivider(color = M3OutlineVariant, thickness = 1.dp)
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, thickness = 1.dp)
 
             AndroidView(
                 factory = { ctx ->
@@ -1411,4 +1425,3 @@ fun MarkdownImageCard(
         }
     }
 }
-
