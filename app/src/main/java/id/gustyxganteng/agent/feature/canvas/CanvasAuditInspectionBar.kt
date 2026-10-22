@@ -68,9 +68,9 @@ fun CanvasAuditInspectionBar(
     var expanded by remember { mutableStateOf(false) }
 
     Surface(
-        color = id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerLow,
+        color = MaterialTheme.colorScheme.surfaceContainerLow,
         shape = RoundedCornerShape(12.dp),
-        border = BorderStroke(1.dp, id.gustyxganteng.agent.core.designsystem.M3OutlineVariant),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp, vertical = 4.dp)
@@ -90,7 +90,7 @@ fun CanvasAuditInspectionBar(
                 Text(
                     text = stringResource(R.string.canvas_audit_title),
                     style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold, fontSize = 12.sp),
-                    color = id.gustyxganteng.agent.core.designsystem.M3TextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Spacer(Modifier.width(6.dp))
@@ -123,12 +123,12 @@ fun CanvasAuditInspectionBar(
                 // Token & Duration Pill
                 Surface(
                     shape = RoundedCornerShape(6.dp),
-                    color = id.gustyxganteng.agent.core.designsystem.M3SurfaceContainerHigh
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh
                 ) {
                     val durationText = String.format("%.1fs", auditResult.durationMs / 1000f)
                     Text(
                         text = stringResource(R.string.canvas_audit_tokens, auditResult.tokensUsed, durationText),
-                        color = id.gustyxganteng.agent.core.designsystem.M3Primary,
+                        color = MaterialTheme.colorScheme.primary,
                         fontSize = 10.5.sp,
                         fontFamily = FontFamily.Monospace,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
@@ -140,7 +140,7 @@ fun CanvasAuditInspectionBar(
                 Icon(
                     imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                     contentDescription = null,
-                    tint = id.gustyxganteng.agent.core.designsystem.M3TextSecondary,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(16.dp)
                 )
             }
@@ -159,7 +159,7 @@ fun CanvasAuditInspectionBar(
                         .padding(horizontal = 12.dp, vertical = 8.dp)
                 ) {
                     HorizontalDivider(
-                        color = id.gustyxganteng.agent.core.designsystem.M3OutlineVariant,
+                        color = MaterialTheme.colorScheme.outlineVariant,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
 
