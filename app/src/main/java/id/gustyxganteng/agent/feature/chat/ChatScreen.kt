@@ -25,6 +25,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.padding
@@ -48,6 +50,9 @@ import androidx.compose.material.icons.rounded.FolderOpen
 import androidx.compose.material.icons.rounded.Hub
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.Refresh
+import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.WifiOff
 import androidx.compose.material.icons.rounded.School
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.Terminal
@@ -147,6 +152,7 @@ fun ChatScreen(
     onNavigateToSettings: () -> Unit
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val activeSkills by viewModel.activeSkillsForTurn.collectAsState()
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val listState = rememberLazyListState()
@@ -503,6 +509,47 @@ fun ChatScreen(
                         }
                     }
 
+                    if (activeSkills.isNotEmpty()) {
+                        item {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .horizontalScroll(rememberScrollState())
+                                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                activeSkills.forEach { skill ->
+                                    Surface(
+                                        shape = RoundedCornerShape(12.dp),
+                                        color = PalapaGoldContainer.copy(alpha = 0.35f),
+                                        border = BorderStroke(1.dp, PalapaGold.copy(alpha = 0.4f))
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Rounded.AutoAwesome,
+                                                contentDescription = null,
+                                                tint = PalapaGold,
+                                                modifier = Modifier.size(12.dp)
+                                            )
+                                            Spacer(Modifier.width(6.dp))
+                                            Text(
+                                                text = "Skill: ${skill.name}",
+                                                style = MaterialTheme.typography.labelSmall.copy(
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Medium
+                                                ),
+                                                color = PalapaGold
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     // Existing Chat Messages
                     items(uiState.messages) { message ->
                         ChatMessageItem(
@@ -521,7 +568,10 @@ fun ChatScreen(
                                 viewModel.regenerateResponse(msg)
                                 Toast.makeText(context, context.getString(R.string.reloading_response), Toast.LENGTH_SHORT).show()
                             },
-                            onOpenImageStudio = { showImageGenStudioSheet = true }
+                            onOpenImageStudio = { showImageGenStudioSheet = true },
+                            onContinueInterrupted = { msgId ->
+                                viewModel.continueInterruptedTurn(msgId)
+                            }
                         )
                     }
 
@@ -965,7 +1015,8 @@ fun ChatMessageItem(
     onOpenCanvas: (title: String, language: String, content: String, filePath: String?) -> Unit,
     onEditPrompt: (String) -> Unit = {},
     onReloadMessage: (Message) -> Unit = {},
-    onOpenImageStudio: (() -> Unit)? = null
+    onOpenImageStudio: (() -> Unit)? = null,
+    onContinueInterrupted: ((String) -> Unit)? = null
 ) {
     val clipboard = LocalClipboardManager.current
     val context = LocalContext.current
@@ -1294,6 +1345,65 @@ fun ChatMessageItem(
                             onOpenCanvas(webTitle, "html", cleanWebDoc, null)
                         }
                     )
+                }
+
+                // Interrupted Stream Banner & Resume Action (Antigravity Style)
+                if (message.isInterrupted) {
+                    Spacer(Modifier.height(10.dp))
+                    Surface(
+                        shape = RoundedCornerShape(14.dp),
+                        color = Color(0xFFF59E0B).copy(alpha = 0.12f),
+                        border = BorderStroke(1.dp, Color(0xFFF59E0B).copy(alpha = 0.4f)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.WifiOff,
+                                    contentDescription = null,
+                                    tint = Color(0xFFFBBF24),
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(Modifier.width(10.dp))
+                                Text(
+                                    text = stringResource(R.string.offline_interrupted_badge),
+                                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            Spacer(Modifier.width(8.dp))
+                            Button(
+                                onClick = { onContinueInterrupted?.invoke(message.id) },
+                                shape = RoundedCornerShape(10.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Color(0xFFFBBF24),
+                                    contentColor = Color(0xFF131417)
+                                ),
+                                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.PlayArrow,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(15.dp)
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(
+                                    text = stringResource(R.string.offline_continue_button),
+                                    style = MaterialTheme.typography.labelSmall.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp
+                                    )
+                                )
+                            }
+                        }
+                    }
                 }
 
                 // Token Metadata & Actions Row

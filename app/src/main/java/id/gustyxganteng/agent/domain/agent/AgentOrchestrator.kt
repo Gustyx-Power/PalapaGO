@@ -62,6 +62,7 @@ sealed interface AgentState {
     ) : AgentState
     data class ExecutingTool(val toolName: String, val description: String) : AgentState
     data class Error(val message: String) : AgentState
+    data class Interrupted(val message: String, val messageId: String) : AgentState
 }
 
 class AgentOrchestrator(
@@ -75,10 +76,16 @@ class AgentOrchestrator(
     private val settingsRepository: AppSettingsRepository? = null,
     private val groqSidecarService: GroqSidecarService? = null,
     private val geminiSidecarService: GeminiSidecarService? = null,
+    private val agentRulesManager: id.gustyxganteng.agent.domain.rules.AgentRulesManager? = null,
+    private val agentSkillsManager: id.gustyxganteng.agent.domain.skills.AgentSkillsManager = id.gustyxganteng.agent.domain.skills.AgentSkillsManager(),
+    private val agentsScaffolder: id.gustyxganteng.agent.domain.agent.scaffold.AgentsScaffolder = id.gustyxganteng.agent.domain.agent.scaffold.AgentsScaffolder(),
     private val json: Json = Json { ignoreUnknownKeys = true }
 ) {
     private val _agentState = MutableStateFlow<AgentState>(AgentState.Idle)
     val agentState: StateFlow<AgentState> = _agentState.asStateFlow()
+
+    private val _activeSkillsForTurn = MutableStateFlow<List<id.gustyxganteng.agent.domain.skills.model.AgentSkill>>(emptyList())
+    val activeSkillsForTurn: StateFlow<List<id.gustyxganteng.agent.domain.skills.model.AgentSkill>> = _activeSkillsForTurn.asStateFlow()
 
     private var activeJob: Job? = null
     private var pendingApprovalDeferred: CompletableDeferred<Boolean>? = null
@@ -99,7 +106,7 @@ class AgentOrchestrator(
     }
 
     fun clearError() {
-        if (_agentState.value is AgentState.Error) {
+        if (_agentState.value is AgentState.Error || _agentState.value is AgentState.Interrupted) {
             _agentState.value = AgentState.Idle
         }
     }
@@ -109,6 +116,63 @@ class AgentOrchestrator(
         pendingApprovalDeferred?.complete(false)
         _agentState.value = AgentState.Idle
         onTurnFinished?.invoke()
+    }
+
+    fun continueInterruptedTurn(
+        scope: CoroutineScope,
+        sessionId: String,
+        baseUrl: String,
+        apiKey: String,
+        model: String,
+        workspacePath: String?,
+        yoloMode: Boolean,
+        enableWebSearch: Boolean,
+        useTermuxEnv: Boolean,
+        executionMode: AgentExecutionMode = AgentExecutionMode.FAST,
+        antiAiSlopMode: Boolean = true,
+        tavilyDeepSearchEnabled: Boolean = false,
+        academicMode: Boolean = false,
+        promptMode: PromptMode = PromptMode.CHAT,
+        claudeMaxMode: Boolean = executionMode == AgentExecutionMode.MAX,
+        messageId: String? = null
+    ) {
+        scope.launch(Dispatchers.IO) {
+            val messages = chatRepository.getMessagesForSessionSync(sessionId)
+            val interruptedMsg = if (!messageId.isNullOrBlank()) {
+                messages.find { it.id == messageId }
+            } else {
+                messages.findLast { it.role == MessageRole.ASSISTANT && it.isInterrupted }
+            }
+
+            if (interruptedMsg != null) {
+                chatRepository.saveMessage(interruptedMsg.copy(isInterrupted = false))
+                val resumptionPrompt = Message(
+                    sessionId = sessionId,
+                    role = MessageRole.USER,
+                    content = "[System Directive: Koneksi sebelumnya terputus di tengah jalan saat streaming respons. Teks terakhir Anda:\n\n\"\"\"\n${interruptedMsg.content}\n\"\"\"\n\nJANGAN ulangi kalimat atau teks di atas. Lanjutkan langsung dari kata terakhir tersebut sampai tuntas.]"
+                )
+                chatRepository.saveMessage(resumptionPrompt)
+                clearError()
+
+                runTurn(
+                    scope = scope,
+                    sessionId = sessionId,
+                    baseUrl = baseUrl,
+                    apiKey = apiKey,
+                    model = model,
+                    workspacePath = workspacePath,
+                    yoloMode = yoloMode,
+                    enableWebSearch = enableWebSearch,
+                    useTermuxEnv = useTermuxEnv,
+                    executionMode = executionMode,
+                    antiAiSlopMode = antiAiSlopMode,
+                    tavilyDeepSearchEnabled = tavilyDeepSearchEnabled,
+                    academicMode = academicMode,
+                    promptMode = promptMode,
+                    claudeMaxMode = claudeMaxMode
+                )
+            }
+        }
     }
 
     fun runTurn(
@@ -163,7 +227,7 @@ class AgentOrchestrator(
             } catch (e: Exception) {
                 _agentState.value = AgentState.Error(e.localizedMessage ?: "Terjadi kesalahan pada Agent")
             } finally {
-                if (_agentState.value !is AgentState.Error) {
+                if (_agentState.value !is AgentState.Error && _agentState.value !is AgentState.Interrupted) {
                     _agentState.value = AgentState.Idle
                 }
                 onTurnFinished?.invoke()
@@ -241,6 +305,24 @@ class AgentOrchestrator(
         while (continueLoop && turnCount < maxTurns) {
             turnCount++
             val dbMessages = chatRepository.getMessagesForSessionSync(sessionId)
+            val lastUserPrompt = dbMessages.findLast { it.role == MessageRole.USER }?.content ?: ""
+
+            // Auto-Scaffold AGENTS.md if in Agent mode or workspace directory exists and AGENTS.md is missing
+            if ((promptMode == PromptMode.AGENT || !workspacePath.isNullOrBlank()) && !agentsScaffolder.hasAgentsConfig(workspacePath)) {
+                try {
+                    agentsScaffolder.scaffoldAgentsMdIfNeeded(workspacePath, lastUserPrompt)
+                } catch (_: Exception) {}
+            }
+
+            // Ingest Rules (System Invariants, Workspace AGENTS.md, User Custom Rules)
+            val activeRules = agentRulesManager?.getActiveRules(workspacePath, yoloMode, antiAiSlopMode) ?: emptyList()
+            val activeRulesPrompt = agentRulesManager?.formatRulesPrompt(activeRules) ?: ""
+
+            // Match Skills dynamically based on intent
+            val activeSkills = agentSkillsManager.selectSkillsForTurn(lastUserPrompt, promptMode, workspacePath)
+            _activeSkillsForTurn.value = activeSkills
+            val activeSkillsPrompt = agentSkillsManager.formatSkillsPrompt(activeSkills)
+
             val systemPrompt = AgentSystemPrompt.getPrompt(
                 workspacePath = workspacePath,
                 yoloMode = yoloMode,
@@ -248,7 +330,9 @@ class AgentOrchestrator(
                 executionMode = effectiveMode,
                 antiAiSlopMode = antiAiSlopMode,
                 academicMode = academicMode,
-                promptMode = promptMode
+                promptMode = promptMode,
+                activeRulesPrompt = activeRulesPrompt,
+                activeSkillsPrompt = activeSkillsPrompt
             )
             val systemMessage = Message(
                 sessionId = sessionId,
@@ -542,6 +626,25 @@ class AgentOrchestrator(
 
                         delay(1500)
                     } else {
+                        val partialContent = contentBuilder.toString().trim()
+                        val partialReasoning = reasoningBuilder.toString().trim().ifEmpty { null }
+                        if (partialContent.isNotEmpty() || !partialReasoning.isNullOrEmpty()) {
+                            val interruptedMessage = Message(
+                                sessionId = sessionId,
+                                role = MessageRole.ASSISTANT,
+                                content = partialContent,
+                                reasoningContent = partialReasoning,
+                                isInterrupted = true,
+                                timestamp = System.currentTimeMillis()
+                            )
+                            chatRepository.saveMessage(interruptedMessage)
+                            _agentState.value = AgentState.Interrupted(
+                                message = "Koneksi terputus saat merespons.",
+                                messageId = interruptedMessage.id
+                            )
+                            continueLoop = false
+                            break
+                        }
                         throw e
                     }
                 }

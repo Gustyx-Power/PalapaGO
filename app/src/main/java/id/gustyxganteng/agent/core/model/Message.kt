@@ -27,5 +27,6 @@ data class Message(
     val toolCallId: String? = null,
     val imagesBase64: List<String> = emptyList(),
     val tokenUsage: TokenUsage? = null,
+    val isInterrupted: Boolean = false,
     val timestamp: Long = System.currentTimeMillis()
 )

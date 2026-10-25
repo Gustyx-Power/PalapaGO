@@ -275,11 +275,55 @@ class ChatViewModel(
         }
     }
 
+    val activeSkillsForTurn: StateFlow<List<id.gustyxganteng.agent.domain.skills.model.AgentSkill>> = orchestrator.activeSkillsForTurn
+
+    fun continueInterruptedTurn(messageId: String? = null) {
+        val session = uiState.value.currentSession ?: return
+        val settings = uiState.value.appSettings ?: return
+        orchestrator.clearError()
+
+        val pMode = settings.promptMode
+        val effectiveWorkspace = if (pMode == PromptMode.CHAT) null else (session.workspacePath ?: settings.activeWorkspacePath)
+        val effectiveAcademic = pMode == PromptMode.ACADEMIC || settings.academicMode
+        val effectiveWebSearch = pMode == PromptMode.ACADEMIC || settings.webSearchEnabled
+
+        viewModelScope.launch {
+            AgentForegroundService.start(getApplication(), getApplication<Application>().getString(R.string.service_notification_text))
+            orchestrator.continueInterruptedTurn(
+                scope = viewModelScope,
+                sessionId = session.id,
+                baseUrl = settings.baseUrl,
+                apiKey = settings.apiKey,
+                model = if (session.model == "agnes-3.0-pro") "agnes-3.0-flash" else session.model,
+                workspacePath = effectiveWorkspace,
+                yoloMode = settings.yoloMode,
+                enableWebSearch = effectiveWebSearch,
+                useTermuxEnv = true,
+                executionMode = settings.executionMode,
+                antiAiSlopMode = settings.antiAiSlopMode,
+                tavilyDeepSearchEnabled = settings.tavilyDeepSearchEnabled,
+                academicMode = effectiveAcademic,
+                promptMode = pMode,
+                claudeMaxMode = settings.claudeMaxMode,
+                messageId = messageId
+            )
+        }
+    }
+
     fun sendMessage(content: String, images: List<String> = emptyList()) {
         val session = uiState.value.currentSession ?: return
         val settings = uiState.value.appSettings ?: return
 
         orchestrator.clearError()
+
+        val trimmed = content.trim().lowercase()
+        if (trimmed in setOf("continue", "lanjutkan", "lanjut") && images.isEmpty()) {
+            val lastInterrupted = _messages.value.findLast { it.role == MessageRole.ASSISTANT && it.isInterrupted }
+            if (lastInterrupted != null) {
+                continueInterruptedTurn(lastInterrupted.id)
+                return
+            }
+        }
 
         val pMode = settings.promptMode
         val effectiveWorkspace = if (pMode == PromptMode.CHAT) null else (session.workspacePath ?: settings.activeWorkspacePath)

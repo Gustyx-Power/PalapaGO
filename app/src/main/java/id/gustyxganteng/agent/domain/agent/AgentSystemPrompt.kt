@@ -14,7 +14,9 @@ object AgentSystemPrompt {
         antiAiSlopMode: Boolean = true,
         academicMode: Boolean = false,
         promptMode: PromptMode = PromptMode.CHAT,
-        claudeMaxMode: Boolean = executionMode == AgentExecutionMode.MAX
+        claudeMaxMode: Boolean = executionMode == AgentExecutionMode.MAX,
+        activeRulesPrompt: String = "",
+        activeSkillsPrompt: String = ""
     ): String {
         val currentDate = LocalDate.now()
         val currentYear = currentDate.year
@@ -97,7 +99,7 @@ Consider these requirements when carrying out a task:
 
 $domainModules
 
-### ATURAN UTAMA: PRIORITAS KODE PENGGUNA & LOKAL (ANTI-DOC DRIFT):
+${if (activeRulesPrompt.isNotBlank()) activeRulesPrompt + "\n" else ""}${if (activeSkillsPrompt.isNotBlank()) activeSkillsPrompt + "\n" else ""}### ATURAN UTAMA: PRIORITAS KODE PENGGUNA & LOKAL (ANTI-DOC DRIFT):
 Saat pengguna memberikan cuplikan kode, patch, struktur data, driver, atau merujuk ke berkas di workspace:
 - PRIORITAS NOMOR SATU adalah membaca, memahami, dan membedah KODE YANG DIBERIKAN PENGGUNA serta file-file yang ada di workspace lokal.
 - DILARANG KERAS mengabaikan kode pengguna dan malah "kabur" mencari dokumentasi generik di web (`web_search` / `read_webpage`).

@@ -143,6 +143,7 @@ class ChatRepository(
             toolCallId = msg.toolCallId,
             imagesBase64Json = imagesJson,
             tokenUsageJson = tokenJson,
+            isInterrupted = msg.isInterrupted,
             timestamp = msg.timestamp
         )
     }
@@ -179,6 +180,7 @@ class ChatRepository(
             toolCallId = entity.toolCallId,
             imagesBase64 = images,
             tokenUsage = tokenUsage,
+            isInterrupted = entity.isInterrupted,
             timestamp = entity.timestamp
         )
     }

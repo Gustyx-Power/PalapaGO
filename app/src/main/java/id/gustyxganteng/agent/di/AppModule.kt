@@ -10,10 +10,15 @@ import id.gustyxganteng.agent.core.network.GeminiSidecarService
 import id.gustyxganteng.agent.core.network.GeminiSidecarServiceImpl
 import id.gustyxganteng.agent.core.network.GroqSidecarService
 import id.gustyxganteng.agent.core.network.GroqSidecarServiceImpl
+import id.gustyxganteng.agent.core.network.NetworkMonitor
 import id.gustyxganteng.agent.core.network.SmartRetryInterceptor
 import id.gustyxganteng.agent.core.network.SseStreamParser
 import id.gustyxganteng.agent.domain.agent.AgentOrchestrator
+import id.gustyxganteng.agent.domain.agent.scaffold.AgentsScaffolder
 import id.gustyxganteng.agent.domain.context.ContextMeterManager
+import id.gustyxganteng.agent.domain.rules.AgentRulesManager
+import id.gustyxganteng.agent.domain.skills.AgentSkillsManager
+import id.gustyxganteng.agent.domain.skills.SkillMatcher
 import id.gustyxganteng.agent.domain.tools.AcademicTool
 import id.gustyxganteng.agent.domain.tools.FileSystemTool
 import id.gustyxganteng.agent.domain.tools.ImageTool
@@ -48,11 +53,13 @@ val appModule = module {
     single { get<GGAgentDatabase>().chatSessionDao() }
     single { get<GGAgentDatabase>().messageDao() }
     single { get<GGAgentDatabase>().workspaceDao() }
+    single { get<GGAgentDatabase>().userRuleDao() }
 
     single { AppSettingsRepository(androidContext()) }
     single { ChatRepository(get(), get(), get()) }
 
     // Network & SSE
+    single { NetworkMonitor(androidContext()) }
     single {
         SmartRetryInterceptor(
             maxRetriesProvider = { 5 }
@@ -77,6 +84,10 @@ val appModule = module {
     single { AcademicTool() }
     single { ImageTool(get(), get(), androidContext()) }
     single { ContextMeterManager(get(), get()) }
+    single { SkillMatcher() }
+    single { AgentSkillsManager(get()) }
+    single { AgentRulesManager(get()) }
+    single { AgentsScaffolder() }
     single {
         AgentOrchestrator(
             agnesApiService = get(),
@@ -89,6 +100,9 @@ val appModule = module {
             settingsRepository = get(),
             groqSidecarService = get(),
             geminiSidecarService = get(),
+            agentRulesManager = get(),
+            agentSkillsManager = get(),
+            agentsScaffolder = get(),
             json = get()
         )
     }
