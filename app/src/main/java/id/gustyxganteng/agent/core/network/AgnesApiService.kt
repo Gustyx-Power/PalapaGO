@@ -180,20 +180,22 @@ class AgnesApiServiceImpl(
             )
         }
 
-        // Susun Jaringan Provider Failover (Agnes Utama -> Agnes Cadangan -> Xemarux Kimi/DeepSeek -> Gemini Sidecar -> Groq Sidecar)
+        // Susun Jaringan Provider Failover (Agnes Utama -> Agnes Cadangan -> Xemarux hy3/Kimi/DeepSeek -> Gemini Sidecar -> Groq Sidecar)
         val targets = mutableListOf<StreamTarget>()
 
-        val isExplicitXemarux = model.startsWith("kimi-") ||
-            model == "deepseek-v4.1-flash" ||
-            model == "hy3" ||
-            model == "step-5-preview"
+        val requestedModel = if (model == "agnes-3.0-pro") "hy3" else model
+
+        val isExplicitXemarux = requestedModel.startsWith("kimi-") ||
+            requestedModel == "deepseek-v4.1-flash" ||
+            requestedModel == "hy3" ||
+            requestedModel == "step-5-preview"
 
         val xemaruxKey = KeyVault.getXemaruxApiKey()
         val xemaruxBase = KeyVault.getXemaruxBaseUrl().trimEnd('/')
         val xemaruxEndpoint = if (xemaruxBase.endsWith("/chat/completions")) xemaruxBase else "$xemaruxBase/chat/completions"
 
         fun addAgnesTargets() {
-            val effectiveAgnesModel = if (model == "agnes-3.0-pro" || model.isBlank()) "agnes-3.0-flash" else model
+            val effectiveAgnesModel = if (requestedModel.isBlank() || isExplicitXemarux) "agnes-3.0-flash" else requestedModel
             val agnesKeys = mutableListOf<String>()
             if (apiKey.isNotBlank()) agnesKeys.add(apiKey.trim())
             for (k in KeyVault.getAgnesKeyPool()) {
@@ -217,28 +219,26 @@ class AgnesApiServiceImpl(
 
         fun addXemaruxTargets() {
             if (xemaruxKey.isNotBlank()) {
-                val primaryXemaruxModel = if (isExplicitXemarux) model else "kimi-k2.8-preview"
-                targets.add(
-                    StreamTarget(
-                        providerName = "Xemarux Router ($primaryXemaruxModel 40 RPM)",
-                        endpoint = xemaruxEndpoint,
-                        apiKey = xemaruxKey,
-                        model = primaryXemaruxModel,
-                        isAnthropicHeaders = false,
-                        includeThinking = true,
-                        maxTokens = effectiveMaxTokens.coerceAtMost(32768)
-                    )
-                )
-                if (primaryXemaruxModel != "deepseek-v4.1-flash") {
+                val primaryXemaruxModel = if (isExplicitXemarux) requestedModel else "hy3"
+                val xemaruxModels = linkedSetOf(primaryXemaruxModel, "hy3", "kimi-k2.8-preview", "deepseek-v4.1-flash")
+
+                for (xModel in xemaruxModels) {
+                    val isDeepSeek = xModel.contains("deepseek", ignoreCase = true)
+                    val label = when (xModel) {
+                        "hy3" -> "Xemarux Router (hy3)"
+                        "kimi-k2.8-preview" -> "Xemarux Router (kimi-k2.8-preview 40 RPM)"
+                        "deepseek-v4.1-flash" -> "Xemarux Router (DeepSeek-v4.1-flash 12 RPM)"
+                        else -> "Xemarux Router ($xModel)"
+                    }
                     targets.add(
                         StreamTarget(
-                            providerName = "Xemarux Router (DeepSeek-v4.1-flash 12 RPM)",
+                            providerName = label,
                             endpoint = xemaruxEndpoint,
                             apiKey = xemaruxKey,
-                            model = "deepseek-v4.1-flash",
+                            model = xModel,
                             isAnthropicHeaders = false,
-                            includeThinking = false,
-                            maxTokens = effectiveMaxTokens.coerceAtMost(8192)
+                            includeThinking = !isDeepSeek,
+                            maxTokens = if (isDeepSeek) effectiveMaxTokens.coerceAtMost(8192) else effectiveMaxTokens.coerceAtMost(32768)
                         )
                     )
                 }

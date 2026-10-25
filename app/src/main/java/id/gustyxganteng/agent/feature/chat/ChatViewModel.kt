@@ -98,7 +98,7 @@ class ChatViewModel(
         val lastMessageUsage = sessionCtx.messages.lastOrNull { it.tokenUsage != null }?.tokenUsage
         val activeContextTokens = lastMessageUsage?.promptTokens ?: sessionCtx.messages.mapNotNull { it.tokenUsage?.totalTokens }.maxOrNull() ?: 0
         val rawModel = currentSession?.model ?: sessionCtx.settings.selectedModel
-        val model = if (rawModel == "agnes-3.0-pro") "agnes-3.0-flash" else rawModel
+        val model = if (rawModel == "agnes-3.0-pro") "hy3" else rawModel
         val contextStatus = contextMeterManager.calculateStatus(
             usedTokens = activeContextTokens,
             model = model,
@@ -188,7 +188,7 @@ class ChatViewModel(
             val newSession = ChatSession(
                 id = UUID.randomUUID().toString(),
                 title = getApplication<Application>().getString(R.string.default_session_title),
-                model = if (settings?.selectedModel == "agnes-3.0-pro") "agnes-3.0-flash" else (settings?.selectedModel ?: "agnes-3.0-flash"),
+                model = if (settings?.selectedModel == "agnes-3.0-pro") "hy3" else (settings?.selectedModel ?: "agnes-3.0-flash"),
                 workspacePath = settings?.activeWorkspacePath
             )
             chatRepository.saveSession(newSession)
@@ -223,7 +223,7 @@ class ChatViewModel(
                 sessionId = session.id,
                 baseUrl = settings.baseUrl,
                 apiKey = settings.apiKey,
-                model = if (session.model == "agnes-3.0-pro") "agnes-3.0-flash" else session.model,
+                model = if (session.model == "agnes-3.0-pro") "hy3" else session.model,
                 workspacePath = effectiveWorkspace,
                 yoloMode = settings.yoloMode,
                 enableWebSearch = effectiveWebSearch,
@@ -260,7 +260,7 @@ class ChatViewModel(
                 sessionId = session.id,
                 baseUrl = settings.baseUrl,
                 apiKey = settings.apiKey,
-                model = if (session.model == "agnes-3.0-pro") "agnes-3.0-flash" else session.model,
+                model = if (session.model == "agnes-3.0-pro") "hy3" else session.model,
                 workspacePath = effectiveWorkspace,
                 yoloMode = settings.yoloMode,
                 enableWebSearch = effectiveWebSearch,
@@ -294,7 +294,7 @@ class ChatViewModel(
                 sessionId = session.id,
                 baseUrl = settings.baseUrl,
                 apiKey = settings.apiKey,
-                model = if (session.model == "agnes-3.0-pro") "agnes-3.0-flash" else session.model,
+                model = if (session.model == "agnes-3.0-pro") "hy3" else session.model,
                 workspacePath = effectiveWorkspace,
                 yoloMode = settings.yoloMode,
                 enableWebSearch = effectiveWebSearch,
@@ -347,7 +347,7 @@ class ChatViewModel(
                 sessionId = session.id,
                 baseUrl = settings.baseUrl,
                 apiKey = settings.apiKey,
-                model = if (session.model == "agnes-3.0-pro") "agnes-3.0-flash" else session.model,
+                model = if (session.model == "agnes-3.0-pro") "hy3" else session.model,
                 workspacePath = effectiveWorkspace,
                 yoloMode = settings.yoloMode,
                 enableWebSearch = effectiveWebSearch,

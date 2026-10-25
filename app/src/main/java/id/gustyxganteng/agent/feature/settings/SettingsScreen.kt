@@ -89,7 +89,7 @@ fun SettingsScreen(
 
     LaunchedEffect(settings) {
         settings?.let {
-            selectedModel = if (it.selectedModel == "agnes-3.0-pro") "agnes-3.0-flash" else it.selectedModel
+            selectedModel = if (it.selectedModel == "agnes-3.0-pro") "hy3" else it.selectedModel
             maxRetries = it.maxRetries.toFloat()
             yoloMode = it.yoloMode
             antiAiSlopMode = it.antiAiSlopMode
@@ -251,6 +251,17 @@ private fun ModelSelectionCard(
                     onClick = { onSelectModel("agnes-3.0-flash") },
                     shape = RoundedCornerShape(14.dp),
                     label = { Text("Agnes AI Core (Utama)", fontWeight = FontWeight.SemiBold) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    ),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+                )
+                FilterChip(
+                    selected = selectedModel == "hy3",
+                    onClick = { onSelectModel("hy3") },
+                    shape = RoundedCornerShape(14.dp),
+                    label = { Text("HY3 (Xemarux Router)", fontWeight = FontWeight.SemiBold) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
                         selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
