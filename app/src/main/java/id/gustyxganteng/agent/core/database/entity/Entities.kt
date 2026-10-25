@@ -29,6 +29,7 @@ data class MessageEntity(
     val toolCallId: String?,
     val imagesBase64Json: String?,
     val tokenUsageJson: String?,
+    val isInterrupted: Boolean = false,
     val timestamp: Long
 )
 
@@ -38,4 +39,13 @@ data class WorkspaceEntity(
     val name: String,
     val rootPath: String,
     val lastUsedAt: Long
+)
+
+@Entity(tableName = "user_custom_rules")
+data class UserRuleEntity(
+    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
+    val title: String,
+    val instruction: String,
+    val isEnabled: Boolean = true,
+    val createdAt: Long = System.currentTimeMillis()
 )

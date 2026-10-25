@@ -66,3 +66,18 @@ interface WorkspaceDao {
     @Query("DELETE FROM workspaces WHERE id = :workspaceId")
     suspend fun deleteWorkspace(workspaceId: String)
 }
+
+@Dao
+interface UserRuleDao {
+    @Query("SELECT * FROM user_custom_rules ORDER BY createdAt DESC")
+    fun getAllRules(): Flow<List<id.gustyxganteng.agent.core.database.entity.UserRuleEntity>>
+
+    @Query("SELECT * FROM user_custom_rules WHERE isEnabled = 1 ORDER BY createdAt DESC")
+    suspend fun getEnabledRulesSync(): List<id.gustyxganteng.agent.core.database.entity.UserRuleEntity>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertOrUpdate(rule: id.gustyxganteng.agent.core.database.entity.UserRuleEntity)
+
+    @Query("DELETE FROM user_custom_rules WHERE id = :ruleId")
+    suspend fun deleteRule(ruleId: String)
+}
