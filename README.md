@@ -13,7 +13,7 @@ Palapa GO is an autonomous mobile AI workspace, academic research engine, and co
 - Full offline message and session persistence powered by Android Room Database.
 - Markdown rendering support including tables, code blocks, and copy actions.
 
-### 2. Pelajar Mode (Academic Research)
+### 2. Scholar Mode (Academic Research)
 - Multi-API aggregation querying OpenAlex, Semantic Scholar, and Crossref in parallel.
 - Direct DOI (Digital Object Identifier) verification to eliminate citation hallucination.
 - Automated bibliography formatting supporting APA, IEEE, and BibTeX styles.
@@ -91,11 +91,37 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 ## Configuration
 
-Upon launching the application, open the Settings screen to configure your inference backend:
-1. **API Base URL**: Specify the target endpoint (for example, official providers or local proxy endpoints).
-2. **API Key**: Enter your personal API credential (BYOK).
-3. **Model Identifier**: Define the target model name (e.g., `gemini-2.0-flash`, `deepseek-chat`, or `gpt-4o`).
-4. **Max Retries**: Configure network retry thresholds for high-latency connections.
+### Compile-time API Keys (`local.properties`)
+To enable embedded inference backends and academic search engines during compilation, create a `local.properties` file in the project root directory based on [local.properties.example](local.properties.example):
+
+```bash
+cp local.properties.example local.properties
+```
+
+Populate the required credentials according to your services:
+```properties
+## Android SDK
+sdk.dir=/path/to/Android/Sdk
+
+## AI Inference Backend (Agnes AI / OpenAI-compatible / Gemini / Groq)
+AGNES_API_KEY=your_agnes_api_key_here
+AGNES_BASE_URL=https://apihub.agnes-ai.com/v1
+GEMINI_API_KEY=your_gemini_api_key_here
+GROQ_API_KEY=your_groq_api_key_here
+
+## Academic Literature APIs (Scholar Mode)
+SEMANTIC_SCHOLAR_API_KEY=your_semantic_scholar_api_key_here
+OPENALEX_MAILTO=your_email@example.com
+
+## Web Search Engine
+TAVILY_API_KEY=your_tavily_api_key_here
+```
+
+### In-App BYOK Runtime Settings
+You can also override or provide your own API credentials at runtime directly within the application:
+1. Open the **Settings** screen from the Top Bar.
+2. Configure **API Base URL**, **API Key**, and **Model Identifier** (e.g., `gemini-2.0-flash`, `deepseek-chat`, or `gpt-4o`).
+3. Set **Max Retries** to handle unstable network environments. All runtime credentials are stored securely in local device storage.
 
 ---
 

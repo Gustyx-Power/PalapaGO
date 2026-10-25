@@ -1,0 +1,23 @@
+## Android SDK location (adjust to your local environment)
+sdk.dir=/path/to/Android/Sdk
+
+## Primary Inference Backend (Agnes AI / OpenAI-Compatible)
+AGNES_API_KEY=your_agnes_api_key_here
+AGNES_API_KEY_SECONDARY=your_secondary_agnes_key_here
+AGNES_BASE_URL=https://apihub.agnes-ai.com/v1
+
+## Alternative Inference Providers
+GROQ_API_KEY=your_groq_api_key_here
+GROQ_API_KEY_SECONDARY=your_secondary_groq_key_here
+
+GEMINI_API_KEY=your_gemini_api_key_here
+
+XEMARUX_API_KEY=your_xemarux_api_key_here
+XEMARUX_BASE_URL=https://ai.xemarux.com/v1
+
+## Web Search Engine (Tavily)
+TAVILY_API_KEY=your_tavily_api_key_here
+
+## Academic Literature APIs (Scholar Mode)
+SEMANTIC_SCHOLAR_API_KEY=your_semantic_scholar_api_key_here
+OPENALEX_MAILTO=your_email@example.com

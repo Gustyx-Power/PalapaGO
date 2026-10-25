@@ -91,11 +91,37 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 ## Konfigurasi Aplikasi
 
-Setelah membuka aplikasi, masuk ke menu Pengaturan untuk mengonfigurasi layanan model bahasa:
-1. **API Base URL**: Tentukan alamat endpoint API target (misal penyedia resmi atau server proxy lokal).
-2. **API Key**: Masukkan kunci API pribadi Anda.
-3. **Model**: Masukkan pengenal model yang dituju (contoh: `gemini-2.0-flash`, `deepseek-chat`, atau `gpt-4o`).
-4. **Max Retries**: Atur batas pengulangan panggilan jaringan saat koneksi tidak stabil.
+### Kunci API Waktu Kompilasi (`local.properties`)
+Untuk mengaktifkan backend inferensi bawaan dan mesin pencarian jurnal ilmiah saat proses kompilasi, buat berkas `local.properties` di direktori utama proyek berdasarkan [local.properties.example](local.properties.example):
+
+```bash
+cp local.properties.example local.properties
+```
+
+Isi kredensial yang dibutuhkan sesuai layanan yang Anda gunakan:
+```properties
+## Android SDK
+sdk.dir=/path/to/Android/Sdk
+
+## Backend Inferensi AI (Agnes AI / OpenAI-compatible / Gemini / Groq)
+AGNES_API_KEY=your_agnes_api_key_here
+AGNES_BASE_URL=https://apihub.agnes-ai.com/v1
+GEMINI_API_KEY=your_gemini_api_key_here
+GROQ_API_KEY=your_groq_api_key_here
+
+## API Pustaka Ilmiah (Mode Pelajar)
+SEMANTIC_SCHOLAR_API_KEY=your_semantic_scholar_api_key_here
+OPENALEX_MAILTO=your_email@example.com
+
+## Mesin Pencarian Web
+TAVILY_API_KEY=your_tavily_api_key_here
+```
+
+### Pengaturan Waktu Jalan (BYOK In-App)
+Pengguna juga dapat menimpa atau menyediakan kredensial API secara dinamis langsung dari dalam antarmuka aplikasi:
+1. Buka layar **Pengaturan** melalui ikon di bilah atas (*Top Bar*).
+2. Sesuaikan **API Base URL**, **API Key**, dan **Model** (contoh: `gemini-2.0-flash`, `deepseek-chat`, atau `gpt-4o`).
+3. Atur **Max Retries** untuk menghadapi koneksi yang fluktuatif. Seluruh kredensial runtime tersimpan aman di penyimpanan lokal perangkat.
 
 ---
 
