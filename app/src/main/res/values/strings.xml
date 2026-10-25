@@ -3,6 +3,8 @@
     <string name="app_subtitle">Android AI Workspace &amp; Coding Agent</string>
 
     <!-- TopBar & Navigation -->
+    <string name="topbar_title">Palapa GO</string>
+    <string name="topbar_new">New</string>
     <string name="topbar_menu">Menu</string>
     <string name="model_fast_desc">Fast Mode</string>
     <string name="model_standard_desc">Standard Mode</string>
@@ -33,22 +35,34 @@
     <string name="default_session_title">New Chat</string>
 
     <!-- Prompt Modes (Gemini-style Segmented Switcher) -->
+    <string name="modal_select_mode_header">SELECT MODE</string>
     <string name="prompt_mode_chat">Chat</string>
-    <string name="prompt_mode_chat_desc">General conversation and Q&amp;A without workspace folder</string>
+    <string name="prompt_mode_chat_desc">Discussion, ideas, and coding assistance.</string>
     <string name="prompt_mode_agent">Agent</string>
-    <string name="prompt_mode_agent_desc">Autonomous workspace &amp; coding agent (requires folder selection)</string>
+    <string name="prompt_mode_agent_desc">Select a workspace folder first.</string>
     <string name="prompt_mode_academic">Scholar</string>
-    <string name="prompt_mode_academic_desc">Scientific journal research, indexed citations, and study tasks</string>
-    <string name="prompt_mode_canvas">Canvas</string>
-    <string name="prompt_mode_canvas_desc">Interactive studio for documents, UI simulations, and code</string>
+    <string name="prompt_mode_academic_desc">Learn code step by step.</string>
     <string name="prompt_mode_image_gen">Image Gen</string>
-    <string name="prompt_mode_image_gen_desc">Agnes AI Multimodal Visual Studio (agnes-image-2.5-flash)</string>
+    <string name="prompt_mode_image_gen_desc">Generate images from your description.</string>
+    <string name="prompt_mode_canvas">Canvas</string>
+    <string name="prompt_mode_canvas_desc">Develop ideas in a visual space.</string>
     <string name="image_gen_studio_title">Image Gen Studio</string>
     <string name="telemetry_neural_title">Telemetri Neural</string>
     <string name="prompt_mode_agent_requires_folder">Agent mode requires choosing a project workspace folder first.</string>
     <string name="prompt_placeholder_chat">Ask anything...</string>
     <string name="prompt_placeholder_agent">Instruct agent to inspect, code, or execute in workspace...</string>
     <string name="prompt_placeholder_academic">Search papers, cited research, or ask about study tasks...</string>
+
+    <!-- Attachments & Tools Modal (Foto 2) -->
+    <string name="modal_attachments_header">ATTACHMENTS &amp; TOOLS</string>
+    <string name="tool_attachment_title">Attachment</string>
+    <string name="tool_attachment_desc">Add files from device.</string>
+    <string name="tool_camera_title">Camera</string>
+    <string name="tool_camera_desc">Capture photo for conversation.</string>
+    <string name="tool_web_search_title">Web Search</string>
+    <string name="tool_web_search_desc">Search latest information on web.</string>
+    <string name="tool_canvas_title">Canvas</string>
+    <string name="tool_canvas_desc">Open visual workspace.</string>
 
     <!-- Action Chips & Input Capsule -->
     <string name="chip_workspace">Workspace</string>
@@ -58,6 +72,13 @@
     <string name="chip_canvas">Canvas</string>
     <string name="chip_yolo">Auto-Approve</string>
     <string name="input_placeholder">Ask anything or command agent...</string>
+    <string name="composer_web_active">Web active</string>
+    <string name="composer_send">Send</string>
+    <string name="workspace_banner_title">Setup workspace</string>
+    <string name="workspace_banner_desc">Select a folder to use Agent mode.</string>
+    <string name="workspace_banner_button">Select folder</string>
+    <string name="workspace_banner_button_change">Change folder</string>
+    <string name="workspace_banner_active">Active: %1$s</string>
     <string name="cd_attach">Attachment</string>
     <string name="cd_send">Send</string>
     <string name="cd_stop">Stop</string>
@@ -191,14 +212,18 @@
 
     <!-- Welcome Hero & Suggestions -->
     <string name="welcome_hero_title">What would you like to build?</string>
-    <string name="welcome_hero_subtitle">Autonomous coding agent &amp; workspace assistant</string>
+    <string name="welcome_hero_subtitle">Autonomous coding agent &amp; workspace assistant.</string>
     <string name="suggestion_web_title">Interactive Web App</string>
+    <string name="suggestion_web_desc">Build a complete single-page interactive web application.</string>
     <string name="suggestion_web_prompt">Create an interactive single-page web app with modern HTML, CSS, and JavaScript.</string>
     <string name="suggestion_inspect_title">Inspect Architecture</string>
+    <string name="suggestion_inspect_desc">Analyze workspace file and directory architecture.</string>
     <string name="suggestion_inspect_prompt">Inspect the workspace files and directory structure, and explain the architecture.</string>
     <string name="suggestion_shell_title">Terminal Automation</string>
+    <string name="suggestion_shell_desc">Create bash scripts to automate project workflows.</string>
     <string name="suggestion_shell_prompt">Help me write a shell automation script for this project\'s workflow.</string>
     <string name="suggestion_research_title">Academic Papers</string>
+    <string name="suggestion_research_desc">Search latest arXiv research and papers for your project.</string>
     <string name="suggestion_research_prompt">Search arXiv and research papers for the latest state of AI coding agents.</string>
 
     <!-- Onboarding Setup (Pixel OOBE Style) -->

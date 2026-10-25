@@ -3,6 +3,8 @@
     <string name="app_subtitle">Agen Coding &amp; Workspace AI Android</string>
 
     <!-- TopBar & Navigation -->
+    <string name="topbar_title">Palapa GO</string>
+    <string name="topbar_new">Baru</string>
     <string name="topbar_menu">Menu</string>
     <string name="model_fast_desc">Mode Cepat</string>
     <string name="model_standard_desc">Mode Standar</string>
@@ -33,22 +35,34 @@
     <string name="default_session_title">Obrolan Baru</string>
 
     <!-- Prompt Modes (Gemini-style Segmented Switcher) -->
+    <string name="modal_select_mode_header">PILIH MODE</string>
     <string name="prompt_mode_chat">Chat</string>
-    <string name="prompt_mode_chat_desc">Tanya jawab umum dan diskusi cepat tanpa folder</string>
+    <string name="prompt_mode_chat_desc">Diskusi, ide, dan bantuan coding.</string>
     <string name="prompt_mode_agent">Agent</string>
-    <string name="prompt_mode_agent_desc">Eksekusi workspace &amp; coding otonom (wajib pilih folder)</string>
+    <string name="prompt_mode_agent_desc">Pilih folder workspace terlebih dahulu.</string>
     <string name="prompt_mode_academic">Pelajar</string>
-    <string name="prompt_mode_academic_desc">Riset jurnal ilmiah, sitasi terindeks, dan tugas sekolah/kuliah</string>
-    <string name="prompt_mode_canvas">Canvas</string>
-    <string name="prompt_mode_canvas_desc">Studio interaktif untuk dokumen, simulasi UI, dan kode</string>
+    <string name="prompt_mode_academic_desc">Pelajari kode langkah demi langkah.</string>
     <string name="prompt_mode_image_gen">Image Gen</string>
-    <string name="prompt_mode_image_gen_desc">Studio visual multimodal Agnes AI (agnes-image-2.5-flash)</string>
+    <string name="prompt_mode_image_gen_desc">Buat gambar dari deskripsi Anda.</string>
+    <string name="prompt_mode_canvas">Canvas</string>
+    <string name="prompt_mode_canvas_desc">Kembangkan ide di ruang visual.</string>
     <string name="image_gen_studio_title">Image Gen Studio</string>
     <string name="telemetry_neural_title">Telemetri Neural</string>
     <string name="prompt_mode_agent_requires_folder">Mode Agent mewajibkan pemilihan folder workspace terlebih dahulu.</string>
     <string name="prompt_placeholder_chat">Tanyakan apa saja...</string>
     <string name="prompt_placeholder_agent">Perintahkan agent untuk menulis file, coding, dsb...</string>
     <string name="prompt_placeholder_academic">Cari jurnal ilmiah, sitasi, tinjauan pustaka, atau tugas...</string>
+
+    <!-- Attachments & Tools Modal (Foto 2) -->
+    <string name="modal_attachments_header">LAMPIRAN &amp; ALAT</string>
+    <string name="tool_attachment_title">Lampiran</string>
+    <string name="tool_attachment_desc">Tambahkan file dari perangkat.</string>
+    <string name="tool_camera_title">Kamera</string>
+    <string name="tool_camera_desc">Ambil foto untuk percakapan.</string>
+    <string name="tool_web_search_title">Pencarian Web</string>
+    <string name="tool_web_search_desc">Cari informasi terbaru di web.</string>
+    <string name="tool_canvas_title">Canvas</string>
+    <string name="tool_canvas_desc">Buka ruang kerja visual.</string>
 
     <!-- Action Chips & Input Capsule -->
     <string name="chip_workspace">Workspace</string>
@@ -58,6 +72,13 @@
     <string name="chip_canvas">Canvas</string>
     <string name="chip_yolo">Auto-Setujui</string>
     <string name="input_placeholder">Tanyakan apa saja atau perintahkan agent...</string>
+    <string name="composer_web_active">Web aktif</string>
+    <string name="composer_send">Kirim</string>
+    <string name="workspace_banner_title">Siapkan workspace</string>
+    <string name="workspace_banner_desc">Pilih folder untuk memakai mode Agent.</string>
+    <string name="workspace_banner_button">Pilih folder</string>
+    <string name="workspace_banner_button_change">Ganti folder</string>
+    <string name="workspace_banner_active">Aktif: %1$s</string>
     <string name="cd_attach">Lampiran</string>
     <string name="cd_send">Kirim</string>
     <string name="cd_stop">Berhenti</string>
@@ -191,13 +212,17 @@
 
     <!-- Welcome Hero & Suggestions -->
     <string name="welcome_hero_title">Apa yang ingin Anda bangun?</string>
-    <string name="welcome_hero_subtitle">Agen coding dan asisten workspace Android berdaya penuh</string>
+    <string name="welcome_hero_subtitle">Agen coding dan asisten workspace Android berdaya penuh.</string>
     <string name="suggestion_web_title">Aplikasi Web Interaktif</string>
+    <string name="suggestion_web_desc">Buat aplikasi web interaktif satu halaman lengkap.</string>
     <string name="suggestion_web_prompt">Buat aplikasi web interaktif satu halaman lengkap dengan HTML, CSS, dan JavaScript modern.</string>
     <string name="suggestion_inspect_title">Inspeksi Arsitektur</string>
+    <string name="suggestion_inspect_desc">Analisis struktur file dan direktori dalam workspace.</string>
     <string name="suggestion_inspect_prompt">Analisis struktur file dan direktori dalam workspace ini, jelaskan arsitekturnya.</string>
     <string name="suggestion_shell_title">Otomasi Terminal</string>
+    <string name="suggestion_shell_desc">Buat skrip bash untuk mengotomatiskan alur kerja.</string>
     <string name="suggestion_shell_prompt">Bantu saya membuat skrip bash otomatisasi untuk alur kerja proyek ini.</string>
     <string name="suggestion_research_title">Paper Akademik</string>
+    <string name="suggestion_research_desc">Cari paper dan riset arXiv terbaru untuk proyek Anda.</string>
     <string name="suggestion_research_prompt">Cari paper dan riset arXiv terbaru tentang implementasi arsitektur AI agent.</string>
 </resources>
