@@ -46,7 +46,7 @@ Palapa GO is an autonomous mobile AI workspace, academic research engine, and co
 
 ## Technical Specifications
 
-- **Operating System**: Android 8.0 (API level 26) or higher
+- **Operating System**: Android 9.0 (API level 28) or higher
 - **Programming Language**: Kotlin 2.0+
 - **UI Toolkit**: Jetpack Compose with Material 3 Expressive tokens
 - **Architecture**: Clean Architecture with Unidirectional Data Flow (UDF) and MVVM
