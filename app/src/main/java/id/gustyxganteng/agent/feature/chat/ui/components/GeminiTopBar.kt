@@ -43,6 +43,7 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -68,6 +69,10 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Psychology
 import androidx.compose.material.icons.automirrored.rounded.TrendingUp
 import androidx.compose.material.icons.rounded.Tune
+import id.gustyxganteng.agent.core.designsystem.PalapaBlue
+import id.gustyxganteng.agent.core.designsystem.PalapaBorder
+import id.gustyxganteng.agent.core.designsystem.PalapaGold
+import id.gustyxganteng.agent.core.designsystem.PalapaSurface
 import id.gustyxganteng.agent.core.model.AgentExecutionMode
 import id.gustyxganteng.agent.domain.context.ContextMeterManager
 import id.gustyxganteng.agent.domain.context.ContextMeterStatus
@@ -82,11 +87,13 @@ fun GeminiTopBar(
     onSelectExecutionMode: (AgentExecutionMode) -> Unit = {},
     onCompactContext: () -> Unit,
     onBranchSession: () -> Unit = {},
+    onNewSession: () -> Unit = {},
     isExecutionLocked: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
     var showModelMenu by remember { mutableStateOf(false) }
+    var showContextSheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(isExecutionLocked) {
         if (isExecutionLocked) {
@@ -96,50 +103,71 @@ fun GeminiTopBar(
 
     val currentMode = executionMode
 
-    val (badgeBg, badgeFg) = when (currentMode) {
-        AgentExecutionMode.FAST -> Pair(MaterialTheme.colorScheme.surfaceContainerHighest, MaterialTheme.colorScheme.onSurfaceVariant)
-        AgentExecutionMode.STANDARD -> Pair(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f), MaterialTheme.colorScheme.primary)
-        AgentExecutionMode.HIGH -> Pair(MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.secondary)
-        AgentExecutionMode.SMART -> Pair(MaterialTheme.colorScheme.tertiaryContainer, MaterialTheme.colorScheme.tertiary)
-        AgentExecutionMode.MAX -> Pair(MaterialTheme.colorScheme.tertiaryContainer, MaterialTheme.colorScheme.tertiary)
-    }
-
     Surface(
-        color = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.background,
         modifier = modifier.fillMaxWidth()
     ) {
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+        ) {
+            // Row 1: App Header Bar (Menu - Palapa GO - Baru)
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .statusBarsPadding()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
+                    .padding(horizontal = 8.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Navigation Drawer Toggle with Expressive Tonal Circle Button
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    modifier = Modifier.size(38.dp)
-                ) {
-                    IconButton(onClick = onOpenDrawer) {
-                        Icon(
-                            imageVector = Icons.Rounded.Menu,
-                            contentDescription = stringResource(R.string.topbar_menu),
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(19.dp)
-                        )
-                    }
+                IconButton(onClick = onOpenDrawer) {
+                    Icon(
+                        imageVector = Icons.Rounded.Menu,
+                        contentDescription = stringResource(R.string.topbar_menu),
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
 
-                // Model Selector Pill (Center - M3 Expressive Pill)
+                Text(
+                    text = stringResource(R.string.topbar_title),
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                TextButton(
+                    onClick = onNewSession,
+                    colors = ButtonDefaults.textButtonColors(contentColor = PalapaGold)
+                ) {
+                    Text(
+                        text = stringResource(R.string.topbar_new),
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.5.sp
+                        )
+                    )
+                }
+            }
+
+            // Row 2: Sub-toolbar controls (Model Selector on Left, Context Gauge on Right)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Model Selector Pill (Left)
                 Box {
                     Surface(
-                        shape = RoundedCornerShape(24.dp),
-                        color = if (isExecutionLocked) MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.6f) else MaterialTheme.colorScheme.surfaceContainerHigh,
+                        shape = RoundedCornerShape(20.dp),
+                        color = PalapaSurface,
+                        border = BorderStroke(1.dp, PalapaBorder),
                         modifier = Modifier
-                            .clip(RoundedCornerShape(24.dp))
+                            .clip(RoundedCornerShape(20.dp))
                             .clickable {
                                 if (isExecutionLocked) {
                                     Toast.makeText(
@@ -153,7 +181,7 @@ fun GeminiTopBar(
                             }
                     ) {
                         Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 7.dp),
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 7.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
@@ -166,7 +194,7 @@ fun GeminiTopBar(
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
-                            Spacer(Modifier.width(4.dp))
+                            Spacer(Modifier.width(6.dp))
                             Icon(
                                 imageVector = if (isExecutionLocked) Icons.Rounded.Lock else Icons.Default.ArrowDropDown,
                                 contentDescription = null,
@@ -245,69 +273,69 @@ fun GeminiTopBar(
                     }
                 }
 
-                // Context Meter Pill (Right side - M3 Expressive micro circular gauge)
-                if (contextStatus != null) {
-                    var showContextSheet by remember { mutableStateOf(false) }
-
-                    Surface(
-                        shape = RoundedCornerShape(24.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(24.dp))
-                            .clickable { showContextSheet = true }
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Box(
-                                modifier = Modifier.size(14.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                CircularProgressIndicator(
-                                    progress = { (contextStatus.percentage / 100f).coerceIn(0.04f, 1f) },
-                                    modifier = Modifier.fillMaxSize(),
-                                    color = contextStatus.indicatorColor,
-                                    trackColor = contextStatus.indicatorColor.copy(alpha = 0.2f),
-                                    strokeWidth = 2.2.dp,
-                                    strokeCap = StrokeCap.Round
-                                )
+                // Context Meter Pill (Right)
+                val percent = contextStatus?.percentage ?: 0f
+                val indicatorColor = contextStatus?.indicatorColor ?: PalapaBlue
+                Surface(
+                    shape = RoundedCornerShape(20.dp),
+                    color = PalapaSurface,
+                    border = BorderStroke(1.dp, PalapaBorder),
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .clickable {
+                            if (contextStatus != null) {
+                                showContextSheet = true
                             }
-                            Spacer(Modifier.width(6.dp))
-                            Text(
-                                text = "${String.format(java.util.Locale.US, "%.0f", contextStatus.percentage)}%",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.SemiBold,
-                                    fontSize = 11.sp,
-                                    letterSpacing = 0.2.sp
-                                ),
-                                color = MaterialTheme.colorScheme.onSurface,
-                                maxLines = 1,
-                                softWrap = false
+                        }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 7.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier.size(14.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                progress = { (percent / 100f).coerceIn(0.04f, 1f) },
+                                modifier = Modifier.fillMaxSize(),
+                                color = indicatorColor,
+                                trackColor = indicatorColor.copy(alpha = 0.25f),
+                                strokeWidth = 2.2.dp,
+                                strokeCap = StrokeCap.Round
                             )
                         }
-                    }
-
-                    if (showContextSheet) {
-                        ContextDetailsBottomSheet(
-                            status = contextStatus,
-                            modelName = "PalapaGO Core",
-                            onDismiss = { showContextSheet = false },
-                            onCompactContext = {
-                                showContextSheet = false
-                                onCompactContext()
-                            },
-                            onBranchSession = {
-                                showContextSheet = false
-                                onBranchSession()
-                            }
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            text = "${String.format(java.util.Locale.US, "%.0f", percent)}%",
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontWeight = FontWeight.SemiBold,
+                                fontSize = 11.5.sp,
+                                letterSpacing = 0.2.sp
+                            ),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            softWrap = false
                         )
                     }
-                } else {
-                    Box(modifier = Modifier.size(38.dp))
                 }
             }
-            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.55f), thickness = 0.5.dp)
+
+            if (showContextSheet && contextStatus != null) {
+                ContextDetailsBottomSheet(
+                    status = contextStatus,
+                    modelName = "PalapaGO Core",
+                    onDismiss = { showContextSheet = false },
+                    onCompactContext = {
+                        showContextSheet = false
+                        onCompactContext()
+                    },
+                    onBranchSession = {
+                        showContextSheet = false
+                        onBranchSession()
+                    }
+                )
+            }
         }
     }
 }
