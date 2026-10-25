@@ -104,6 +104,14 @@ import androidx.core.content.FileProvider
 import id.gustyxganteng.agent.R
 import id.gustyxganteng.agent.core.designsystem.GeminiSparkleIcon
 import id.gustyxganteng.agent.core.designsystem.M3ExpressiveUserBubbleShape
+import id.gustyxganteng.agent.core.designsystem.PalapaBentoCard
+import id.gustyxganteng.agent.core.designsystem.PalapaBlue
+import id.gustyxganteng.agent.core.designsystem.PalapaBlueContainer
+import id.gustyxganteng.agent.core.designsystem.PalapaBorder
+import id.gustyxganteng.agent.core.designsystem.PalapaGold
+import id.gustyxganteng.agent.core.designsystem.PalapaGoldContainer
+import id.gustyxganteng.agent.core.designsystem.PalapaSurface
+import id.gustyxganteng.agent.core.designsystem.PalapaWorkspaceBanner
 import id.gustyxganteng.agent.core.markdown.MarkdownContent
 import id.gustyxganteng.agent.core.model.AgentExecutionMode
 import id.gustyxganteng.agent.core.model.CanvasArtifact
@@ -123,6 +131,7 @@ import id.gustyxganteng.agent.feature.chat.ui.components.ImageGeneratingSilhouet
 import id.gustyxganteng.agent.feature.chat.ui.components.ImageGenStudioModalSheet
 import id.gustyxganteng.agent.feature.chat.ui.components.NeuralSpiderStatsCard
 import id.gustyxganteng.agent.feature.chat.ui.components.NeuralTelemetryModalSheet
+import id.gustyxganteng.agent.feature.chat.ui.components.PalapaEdgeShimmer
 import id.gustyxganteng.agent.feature.chat.ui.components.ThinkingAccordion
 import id.gustyxganteng.agent.feature.chat.ui.components.ToolExecutionCard
 import id.gustyxganteng.agent.feature.workspace.DiffApprovalDialog
@@ -439,8 +448,9 @@ fun ChatScreen(
             }
         }
     ) {
-        Scaffold(
-            containerColor = MaterialTheme.colorScheme.surface,
+        Box(modifier = Modifier.fillMaxSize()) {
+            Scaffold(
+                containerColor = MaterialTheme.colorScheme.background,
             topBar = {
                 val isExecutionLocked = uiState.agentState !is AgentState.Idle && uiState.agentState !is AgentState.Error
                 GeminiTopBar(
@@ -460,6 +470,7 @@ fun ChatScreen(
                             Toast.makeText(context, context.getString(R.string.session_branched_toast), Toast.LENGTH_SHORT).show()
                         }
                     },
+                    onNewSession = { viewModel.createNewSession() },
                     isExecutionLocked = isExecutionLocked
                 )
             }
@@ -485,7 +496,9 @@ fun ChatScreen(
                             WelcomeHeroSection(
                                 onSelectSuggestion = { suggestionPrompt ->
                                     inputText = suggestionPrompt
-                                }
+                                },
+                                activeWorkspacePath = uiState.appSettings?.activeWorkspacePath,
+                                onOpenWorkspaceManager = { showWorkspaceManager = true }
                             )
                         }
                     }
@@ -734,7 +747,15 @@ fun ChatScreen(
                 )
             }
         }
+
+        // Ambient Edge Shimmer Dot Stream along Left & Right bezels (New Chat Entrance)
+        PalapaEdgeShimmer(
+            triggerKey = uiState.currentSession?.id ?: "initial_fresh_session",
+            enabled = uiState.messages.isEmpty() && uiState.agentState is AgentState.Idle,
+            modifier = Modifier.fillMaxSize()
+        )
     }
+}
 
     // Modal Workspace Manager BottomSheet
     if (showWorkspaceManager) {
@@ -819,143 +840,119 @@ fun ChatScreen(
 @Composable
 private fun WelcomeHeroSection(
     onSelectSuggestion: (String) -> Unit,
+    activeWorkspacePath: String?,
+    onOpenWorkspaceManager: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 24.dp),
+            .padding(horizontal = 20.dp, vertical = 20.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+        // App Icon Badge
         Surface(
-            shape = RoundedCornerShape(22.dp),
-            color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-            modifier = Modifier.size(68.dp)
+            shape = RoundedCornerShape(18.dp),
+            color = PalapaSurface,
+            border = BorderStroke(1.dp, PalapaBorder),
+            modifier = Modifier.size(64.dp)
         ) {
             Box(contentAlignment = Alignment.Center) {
-                GeminiSparkleIcon(size = 48.dp)
+                GeminiSparkleIcon(size = 44.dp)
             }
         }
 
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(18.dp))
 
+        // Title
         Text(
             text = stringResource(R.string.welcome_hero_title),
-            style = MaterialTheme.typography.titleLarge.copy(
+            style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.Bold,
-                fontSize = 21.sp
+                fontSize = 26.sp,
+                letterSpacing = (-0.5).sp
             ),
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center
         )
 
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(8.dp))
 
+        // Subtitle
         Text(
             text = stringResource(R.string.welcome_hero_subtitle),
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.bodyMedium.copy(
+                fontSize = 14.5.sp,
+                lineHeight = 21.sp
+            ),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
 
         Spacer(Modifier.height(24.dp))
 
-        // Bento Grid Suggestions
+        // Bento Grid Suggestions (2x2)
         Column(
-            verticalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                HeroSuggestionCard(
+                PalapaBentoCard(
                     icon = Icons.Rounded.Web,
+                    iconContainerColor = PalapaGoldContainer,
+                    iconTint = PalapaGold,
                     title = stringResource(R.string.suggestion_web_title),
-                    prompt = stringResource(R.string.suggestion_web_prompt),
-                    onSelect = onSelectSuggestion,
+                    subtitle = stringResource(R.string.suggestion_web_desc),
+                    onClick = { onSelectSuggestion(context.getString(R.string.suggestion_web_prompt)) },
                     modifier = Modifier.weight(1f)
                 )
-                HeroSuggestionCard(
+                PalapaBentoCard(
                     icon = Icons.Rounded.FolderOpen,
+                    iconContainerColor = PalapaBlueContainer,
+                    iconTint = PalapaBlue,
                     title = stringResource(R.string.suggestion_inspect_title),
-                    prompt = stringResource(R.string.suggestion_inspect_prompt),
-                    onSelect = onSelectSuggestion,
+                    subtitle = stringResource(R.string.suggestion_inspect_desc),
+                    onClick = { onSelectSuggestion(context.getString(R.string.suggestion_inspect_prompt)) },
                     modifier = Modifier.weight(1f)
                 )
             }
             Row(
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                HeroSuggestionCard(
+                PalapaBentoCard(
                     icon = Icons.Rounded.Terminal,
+                    iconContainerColor = PalapaBlueContainer,
+                    iconTint = PalapaBlue,
                     title = stringResource(R.string.suggestion_shell_title),
-                    prompt = stringResource(R.string.suggestion_shell_prompt),
-                    onSelect = onSelectSuggestion,
+                    subtitle = stringResource(R.string.suggestion_shell_desc),
+                    onClick = { onSelectSuggestion(context.getString(R.string.suggestion_shell_prompt)) },
                     modifier = Modifier.weight(1f)
                 )
-                HeroSuggestionCard(
+                PalapaBentoCard(
                     icon = Icons.Rounded.School,
+                    iconContainerColor = PalapaGoldContainer,
+                    iconTint = PalapaGold,
                     title = stringResource(R.string.suggestion_research_title),
-                    prompt = stringResource(R.string.suggestion_research_prompt),
-                    onSelect = onSelectSuggestion,
+                    subtitle = stringResource(R.string.suggestion_research_desc),
+                    onClick = { onSelectSuggestion(context.getString(R.string.suggestion_research_prompt)) },
                     modifier = Modifier.weight(1f)
                 )
             }
         }
-    }
-}
 
-@Composable
-private fun HeroSuggestionCard(
-    icon: ImageVector,
-    title: String,
-    prompt: String,
-    onSelect: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Surface(
-        shape = RoundedCornerShape(18.dp),
-        color = MaterialTheme.colorScheme.surfaceContainer,
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        modifier = modifier
-            .clip(RoundedCornerShape(18.dp))
-            .clickable { onSelect(prompt) }
-    ) {
-        Column(modifier = Modifier.padding(14.dp)) {
-            Surface(
-                shape = RoundedCornerShape(10.dp),
-                color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
-                modifier = Modifier.size(32.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(17.dp)
-                    )
-                }
-            }
-            Spacer(Modifier.height(10.dp))
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold, fontSize = 13.5.sp),
-                color = MaterialTheme.colorScheme.onSurface,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Spacer(Modifier.height(2.dp))
-            Text(
-                text = prompt,
-                style = MaterialTheme.typography.bodySmall.copy(fontSize = 11.sp, lineHeight = 15.sp),
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
+        Spacer(Modifier.height(14.dp))
+
+        // Siapkan Workspace Banner
+        PalapaWorkspaceBanner(
+            activeWorkspacePath = activeWorkspacePath,
+            onOpenWorkspaceManager = onOpenWorkspaceManager
+        )
     }
 }
 
