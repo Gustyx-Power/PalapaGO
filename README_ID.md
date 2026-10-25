@@ -46,7 +46,7 @@ Palapa GO adalah sistem asisten kecerdasan buatan berbasis agen otonom, mesin ri
 
 ## Spesifikasi Teknis
 
-- **Sistem Operasi**: Android 8.0 (API level 26) atau versi di atasnya
+- **Sistem Operasi**: Android 9.0 (API level 28) atau versi di atasnya
 - **Bahasa Pemrograman**: Kotlin 2.0+
 - **Antarmuka Pengguna**: Jetpack Compose dengan Material 3 Expressive tokens
 - **Pola Arsitektur**: Clean Architecture dengan Unidirectional Data Flow (UDF) dan MVVM
