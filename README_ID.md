@@ -40,7 +40,7 @@ Palapa GO adalah sistem asisten kecerdasan buatan berbasis agen otonom, mesin ri
 
 - **Tata Kelola Human-in-the-Loop**: Seluruh operasi penulisan berkas, penerapan *patch*, dan eksekusi skrip terminal memerlukan konfirmasi eksplisit pengguna melalui dialog persetujuan, kecuali jika mode otonom penuh diaktifkan secara sengaja.
 - **Smart Retry Interceptor**: Mekanisme penundaan eksponensial (*exponential backoff with full jitter*) untuk menangani pembatasan laju permintaan (*rate limit* HTTP 429) serta gangguan peladen upstream (HTTP 5xx).
-- **BYOK (Bring Your Own Key)**: Manajemen kredensial mandiri yang memungkinkan pengguna memasukkan kunci API, URL dasar, dan nama model pilihan (OpenAI-compatible, Google Gemini, DeepSeek). Data kredensial tersimpan aman di penyimpanan lokal melalui Jetpack DataStore terenkripsi.
+- **Isolasi & Obfuskasi Kredensial**: Kunci API dan endpoint layanan dikonfigurasi saat proses kompilasi melalui `local.properties` serta dilindungi teknik obfuskasi biner pada `KeyVault`, bukan dicatat langsung dalam sistem pengontrol versi (*version control*).
 
 ---
 
@@ -117,11 +117,12 @@ OPENALEX_MAILTO=your_email@example.com
 TAVILY_API_KEY=your_tavily_api_key_here
 ```
 
-### Pengaturan Waktu Jalan (BYOK In-App)
-Pengguna juga dapat menimpa atau menyediakan kredensial API secara dinamis langsung dari dalam antarmuka aplikasi:
-1. Buka layar **Pengaturan** melalui ikon di bilah atas (*Top Bar*).
-2. Sesuaikan **API Base URL**, **API Key**, dan **Model** (contoh: `gemini-2.0-flash`, `deepseek-chat`, atau `gpt-4o`).
-3. Atur **Max Retries** untuk menghadapi koneksi yang fluktuatif. Seluruh kredensial runtime tersimpan aman di penyimpanan lokal perangkat.
+### Pengaturan Waktu Jalan (In-App Settings)
+Di dalam aplikasi, buka layar **Pengaturan** melalui ikon di bilah atas (*Top Bar*) untuk menyesuaikan perilaku sistem:
+1. **Pilihan Model**: Berpindah antar model inferensi yang tersedia (contoh: `agnes-3.0-flash`).
+2. **Kontrol Keamanan**: Aktifkan **YOLO Mode** untuk eksekusi perkakas otomatis dan atur penggeser **Max Retries** (1-10) untuk toleransi jaringan.
+3. **Mode Anti-AI-Slop**: Mengharuskan jawaban yang ringkas, profesional, dan bersih dari basa-basi maupun kata klise pemasaran.
+4. **Tavily Deep Search**: Mengaktifkan pencarian web mendalam bertahap ganda untuk pertanyaan riset yang kompleks.
 
 ---
 

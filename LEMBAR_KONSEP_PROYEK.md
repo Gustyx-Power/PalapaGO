@@ -71,7 +71,7 @@ Kemunculan *Large Language Models* (LLM) telah mengubah cara masyarakat mengakse
 
 | Di Dalam Ruang Lingkup (*In-Scope*) | Di Luar Ruang Lingkup (*Out-of-Scope*) |
 | :--- | :--- |
-| 1. Aplikasi berjalan pada sistem operasi Android (min. SDK 26 / Android 8.0 Oreo hingga Android 14/15). | 1. Tidak melatih (*training/fine-tuning*) fondasi model bahasa dari awal; memanfaatkan protokol REST/SSE API model fondasi (OpenAI-compatible / Gemini / DeepSeek via BYOK - *Bring Your Own Key*). |
+| 1. Aplikasi berjalan pada sistem operasi Android (min. SDK 26 / Android 8.0 Oreo hingga Android 14/15). | 1. Tidak melatih (*training/fine-tuning*) fondasi model bahasa dari awal; memanfaatkan protokol REST/SSE API model fondasi (OpenAI-compatible / Gemini / DeepSeek dengan injeksi konfigurasi kunci API pada tingkat kompilasi / `local.properties`). |
 | 2. Fitur **Mode Pelajar** dengan integrasi langsung ke Semantic Scholar API, OpenAlex API, dan Crossref DOI Verification Tool. | 2. Tidak melayani pengunduhan artikel berbayar (*paywalled*); pengunduhan dibatasi pada berkas berlisensi *Open Access*. |
 | 3. Fitur **Mode Agen Otonom** dengan sistem persetujuan berkas *Human-in-the-Loop* (Diff Dialog), pembacaan direktori lokal, dan eksekusi skrip terminal terisolasi. | 3. Tidak memerlukan hak akses *root* sistem pada perangkat Android pengguna. |
 | 4. Fitur **Mode Kreasi Gambar** untuk generasi visual berbasis teks dan **Mode Canvas** untuk manipulasi dokumen interaktif (HTML & Markdown). | 4. Tidak menyediakan layanan komputasi awan mandiri untuk penyimpanan data pengguna (seluruh data percakapan tersimpan secara lokal via Room Database di perangkat). |

@@ -40,7 +40,7 @@ Palapa GO is an autonomous mobile AI workspace, academic research engine, and co
 
 - **Human-in-the-Loop Governance**: File write operations, diff patches, and shell commands require explicit user consent via approval dialogs unless autonomous execution is intentionally toggled.
 - **Smart Retry Interceptor**: Exponential backoff with full jitter to automatically handle upstream HTTP 429 (rate limits) and 5xx server errors.
-- **BYOK (Bring Your Own Key)**: Decentralized credential management allowing users to supply custom API keys, base URLs, and model identifiers (OpenAI-compatible, Google Gemini, DeepSeek). Credentials remain stored strictly on the local device via Encrypted DataStore.
+- **Credential Isolation & Obfuscation**: API keys and service endpoints are configured at build time via `local.properties` and protected through compile-time binary obfuscation in `KeyVault` rather than hardcoded in version control.
 
 ---
 
@@ -117,11 +117,12 @@ OPENALEX_MAILTO=your_email@example.com
 TAVILY_API_KEY=your_tavily_api_key_here
 ```
 
-### In-App BYOK Runtime Settings
-You can also override or provide your own API credentials at runtime directly within the application:
-1. Open the **Settings** screen from the Top Bar.
-2. Configure **API Base URL**, **API Key**, and **Model Identifier** (e.g., `gemini-2.0-flash`, `deepseek-chat`, or `gpt-4o`).
-3. Set **Max Retries** to handle unstable network environments. All runtime credentials are stored securely in local device storage.
+### In-App Runtime Settings
+Within the application, open the **Settings** screen from the Top Bar to configure runtime behavior:
+1. **Model Selection**: Switch between available inference models (e.g., `agnes-3.0-flash`).
+2. **Security Controls**: Toggle **YOLO Mode** for autonomous tool execution and adjust the **Max Retries** slider (1-10) for network tolerance.
+3. **Anti-AI-Slop Mode**: Enforce concise, professional responses free of conversational filler, sycophancy, or marketing buzzwords.
+4. **Tavily Deep Search**: Toggle comprehensive multi-pass web search for in-depth inquiries.
 
 ---
 
