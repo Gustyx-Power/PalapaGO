@@ -62,8 +62,9 @@ class SmartRetryInterceptor(
 
                 val code = response.code
                 val isRetryable = code == 429 || code == 502 || code == 503 || code == 504
+                val maxAttemptsForCode = if (code == 503 || code == 502) 1 else maxRetries
 
-                if (!isRetryable || attempt >= maxRetries) {
+                if (!isRetryable || attempt >= maxAttemptsForCode) {
                     return response
                 }
 
@@ -71,6 +72,8 @@ class SmartRetryInterceptor(
                 val retryAfterHeader = response.header("Retry-After")?.toLongOrNull()
                 val backoffSeconds: Long = if (retryAfterHeader != null && retryAfterHeader > 0) {
                     retryAfterHeader
+                } else if (code == 503 || code == 502) {
+                    1L // Failover cepat ke provider berikutnya jika server overloaded
                 } else {
                     // Exponential backoff: 3s, 6s, 12s, 24s... + jitter
                     val baseDelayMs = 3000L * (1L shl attempt)
@@ -80,7 +83,12 @@ class SmartRetryInterceptor(
                 }
 
                 attempt++
-                val statusMsg = "Terkena Rate Limit API ($code). Mencoba lagi dalam ${backoffSeconds}s... (Percobaan $attempt/$maxRetries)"
+                val statusMsg = when (code) {
+                    429 -> "Batas Laju API Tercapai (429). Mencoba lagi dalam ${backoffSeconds}s... (Percobaan $attempt/$maxRetries)"
+                    503 -> "Peladen AI Sedang Penuh / Overloaded (503). Mengalihkan ke provider cadangan..."
+                    502, 504 -> "Gerbang Server Bermasalah ($code). Mengalihkan ke provider cadangan..."
+                    else -> "Gangguan Jaringan API ($code). Mencoba lagi dalam ${backoffSeconds}s..."
+                }
                 _rateLimitEvents.tryEmit(
                     RateLimitStatus(
                         isThrottled = true,

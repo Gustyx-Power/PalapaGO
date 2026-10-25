@@ -193,6 +193,7 @@ class AgnesApiServiceImpl(
         val xemaruxEndpoint = if (xemaruxBase.endsWith("/chat/completions")) xemaruxBase else "$xemaruxBase/chat/completions"
 
         fun addAgnesTargets() {
+            val effectiveAgnesModel = if (model == "agnes-3.0-pro" || model.isBlank()) "agnes-3.0-flash" else model
             val agnesKeys = mutableListOf<String>()
             if (apiKey.isNotBlank()) agnesKeys.add(apiKey.trim())
             for (k in KeyVault.getAgnesKeyPool()) {
@@ -205,7 +206,7 @@ class AgnesApiServiceImpl(
                         providerName = label,
                         endpoint = agnesEndpoint,
                         apiKey = k,
-                        model = if (isExplicitXemarux) "claude-3-7-sonnet-20250219" else model,
+                        model = if (isExplicitXemarux) "claude-3-7-sonnet-20250219" else effectiveAgnesModel,
                         isAnthropicHeaders = true,
                         includeThinking = effectiveBudgetTokens > 0,
                         maxTokens = effectiveMaxTokens
@@ -244,46 +245,51 @@ class AgnesApiServiceImpl(
             }
         }
 
+        fun addGroqTargets() {
+            val groqKeys = KeyVault.getGroqKeyPool()
+            for ((idx, gk) in groqKeys.withIndex()) {
+                val groqLabel = if (idx == 0) "Groq Sidecar (Llama/OSS)" else "Groq Sidecar (Cadangan #$idx)"
+                targets.add(
+                    StreamTarget(
+                        providerName = groqLabel,
+                        endpoint = "https://api.groq.com/openai/v1/chat/completions",
+                        apiKey = gk,
+                        model = "openai/gpt-oss-120b",
+                        isAnthropicHeaders = false,
+                        includeThinking = false,
+                        maxTokens = effectiveMaxTokens.coerceAtMost(8192)
+                    )
+                )
+            }
+        }
+
+        fun addGeminiTargets() {
+            val geminiKey = KeyVault.getGeminiApiKey()
+            if (geminiKey.isNotBlank()) {
+                targets.add(
+                    StreamTarget(
+                        providerName = "Gemini Sidecar (Google Cloud)",
+                        endpoint = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
+                        apiKey = geminiKey,
+                        model = "gemini-3.8-flash",
+                        isAnthropicHeaders = false,
+                        includeThinking = false,
+                        maxTokens = effectiveMaxTokens.coerceAtMost(8192)
+                    )
+                )
+            }
+        }
+
         if (isExplicitXemarux) {
             addXemaruxTargets()
             addAgnesTargets()
+            addGroqTargets()
+            addGeminiTargets()
         } else {
-            // Yang terus dibakar tetap Agnes (bebas kuota bagi pengguna)
             addAgnesTargets()
             addXemaruxTargets()
-        }
-
-        // 3. Gemini Sidecar (Google Cloud OpenAI Endpoint)
-        val geminiKey = KeyVault.getGeminiApiKey()
-        if (geminiKey.isNotBlank()) {
-            targets.add(
-                StreamTarget(
-                    providerName = "Gemini Sidecar (Google Cloud)",
-                    endpoint = "https://generativelanguage.googleapis.com/v1beta/openai/chat/completions",
-                    apiKey = geminiKey,
-                    model = "gemini-3.8-flash",
-                    isAnthropicHeaders = false,
-                    includeThinking = false,
-                    maxTokens = effectiveMaxTokens.coerceAtMost(8192)
-                )
-            )
-        }
-
-        // 4. Groq Sidecar Key Pool (Ultra-Fast Llama/Qwen)
-        val groqKeys = KeyVault.getGroqKeyPool()
-        for ((idx, gk) in groqKeys.withIndex()) {
-            val groqLabel = if (idx == 0) "Groq Sidecar (Llama/OSS)" else "Groq Sidecar (Cadangan #$idx)"
-            targets.add(
-                StreamTarget(
-                    providerName = groqLabel,
-                    endpoint = "https://api.groq.com/openai/v1/chat/completions",
-                    apiKey = gk,
-                    model = "openai/gpt-oss-120b",
-                    isAnthropicHeaders = false,
-                    includeThinking = false,
-                    maxTokens = effectiveMaxTokens.coerceAtMost(8192)
-                )
-            )
+            addGroqTargets()
+            addGeminiTargets()
         }
 
         if (targets.isEmpty()) {
@@ -296,16 +302,17 @@ class AgnesApiServiceImpl(
 
         for (target in targets) {
             try {
+                val isGemini = target.providerName.contains("Gemini", ignoreCase = true)
                 val requestPayload = ChatCompletionRequest(
                     model = target.model,
                     messages = chatDtos,
                     tools = if (toolsDto.isNullOrEmpty()) null else toolsDto,
                     stream = true,
                     maxTokens = target.maxTokens,
-                    thinking = if (target.includeThinking && effectiveBudgetTokens > 0) {
+                    thinking = if (!isGemini && target.includeThinking && effectiveBudgetTokens > 0) {
                         id.gustyxganteng.agent.core.network.dto.ThinkingConfigDto(budgetTokens = effectiveBudgetTokens)
                     } else null,
-                    reasoningEffort = if (target.includeThinking && effectiveBudgetTokens > 0) reasoningEffort else null
+                    reasoningEffort = if (!isGemini && target.includeThinking && effectiveBudgetTokens > 0) reasoningEffort else null
                 )
 
                 val jsonBody = json.encodeToString(requestPayload)
