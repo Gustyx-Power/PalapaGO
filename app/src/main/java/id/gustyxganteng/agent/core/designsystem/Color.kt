@@ -2,14 +2,33 @@ package id.gustyxganteng.agent.core.designsystem
 
 import androidx.compose.ui.graphics.Color
 
+// Palapa GO Brand Identity Tokens (Mockup Figma #171B20)
+val PalapaBackground = Color(0xFF171B20)
+val PalapaSurface = Color(0xFF1E222A)
+val PalapaSurfaceVariant = Color(0xFF252932)
+val PalapaBorder = Color(0xFF2B303B)
+
+// Warm Gold / Amber Accent Palette
+val PalapaGold = Color(0xFFE8C064)
+val PalapaGoldContainer = Color(0xFF2E2718)
+val PalapaGoldBorder = Color(0xFF4A3E22)
+val PalapaGoldButton = Color(0xFFEFC76B)
+val PalapaOnGoldButton = Color(0xFF1A1608)
+
+// Slate Blue Accent Palette
+val PalapaBlue = Color(0xFF8AB4F8)
+val PalapaBlueContainer = Color(0xFF192534)
+val PalapaBlueBorder = Color(0xFF24354A)
+val PalapaBlueOnContainer = Color(0xFFB0C8ED)
+
 // Material 3 Expressive Surface Containers (Dark Theme)
 val M3SurfaceDim = Color(0xFF0C0E12)
-val M3Surface = Color(0xFF111318)
+val M3Surface = Color(0xFF171B20)
 val M3SurfaceBright = Color(0xFF37393E)
 val M3SurfaceContainerLowest = Color(0xFF0C0E12)
-val M3SurfaceContainerLow = Color(0xFF171A1F)
-val M3SurfaceContainer = Color(0xFF1B1E24)
-val M3SurfaceContainerHigh = Color(0xFF252930)
+val M3SurfaceContainerLow = Color(0xFF171B20)
+val M3SurfaceContainer = Color(0xFF1E222A)
+val M3SurfaceContainerHigh = Color(0xFF252932)
 val M3SurfaceContainerHighest = Color(0xFF30343D)
 
 // Primary (Expressive Blue / Periwinkle)
