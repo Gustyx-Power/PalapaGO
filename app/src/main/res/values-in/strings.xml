@@ -225,4 +225,11 @@
     <string name="suggestion_research_title">Paper Akademik</string>
     <string name="suggestion_research_desc">Cari paper dan riset arXiv terbaru untuk proyek Anda.</string>
     <string name="suggestion_research_prompt">Cari paper dan riset arXiv terbaru tentang implementasi arsitektur AI agent.</string>
+
+    <!-- Network Connectivity & Interruption -->
+    <string name="offline_title">Koneksi Jaringan Terputus</string>
+    <string name="offline_desc">Menunggu koneksi internet tersambung kembali secara otomatis…</string>
+    <string name="offline_retry_button">Periksa Koneksi</string>
+    <string name="offline_interrupted_badge">Aliran respons terputus akibat gangguan koneksi.</string>
+    <string name="offline_continue_button">Lanjutkan</string>
 </resources>

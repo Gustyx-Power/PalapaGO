@@ -16,6 +16,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import id.gustyxganteng.agent.core.database.AppSettingsRepository
 import id.gustyxganteng.agent.core.designsystem.GGAgentTheme
+import id.gustyxganteng.agent.core.designsystem.component.NetworkOfflineOverlay
+import id.gustyxganteng.agent.core.network.NetworkMonitor
 import id.gustyxganteng.agent.feature.chat.ChatScreen
 import id.gustyxganteng.agent.feature.chat.ChatViewModel
 import id.gustyxganteng.agent.feature.onboarding.OnboardingScreen
@@ -27,6 +29,7 @@ class MainActivity : ComponentActivity() {
 
     private val chatViewModel: ChatViewModel by viewModel()
     private val settingsRepository: AppSettingsRepository by inject()
+    private val networkMonitor: NetworkMonitor by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -35,52 +38,60 @@ class MainActivity : ComponentActivity() {
         setContent {
             GGAgentTheme {
                 val hasCompletedOnboarding by settingsRepository.hasCompletedOnboarding.collectAsState(initial = null)
+                val isOnline by networkMonitor.isOnline.collectAsState()
 
-                if (hasCompletedOnboarding != null) {
-                    val navController = rememberNavController()
-                    val startDest = if (hasCompletedOnboarding == true) "chat" else "onboarding"
+                Box(modifier = Modifier.fillMaxSize()) {
+                    if (hasCompletedOnboarding != null) {
+                        val navController = rememberNavController()
+                        val startDest = if (hasCompletedOnboarding == true) "chat" else "onboarding"
 
-                    NavHost(
-                        navController = navController,
-                        startDestination = startDest
-                    ) {
-                        composable("onboarding") {
-                            OnboardingScreen(
-                                settingsRepository = settingsRepository,
-                                onFinished = {
-                                    navController.navigate("chat") {
-                                        popUpTo("onboarding") { inclusive = true }
+                        NavHost(
+                            navController = navController,
+                            startDestination = startDest
+                        ) {
+                            composable("onboarding") {
+                                OnboardingScreen(
+                                    settingsRepository = settingsRepository,
+                                    onFinished = {
+                                        navController.navigate("chat") {
+                                            popUpTo("onboarding") { inclusive = true }
+                                        }
                                     }
-                                }
-                            )
-                        }
+                                )
+                            }
 
-                        composable("chat") {
-                            ChatScreen(
-                                viewModel = chatViewModel,
-                                onNavigateToSettings = {
-                                    navController.navigate("settings")
-                                }
-                            )
-                        }
+                            composable("chat") {
+                                ChatScreen(
+                                    viewModel = chatViewModel,
+                                    onNavigateToSettings = {
+                                        navController.navigate("settings")
+                                    }
+                                )
+                            }
 
-                        composable("settings") {
-                            SettingsScreen(
-                                settingsRepository = settingsRepository,
-                                onNavigateBack = {
-                                    navController.popBackStack()
-                                },
-                                onNavigateToOnboarding = {
-                                    navController.navigate("onboarding")
-                                }
-                            )
+                            composable("settings") {
+                                SettingsScreen(
+                                    settingsRepository = settingsRepository,
+                                    onNavigateBack = {
+                                        navController.popBackStack()
+                                    },
+                                    onNavigateToOnboarding = {
+                                        navController.navigate("onboarding")
+                                    }
+                                )
+                            }
                         }
+                    } else {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(MaterialTheme.colorScheme.surface)
+                        )
                     }
-                } else {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.surface)
+
+                    NetworkOfflineOverlay(
+                        isOnline = isOnline,
+                        onRetry = { networkMonitor.checkConnectivity() }
                     )
                 }
             }

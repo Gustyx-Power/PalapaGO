@@ -275,4 +275,11 @@
     
     <string name="onboarding_revisit_settings_title">Setup Wizard Onboarding</string>
     <string name="onboarding_revisit_settings_desc">Tinjau ulang panduan awal, verifikasi izin sistem, dan konfigurasi mode AI.</string>
+
+    <!-- Network Connectivity & Interruption -->
+    <string name="offline_title">No Internet Connection</string>
+    <string name="offline_desc">Waiting for network connection to restore automatically…</string>
+    <string name="offline_retry_button">Check Connection</string>
+    <string name="offline_interrupted_badge">Response interrupted due to network loss.</string>
+    <string name="offline_continue_button">Continue</string>
 </resources>
